@@ -22,12 +22,13 @@ wss.on("connection", (ws, req) => {
 
     try{
       message = JSON.parse(data.toString())
-
+      console.log(message)
       if(message.type === "connection"){
         clients.set(ws, {boardId: message.boardId})
         const payload = {type: "connection", content: `${message.userName} entered the room.`}
         broadcast(wss, ws, payload)
-      }else if(message.type.startsWith("draw:")){
+      }else if(message.type.startsWith("shape:")){
+        console.log("got figure: ", message)
         broadcast(wss, ws, message)
       }
 

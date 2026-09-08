@@ -1,7 +1,8 @@
 import Tool, { type ToolOptions } from './Tool'
 
-export default class Rect extends Tool{
-    readonly type = 'rect'
+
+export default class Line extends Tool{
+    readonly type = 'line'
     mouseDown: boolean
     startX: number
     startY: number
@@ -25,7 +26,6 @@ export default class Rect extends Tool{
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
         const rect = this.canvas.getBoundingClientRect();
-        this.ctx.beginPath();
         this.startX = e.clientX - rect.left;
         this.startY = e.clientY - rect.top;
         this.saved = this.canvas.toDataURL()
@@ -40,21 +40,19 @@ export default class Rect extends Tool{
             const rect = this.canvas.getBoundingClientRect();
             let currentX = e.clientX - rect.left;
             let currentY = e.clientY - rect.top;
-            let width = currentX - this.startX
-            let height = currentY - this.startY
-            this.draw(this.startX, this.startY, width, height)
+            this.draw(currentX, currentY)
         }
     }
 
-    draw(x: number, y: number, w: number, h: number){
+    draw(x: number, y: number){
         const img = new Image()
         img.src = this.saved
         img.onload = () => {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
             this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height)
             this.ctx.beginPath()
-            this.ctx.rect(x, y, w, h)
-            this.ctx.fill()
+            this.ctx.moveTo(this.startX, this.startY)
+            this.ctx.lineTo(x, y)
             this.ctx.stroke()
         }
     }

@@ -8,12 +8,13 @@ import redoImg from '../assets/redo.png'
 import saveImg from '../assets/save.png'
 import { useToolsStore } from '../store/toolStore'
 import { useCanvasStore } from '../store/canvasStore'
-import Brush from '../tools/Brush'
-import Rect from '../tools/Rect'
-import Circle from '../tools/Circle'
-import Eraser from '../tools/Eraser'
-import Line from '../tools/Line'
+import Brush from '../canvas/tools/Brush'
+import Rect from '../canvas/tools/Rect'
+import Circle from '../canvas/tools/Circle'
+import Eraser from '../canvas/tools/Eraser'
+import Line from '../canvas/tools/Line'
 import {useEffect} from 'react'
+import { useClientStore } from '../store/clientStore'
 
 export default function ToolBar(){
     const setTool = useToolsStore(state => state.setTool)
@@ -24,10 +25,8 @@ export default function ToolBar(){
     const strokeStyle = useToolsStore(state => state.strokeColor)
     const setFillStyle = useToolsStore(state => state.setFillColor)
     const setStrokeStyle = useToolsStore(state => state.setStrokeColor)
-    const undo = useCanvasStore(state => state.undo)
-    const redo = useCanvasStore(state => state.redo)
-    const ws = useCanvasStore(state => state.ws)
-    const boardId = useCanvasStore(state => state.boardId)
+    const ws = useClientStore(state => state.ws)
+    const boardId = useClientStore(state => state.boardId)
 
     useEffect(() => {
         if(tool){
@@ -83,11 +82,11 @@ export default function ToolBar(){
             <div className="flex gap-3">
                 <button 
                     className="cursor-pointer w-5 h-5"
-                    onClick={() => undo()}
+             
                 ><img src={undoImg}/></button>
                 <button 
                     className="cursor-pointer w-5 h-5"
-                    onClick={() => redo()}
+                  
                 ><img src={redoImg}/></button>
                 <button className="cursor-pointer w-5 h-5"><img src={saveImg}/></button>
             </div>

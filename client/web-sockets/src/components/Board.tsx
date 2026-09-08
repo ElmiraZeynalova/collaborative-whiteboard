@@ -2,21 +2,29 @@ import ToolBar from "./ToolBar"
 import SettingsBar from "./SettingsBar"
 import Canvas from "./Canvas"
 import { useParams } from "react-router-dom"
-import {useEffect, useState} from 'react'
+import {useEffect, useState, useRef} from 'react'
 import Modal from "./Modal"
+import { useClientStore } from "../store/clientStore"
+import { handleMessage } from "../utils/messageHandler"
 import { useCanvasStore } from "../store/canvasStore"
-import Brush from "../tools/Brush"
+import CanvasRenderer from "../canvas/CanvasRenderer"
 
 export default function Board(){
     const {id} = useParams()
-    const [name, setName] = useState<string | null>(null)
+    const userNameRef = useRef<HTMLInputElement | null>(null)
     const [showModal, setShowModal] = useState(true)
-    const setUserName = useCanvasStore(state => state.setUserName)
-    const userName = useCanvasStore(state => state.userName)
-    const setBoardId = useCanvasStore(state => state.setBoardId)
-    const setWS = useCanvasStore(state => state.setWS)
+    const setUserName = useClientStore(state => state.setUserName)
+    const setUserId = useClientStore(state => state.setUserId)
+    const userName = useClientStore(state => state.userName)
+    const setBoardId = useClientStore(state => state.setBoardId)
+    const setWS = useClientStore(state => state.setWS)
     const canvas = useCanvasStore(state => state.canvas)
+    const canvasRerendererRef = useRef<CanvasRenderer | null>(null)
+    const shapes = useCanvasStore(state => state.shapes)
+    const undoStack = useCanvasStore(state => state.undoStack)
 
+    console.log( "shapes: ", Object.entries(shapes))
+    console.log("undo: ", undoStack)
     useEffect(() => {
         if(userName){
             const ws = new WebSocket("ws://localhost:3000")
@@ -29,57 +37,28 @@ export default function Board(){
 
             ws.onmessage = (event) => {
                 const message = JSON.parse(event.data)
-                if(message.type === "connection"){
-                    console.log(message.content)
-                }else if(message.type.startsWith("draw:")){
-                    handleDrawing(message)
-                }      
+                handleMessage(message)
             }
 
             return () => ws.close()
         }
-
     }, [userName, id]);
 
-    function handleDrawing(message: { type: string, boardId: string, shape: string, x?: number, y?: number}){
-        const ctx =  canvas?.getContext('2d')
-        if(!ctx) return
+    useEffect(() => {
+        if(!canvas) return
+        canvasRerendererRef.current = new CanvasRenderer(canvas) 
+    }, [canvas])
 
-        switch(message.type){
-            case "draw:start":
-                if(message.x === undefined || message.y === undefined) return
-                startShape(ctx, message.shape, message.x, message.y)
-                break
-            case "draw:move":
-                if(message.x === undefined || message.y === undefined) return
-                moveShape(ctx, message.shape, message.x, message.y)
-                break
-            case "draw:end":
-                ctx.beginPath()
-                break
-        }
-    }
-
-    function startShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: number){
-        switch(shape){
-            case "brush":
-                Brush.start(ctx, x, y)
-                break
-            }
-    }
-
-    function moveShape(ctx: CanvasRenderingContext2D, shape: string, x: number, y: number){
-        switch(shape){
-            case "brush":
-                Brush.draw(ctx, x, y)
-                break
-            }
-    }
+    useEffect(() => {
+        if(!canvasRerendererRef.current) return
+        canvasRerendererRef.current.rerender()
+    }, [shapes])
 
     function handleClick(){
-        if(!name) return 
+        if(!userNameRef.current) return 
         setShowModal(false)
-        setUserName(name)
+        setUserName(userNameRef.current.value)
+        setUserId(crypto.randomUUID())
     }
 
     return(
@@ -87,15 +66,13 @@ export default function Board(){
             <Modal open={showModal} closeModal={() => setShowModal(false)}>
                 <Modal.Overlay/>
                 <Modal.Container>
-                    
                     <Modal.Header className="text-center text-lg font-medium">Type in your username to enter the room</Modal.Header>
                     <Modal.Content>
                         <input 
                             type="text" 
                             placeholder="Username..." 
                             className="bg-white my-4 px-3 py-2 rounded-lg w-full border border-[#aaa]"
-                            value={name ?? ""} 
-                            onChange={(e) => setName(e.target.value)}/>
+                            ref={userNameRef}/>
                         <button 
                             onClick={handleClick}
                             className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium w-full rounded-lg px-3 py-2"
