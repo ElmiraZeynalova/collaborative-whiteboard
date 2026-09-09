@@ -27,12 +27,41 @@ export default function ToolBar(){
     const setStrokeStyle = useToolsStore(state => state.setStrokeColor)
     const ws = useClientStore(state => state.ws)
     const boardId = useClientStore(state => state.boardId)
+    const undo = useCanvasStore(state => state.undo)
+    const redo = useCanvasStore(state => state.redo)
 
     useEffect(() => {
         if(tool){
             tool.updateOptions({fillStyle, strokeStyle, lineWidth})
         }
     }, [tool, fillStyle, strokeStyle, lineWidth])
+
+    function handleUndo() {
+        const deletedItemId = undo()
+
+        if (!deletedItemId) return
+
+        ws?.send(JSON.stringify({
+            type: "shape:delete",
+            shape: {
+                id: deletedItemId
+            }
+        }))
+    }
+
+    function handleRedo() {
+        const returnedItemId = redo()
+
+        if (!returnedItemId) return
+
+        ws?.send(JSON.stringify({
+            type: "shape:update",
+            shape: {
+                id: returnedItemId,
+                isDeleted: false
+            }
+        }))
+    }
 
     return(
         <div className="bg-white h-12 border-b-2 border-[#aaa] px-6 py-4 flex">
@@ -76,17 +105,16 @@ export default function ToolBar(){
                     type="color" 
                     onChange={(e) => {
                     setFillStyle(e.target.value)
-                    setStrokeStyle(e.target.value)
                 }}/>
             </div>
             <div className="flex gap-3">
                 <button 
                     className="cursor-pointer w-5 h-5"
-             
+                    onClick={handleUndo}
                 ><img src={undoImg}/></button>
                 <button 
                     className="cursor-pointer w-5 h-5"
-                  
+                    onClick={handleRedo}
                 ><img src={redoImg}/></button>
                 <button className="cursor-pointer w-5 h-5"><img src={saveImg}/></button>
             </div>

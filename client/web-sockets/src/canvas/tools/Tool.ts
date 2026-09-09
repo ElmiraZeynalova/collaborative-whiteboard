@@ -9,17 +9,14 @@ export default abstract class Tool {
   abstract readonly type: ToolType
   canvas: HTMLCanvasElement
   ctx: CanvasRenderingContext2D
-  lineWidth: number
-  fillStyle: string
-  strokeStyle: string
+  lineWidth!: number
+  fillStyle!: string
+  strokeStyle!: string
   boardId: string
   ws: WebSocket
   
   constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string) {
     this.canvas = canvas;
-    this.lineWidth = options.lineWidth
-    this.fillStyle = options.fillStyle
-    this.strokeStyle = options.strokeStyle
     this.boardId = boardId
     this.ws = ws
 
@@ -28,9 +25,6 @@ export default abstract class Tool {
         throw new Error('Could not get canvas context');
     }
     this.ctx = ctx 
-    this.ctx.lineWidth = this.lineWidth
-    this.ctx.fillStyle = this.fillStyle
-    this.ctx.strokeStyle = this.strokeStyle
     this.destroyEvents()
     this.updateOptions(options)
 

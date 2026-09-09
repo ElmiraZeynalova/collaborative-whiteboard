@@ -22,9 +22,10 @@ export default function Board(){
     const canvasRerendererRef = useRef<CanvasRenderer | null>(null)
     const shapes = useCanvasStore(state => state.shapes)
     const undoStack = useCanvasStore(state => state.undoStack)
-
+    const redoStack = useCanvasStore(state => state.redoStack)
     console.log( "shapes: ", Object.entries(shapes))
     console.log("undo: ", undoStack)
+    console.log("redo: ", redoStack)
     useEffect(() => {
         if(userName){
             const ws = new WebSocket("ws://localhost:3000")
@@ -51,8 +52,8 @@ export default function Board(){
 
     useEffect(() => {
         if(!canvasRerendererRef.current) return
-        canvasRerendererRef.current.rerender()
-    }, [shapes])
+        canvasRerendererRef.current.rerender(shapes)
+    }, [shapes])  
 
     function handleClick(){
         if(!userNameRef.current) return 

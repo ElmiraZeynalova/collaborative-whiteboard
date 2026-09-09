@@ -22,10 +22,13 @@ interface CanvasStore {
     redoStack: string[]
     setCanvas: (newCanvas: HTMLCanvasElement) => void
     addShape: (shape: Shape) => void
+    updateShape: (shapeId:string, changes: Partial<Shape>) => void
     markShapeDeleted: (shapeId: string) => void
     markShapeUnDeleted: (shapeId: string) => void
     pushToUndo: (elemId: string) => void
     pushToRedo: (elemId: string) => void
+    undo: () => string | undefined
+    redo: () => string | undefined
 }
 
 export const useCanvasStore = create<CanvasStore>()((set) => ({
@@ -35,6 +38,24 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     redoStack: [],
     setCanvas: (newCanvas) => set(() => ({canvas: newCanvas })),
     addShape: (shape) => set((state) => ({shapes: {...state.shapes, [shape.id]: shape}})),
+    updateShape: (shapeId, changes) =>
+        set((state) => {
+            const existingShape = state.shapes[shapeId]
+
+            if (!existingShape) {
+                return state
+            }
+
+            return {
+                shapes: {
+                    ...state.shapes,
+                    [shapeId]: {
+                        ...existingShape,
+                        ...changes,
+                    },
+                },
+            }
+    }),
     markShapeDeleted: (shapeId) => set(state => ({
         shapes: {
             ...state.shapes,
@@ -55,6 +76,51 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     })),
     pushToUndo: (elemId) => set((state) => ({undoStack: [...state.undoStack, elemId]})),
     pushToRedo: (elemId) => set((state) => ({redoStack: [...state.redoStack, elemId]})),
+
+    undo: (): string | undefined => {
+        const state = useCanvasStore.getState()
+        const lastItem = state.undoStack[state.undoStack.length - 1]
+
+        if (!lastItem || !state.shapes[lastItem]) {
+            return
+        }
+
+        set((currentState) => ({
+            undoStack: currentState.undoStack.slice(0, -1),
+            redoStack: [...currentState.redoStack, lastItem],
+            shapes: {
+                ...currentState.shapes,
+                [lastItem]: {
+                    ...currentState.shapes[lastItem],
+                    isDeleted: true,
+                },
+            },
+        }))
+        return lastItem
+    },
+
+    redo: (): string | undefined => {
+        const state = useCanvasStore.getState()
+        const lastItem = state.redoStack[state.redoStack.length - 1]
+
+        if (!lastItem || !state.shapes[lastItem]) {
+            return
+        }
+
+        set((currentState) => ({
+            redoStack: currentState.redoStack.slice(0, -1),
+            undoStack: [...currentState.undoStack, lastItem],
+            shapes: {
+                ...currentState.shapes,
+                [lastItem]: {
+                    ...currentState.shapes[lastItem],
+                    isDeleted: false,
+                },
+            },
+        }))
+
+        return lastItem
+    },
 }))
 
 

@@ -16,17 +16,15 @@ export default class CanvasRenderer{
         const ctx = canvas.getContext('2d')
             if (!ctx) {
                 throw new Error('Could not get canvas context');
-        }
+            }
         this.ctx = ctx
     }
 
-    rerender(){
-        const shapes = useCanvasStore.getState().shapes
+    rerender(shapes: Record<string, Shape>){
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         for(const [_, shape] of Object.entries(shapes)){
             console.log("shape: ", shape)
-            if(shape.isDeleted) continue
-            this.drawShape(shape)
+            if(!shape.isDeleted) this.drawShape(shape)
         }
     }
 
@@ -35,8 +33,7 @@ export default class CanvasRenderer{
             case "brush":
                 break
             case "rect":
-                if(shape.width === undefined || shape.height === undefined) return
-                Rect.staticDraw(this.ctx, shape.x, shape.y, shape.width, shape.height)
+                Rect.staticDraw(this.ctx, shape)
                 break
             case "circle":
                 break
