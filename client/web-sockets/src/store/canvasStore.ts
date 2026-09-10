@@ -9,6 +9,9 @@ export type Shape = {
     width?: number
     height?: number
     radius?: number
+    startX?: number
+    startY?: number
+    points?: {x:number, y:number}[]
     fillStyle: string
     strokeStyle: string
     lineWidth: number
@@ -21,6 +24,7 @@ interface CanvasStore {
     undoStack: string[]
     redoStack: string[]
     setCanvas: (newCanvas: HTMLCanvasElement) => void
+    setShapes: (shapes: Record<string, Shape>) => void
     addShape: (shape: Shape) => void
     updateShape: (shapeId:string, changes: Partial<Shape>) => void
     markShapeDeleted: (shapeId: string) => void
@@ -37,6 +41,7 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     undoStack: [],
     redoStack: [],
     setCanvas: (newCanvas) => set(() => ({canvas: newCanvas })),
+    setShapes: (shapes) => set(() =>  ({shapes: shapes})),
     addShape: (shape) => set((state) => ({shapes: {...state.shapes, [shape.id]: shape}})),
     updateShape: (shapeId, changes) =>
         set((state) => {

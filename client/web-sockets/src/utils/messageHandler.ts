@@ -18,16 +18,21 @@ type Message =
       type: "shape:update"
       shape: Partial<Shape> & { id: string }
     }
+  | {
+        type: "board:state"
+        shapes: Record<string, Shape>
+    }
 
 
 export function handleMessage(message: Message){
-    const addShape = useCanvasStore.getState().addShape
-    const updateShape = useCanvasStore.getState().updateShape
-    const markShapeDeleted = useCanvasStore.getState().markShapeDeleted
+    const {setShapes, addShape, updateShape, markShapeDeleted} = useCanvasStore.getState()
 
     switch(message.type){
         case "connection":
             console.log(message.content)
+            break
+        case "board:state":
+            setShapes(message.shapes)
             break
         case "shape:add":
             console.log("adding sent shape...")
@@ -40,6 +45,7 @@ export function handleMessage(message: Message){
         case "shape:delete":
             markShapeDeleted(message.shape.id)
             break
+
     }
 
 }

@@ -1,10 +1,14 @@
 import Tool, { type ToolOptions } from './Tool'
+import { useClientStore } from '../../store/clientStore'
+import { useCanvasStore } from '../../store/canvasStore'
+import type { Shape } from '../../store/canvasStore'
 
 export default class Circle extends Tool{
     readonly type = 'circle'
     mouseDown: boolean
     startX: number
     startY: number
+    radius: number
     saved: string
     
     constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string){
@@ -13,6 +17,7 @@ export default class Circle extends Tool{
         this.listen()
         this.startX = 0
         this.startY = 0
+        this.radius = 0
         this.saved = ""
     }
 
@@ -25,23 +30,55 @@ export default class Circle extends Tool{
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
         const rect = this.canvas.getBoundingClientRect();
-        this.ctx.beginPath();
+
         this.startX = e.clientX - rect.left;
         this.startY = e.clientY - rect.top;
+
+        this.radius = 0;
+
+        this.ctx.beginPath();
         this.saved = this.canvas.toDataURL()
 
     }
 
     mouseUpHandler(){
         this.mouseDown = false
+
+        if (this.radius === 0) {
+            return;
+        }
+
+        const userId = useClientStore.getState().userId
+
+        if (!userId) return
+
+        const message = {
+            type: "shape:add",
+            shape: {
+                id: crypto.randomUUID(),
+                userId: userId,
+                type: this.type,
+                x: this.startX,
+                y: this.startY,
+                radius: this.radius,
+                fillStyle: this.fillStyle,
+                strokeStyle: this.strokeStyle,
+                lineWidth: this.lineWidth,
+                isDeleted: false
+            }
+        }
+        const { addShape, pushToUndo } = useCanvasStore.getState()
+        addShape(message.shape)
+        pushToUndo(message.shape.id)
+        this.ws.send(JSON.stringify(message))
     }
 
     mouseMoveHandler(e: MouseEvent){
         if(this.mouseDown){
             const rect = this.canvas.getBoundingClientRect();
             let currentX = e.clientX - rect.left;
-            let radius = Math.abs(currentX - this.startX)
-            this.draw(this.startX, this.startY, radius)
+            this.radius = Math.abs(currentX - this.startX)
+            this.draw(this.startX, this.startY, this.radius)
         }
     }
 
@@ -56,5 +93,19 @@ export default class Circle extends Tool{
             this.ctx.fill()
             this.ctx.stroke()
         }
+    }
+
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape){
+        if(shape.radius === undefined) return
+        
+        ctx.fillStyle = shape.fillStyle ?? 'black'
+        ctx.strokeStyle = shape.strokeStyle ?? 'black'
+        ctx.lineWidth = shape.lineWidth ?? 1
+        
+        ctx.beginPath()
+        ctx.arc(shape.x, shape.y, shape.radius,  0, 2 * Math.PI)
+        ctx.fill()
+        ctx.stroke()
+
     }
 }

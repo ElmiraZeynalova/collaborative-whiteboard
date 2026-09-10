@@ -1,14 +1,22 @@
 import Tool, { type ToolOptions } from './Tool'
-
+import { useClientStore } from '../../store/clientStore'
+import { useCanvasStore } from '../../store/canvasStore'
+import type { Shape } from '../../store/canvasStore'
 
 export default class Brush extends Tool{
     readonly type = 'brush'
     mouseDown: boolean
+    startX: number
+    startY: number
+    points: { x: number; y: number }[] 
 
     constructor(canvas: HTMLCanvasElement, options: ToolOptions,  ws: WebSocket, boardId: string){
         super(canvas, options,  ws, boardId)
         this.mouseDown = false
         this.listen()
+        this.startX = 0
+        this.startY = 0
+        this.points = []
     }
 
     listen(){
@@ -19,7 +27,33 @@ export default class Brush extends Tool{
 
     mouseUpHandler(){
         this.mouseDown = false
-        this.ws.send(JSON.stringify({ type: "draw:end", boardId: this.boardId, shape: "brush"}));
+
+        if (this.points.length === 0) {
+            return;
+        }
+        const userId = useClientStore.getState().userId
+
+        if (!userId) return
+
+        const message = {
+            type: "shape:add",
+            shape: {
+                id: crypto.randomUUID(),
+                userId: userId,
+                type: this.type,
+                x: this.startX,
+                y: this.startY,
+                points: this.points,
+                fillStyle: this.fillStyle,
+                strokeStyle: this.strokeStyle,
+                lineWidth: this.lineWidth,
+                isDeleted: false
+            }
+        }
+        const { addShape, pushToUndo } = useCanvasStore.getState()
+        addShape(message.shape)
+        pushToUndo(message.shape.id)
+        this.ws.send(JSON.stringify(message))
     }
 
     mouseMoveHandler(e: MouseEvent){
@@ -27,9 +61,8 @@ export default class Brush extends Tool{
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-
-            this.ws.send(JSON.stringify({ type: "draw:move", boardId: this.boardId, shape: "brush", x, y}));
-            Brush.draw(this.ctx, x, y)
+            this.points.push({ x, y })
+            this.draw(x, y)
         }
     }
 
@@ -39,20 +72,34 @@ export default class Brush extends Tool{
 
         const rect = this.canvas.getBoundingClientRect();
 
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        this.startX = e.clientX - rect.left;
+        this.startY = e.clientY - rect.top;
 
-        this.ws.send(JSON.stringify({ type: "draw:start", boardId: this.boardId, shape: "brush", x, y}))
-        Brush.start(this.ctx, x, y)
+        this.points = []
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.startX, this.startY);
     }
 
-    static start(ctx: CanvasRenderingContext2D, x: number, y: number){
-        ctx.beginPath();
-        ctx.moveTo(x, y);
+
+    draw(x: number, y: number){
+        this.ctx.lineTo(x, y)
+        this.ctx.stroke()
     }
 
-    static draw(ctx: CanvasRenderingContext2D, x: number, y: number){
-        ctx.lineTo(x, y)
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape) {
+        if (!shape.points?.length) return
+
+        ctx.strokeStyle = shape.strokeStyle ?? 'black'
+        ctx.lineWidth = shape.lineWidth ?? 1
+
+        ctx.beginPath()
+
+        ctx.moveTo(shape.x, shape.y)
+
+        for (const point of shape.points.slice(1)) {
+            ctx.lineTo(point.x, point.y)
+        }
+
         ctx.stroke()
     }
 }

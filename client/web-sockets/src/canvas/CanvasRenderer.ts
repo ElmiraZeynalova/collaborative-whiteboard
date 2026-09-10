@@ -1,4 +1,4 @@
-import {type Shape, useCanvasStore} from "../store/canvasStore"
+import {type Shape} from "../store/canvasStore"
 import Rect from "./tools/Rect"
 import Circle from "./tools/Circle"
 import Line from "./tools/Line"
@@ -31,31 +31,21 @@ export default class CanvasRenderer{
     private drawShape(shape: Shape){
         switch(shape.type){
             case "brush":
+                Brush.staticDraw(this.ctx, shape)
                 break
             case "rect":
                 Rect.staticDraw(this.ctx, shape)
                 break
             case "circle":
+                Circle.staticDraw(this.ctx, shape)
                 break
             case "eraser":
+                Eraser.staticDraw(this.ctx, shape)
                 break
             case "line": 
+                Line.staticDraw(this.ctx, shape)
                 break
         }
     }
 }
 
-// export type Shape = {
-//     id: string
-//     userId: string
-//     type: string
-//     x: number
-//     y: number
-//     width?: number
-//     height?: number
-//     radius?: number
-//     fillStyle: string
-//     strokeStyle: string
-//     lineWidth: number
-//     isDeleted: boolean
-// }

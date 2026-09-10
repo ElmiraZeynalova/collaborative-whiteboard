@@ -24,7 +24,6 @@ export default function ToolBar(){
     const fillStyle = useToolsStore(state => state.fillColor)
     const strokeStyle = useToolsStore(state => state.strokeColor)
     const setFillStyle = useToolsStore(state => state.setFillColor)
-    const setStrokeStyle = useToolsStore(state => state.setStrokeColor)
     const ws = useClientStore(state => state.ws)
     const boardId = useClientStore(state => state.boardId)
     const undo = useCanvasStore(state => state.undo)

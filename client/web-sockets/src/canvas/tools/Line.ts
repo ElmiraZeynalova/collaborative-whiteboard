@@ -1,11 +1,15 @@
 import Tool, { type ToolOptions } from './Tool'
-
+import { useClientStore } from '../../store/clientStore'
+import { useCanvasStore } from '../../store/canvasStore'
+import type { Shape } from '../../store/canvasStore'
 
 export default class Line extends Tool{
     readonly type = 'line'
     mouseDown: boolean
     startX: number
     startY: number
+    endX: number
+    endY: number
     saved: string
     
     constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string){
@@ -14,6 +18,8 @@ export default class Line extends Tool{
         this.listen()
         this.startX = 0
         this.startY = 0
+        this.endX = 0
+        this.endY = 0
         this.saved = ""
     }
 
@@ -28,19 +34,51 @@ export default class Line extends Tool{
         const rect = this.canvas.getBoundingClientRect();
         this.startX = e.clientX - rect.left;
         this.startY = e.clientY - rect.top;
+
+        this.endX = 0;
+        this.endY = 0;
+
+        this.ctx.beginPath();
         this.saved = this.canvas.toDataURL()
     }
 
     mouseUpHandler(){
         this.mouseDown = false
+        if (this.endX === 0 && this.endY === 0) {
+            return;
+        }
+        const userId = useClientStore.getState().userId
+
+        if (!userId) return
+
+        const message = {
+            type: "shape:add",
+            shape: {
+                id: crypto.randomUUID(),
+                userId: userId,
+                type: this.type,
+                x: this.endX,
+                y: this.endY,
+                startX: this.startX,
+                startY: this.startY,
+                fillStyle: this.fillStyle,
+                strokeStyle: this.strokeStyle,
+                lineWidth: this.lineWidth,
+                isDeleted: false
+            }
+        }
+        const { addShape, pushToUndo } = useCanvasStore.getState()
+        addShape(message.shape)
+        pushToUndo(message.shape.id)
+        this.ws.send(JSON.stringify(message))
     }
 
     mouseMoveHandler(e: MouseEvent){
         if(this.mouseDown){
             const rect = this.canvas.getBoundingClientRect();
-            let currentX = e.clientX - rect.left;
-            let currentY = e.clientY - rect.top;
-            this.draw(currentX, currentY)
+            this.endX = e.clientX - rect.left;
+            this.endY = e.clientY - rect.top;
+            this.draw(this.endX, this.endY)
         }
     }
 
@@ -55,5 +93,18 @@ export default class Line extends Tool{
             this.ctx.lineTo(x, y)
             this.ctx.stroke()
         }
+    }
+
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape){
+        if(shape.startX === undefined || shape.startY === undefined) return
+        
+        ctx.strokeStyle = shape.strokeStyle ?? 'black'
+        ctx.lineWidth = shape.lineWidth ?? 1
+        
+        ctx.beginPath()
+        ctx.moveTo(shape.startX, shape.startY)
+        ctx.lineTo(shape.x, shape.y)
+        ctx.stroke()
+
     }
 }
