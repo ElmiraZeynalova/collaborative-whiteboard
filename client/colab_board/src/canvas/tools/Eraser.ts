@@ -1,7 +1,7 @@
 import Tool, { type ToolOptions } from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import type { Shape } from '../../store/canvasStore'
+import type { EraserShape } from "../../types/shapes"
 
 export default class Eraser extends Tool{
     readonly type = 'eraser'
@@ -32,20 +32,22 @@ export default class Eraser extends Tool{
 
         if (!userId) return
 
+        const shape: EraserShape = {
+            id: crypto.randomUUID(),
+            userId: userId,
+            type: this.type,
+            x: this.startX,
+            y: this.startY,
+            points: this.points,
+            strokeStyle: "#FFFFFF",
+            lineWidth: this.lineWidth,
+            fillStyle: "",
+            isDeleted: false
+        }
+
         const message = {
             type: "shape:add",
-            shape: {
-                id: crypto.randomUUID(),
-                userId: userId,
-                type: this.type,
-                x: this.startX,
-                y: this.startY,
-                points: this.points,
-                fillStyle: this.fillStyle,
-                strokeStyle: "white",
-                lineWidth: this.lineWidth,
-                isDeleted: false
-            }
+            shape: shape
         }
         const { addShape, pushToUndo } = useCanvasStore.getState()
         addShape(message.shape)
@@ -72,21 +74,22 @@ export default class Eraser extends Tool{
         this.startX = e.clientX - rect.left;
         this.startY = e.clientY - rect.top;
 
+        this.points = []
         this.ctx.beginPath();
         this.ctx.moveTo(this.startX, this.startY);
     }
 
 
     draw(x: number, y: number){
-        this.ctx.strokeStyle = 'white'
+        this.ctx.strokeStyle = "#FFFFFF"
         this.ctx.lineTo(x, y)
         this.ctx.stroke()
     }
 
-    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape) {
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: EraserShape) {
         if (!shape.points?.length) return
 
-        ctx.strokeStyle = 'white'
+        ctx.strokeStyle = "#FFFFFF"
         ctx.lineWidth = shape.lineWidth ?? 1
 
         ctx.beginPath()

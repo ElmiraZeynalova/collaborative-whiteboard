@@ -1,25 +1,25 @@
 import Tool, { type ToolOptions } from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import type { Shape } from '../../store/canvasStore'
+import type { RectShape } from "../../types/shapes"
 
-export default class Line extends Tool{
-    readonly type = 'line'
+export default class Rect extends Tool{
+    readonly type = 'rect'
     mouseDown: boolean
     startX: number
     startY: number
-    endX: number
-    endY: number
+    width: number
+    height: number
     saved: string
-    
+
     constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string){
-        super(canvas, options,  ws, boardId)
+        super(canvas, options, ws, boardId)
         this.mouseDown = false
         this.listen()
         this.startX = 0
         this.startY = 0
-        this.endX = 0
-        this.endY = 0
+        this.width = 0
+        this.height = 0
         this.saved = ""
     }
 
@@ -32,11 +32,12 @@ export default class Line extends Tool{
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
         const rect = this.canvas.getBoundingClientRect();
+
         this.startX = e.clientX - rect.left;
         this.startY = e.clientY - rect.top;
 
-        this.endX = 0;
-        this.endY = 0;
+        this.width = 0;
+        this.height = 0;
 
         this.ctx.beginPath();
         this.saved = this.canvas.toDataURL()
@@ -44,28 +45,30 @@ export default class Line extends Tool{
 
     mouseUpHandler(){
         this.mouseDown = false
-        if (this.endX === 0 && this.endY === 0) {
+        if (this.width === 0 && this.height === 0) {
             return;
         }
         const userId = useClientStore.getState().userId
 
         if (!userId) return
 
+        const shape: RectShape = {
+            id: crypto.randomUUID(),
+            userId: userId,
+            type: this.type,
+            x: this.startX,
+            y: this.startY,
+            width: this.width,
+            height: this.height,
+            fillStyle: this.fillStyle,
+            strokeStyle: this.strokeStyle,
+            lineWidth: this.lineWidth,
+            isDeleted: false
+        }
+        
         const message = {
             type: "shape:add",
-            shape: {
-                id: crypto.randomUUID(),
-                userId: userId,
-                type: this.type,
-                x: this.endX,
-                y: this.endY,
-                startX: this.startX,
-                startY: this.startY,
-                fillStyle: this.fillStyle,
-                strokeStyle: this.strokeStyle,
-                lineWidth: this.lineWidth,
-                isDeleted: false
-            }
+            shape: shape
         }
         const { addShape, pushToUndo } = useCanvasStore.getState()
         addShape(message.shape)
@@ -76,35 +79,39 @@ export default class Line extends Tool{
     mouseMoveHandler(e: MouseEvent){
         if(this.mouseDown){
             const rect = this.canvas.getBoundingClientRect();
-            this.endX = e.clientX - rect.left;
-            this.endY = e.clientY - rect.top;
-            this.draw(this.endX, this.endY)
+            let currentX = e.clientX - rect.left;
+            let currentY = e.clientY - rect.top;
+            this.width = currentX - this.startX
+            this.height = currentY - this.startY
+            this.draw(this.startX, this.startY, this.width, this.height)
         }
     }
 
-    draw(x: number, y: number){
+    draw(x: number, y: number, w: number, h: number){
         const img = new Image()
         img.src = this.saved
         img.onload = () => {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
             this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height)
             this.ctx.beginPath()
-            this.ctx.moveTo(this.startX, this.startY)
-            this.ctx.lineTo(x, y)
-            this.ctx.stroke()
+            this.ctx.rect(x, y, w, h)
+            this.ctx.fill()
+            if(this.lineWidth > 0) this.ctx.stroke()
         }
     }
 
-    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape){
-        if(shape.startX === undefined || shape.startY === undefined) return
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: RectShape){
+        if(shape.width === undefined || shape.height === undefined) return
         
-        ctx.strokeStyle = shape.strokeStyle ?? 'black'
-        ctx.lineWidth = shape.lineWidth ?? 1
+        ctx.fillStyle = shape.fillStyle ?? "#000000"
+        ctx.strokeStyle = shape.strokeStyle ?? "#000000"
+        ctx.lineWidth = shape.lineWidth ?? 0
         
         ctx.beginPath()
-        ctx.moveTo(shape.startX, shape.startY)
-        ctx.lineTo(shape.x, shape.y)
-        ctx.stroke()
+        ctx.rect(shape.x, shape.y, shape.width, shape.height)
+        ctx.fill()
+        if(shape.lineWidth > 0) ctx.stroke()
 
     }
+    
 }

@@ -1,4 +1,4 @@
-import type { Shape } from "../store/canvasStore"
+import type { Shape, ShapeChanges } from "../types/shapes"
 import { useCanvasStore } from "../store/canvasStore"
 
 type Message =
@@ -15,8 +15,8 @@ type Message =
       shape: {id: string}
     }
   | {
-      type: "shape:update"
-      shape: Partial<Shape> & { id: string }
+        type: "shape:update"
+        shape: ShapeChanges & {id: string}
     }
   | {
         type: "board:state"

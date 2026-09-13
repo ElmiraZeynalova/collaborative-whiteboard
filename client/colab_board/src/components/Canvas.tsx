@@ -1,7 +1,6 @@
 import {useRef, useEffect} from 'react'
 import { useCanvasStore } from '../store/canvasStore';
 
-
 export default function Canvas(){
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
     const setCanvas = useCanvasStore(state => state.setCanvas)

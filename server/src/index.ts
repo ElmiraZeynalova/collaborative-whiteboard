@@ -42,14 +42,13 @@ wss.on("connection", (ws, req) => {
 
     try{
       message = JSON.parse(data.toString())
-      console.log(message)
 
       if(message.type === "connection"){
         clients.set(ws, {boardId: message.boardId})
         const shapes = boardsStates.get(message.boardId)
         ws.send(JSON.stringify({
             type: 'board:state',
-            shapes: Object.values(shapes ?? {})
+            shapes: shapes ?? {}
         }))
         const payload = {type: "connection", content: `${message.userName} entered the room.`}
         broadcast(wss, ws, payload)

@@ -1,32 +1,19 @@
 import { create } from 'zustand'
-
-export type Shape = {
-    id: string
-    userId: string
-    type: string
-    x: number
-    y: number
-    width?: number
-    height?: number
-    radius?: number
-    startX?: number
-    startY?: number
-    points?: {x:number, y:number}[]
-    fillStyle: string
-    strokeStyle: string
-    lineWidth: number
-    isDeleted: boolean
-}
+import {type Shape, type ShapeChanges} from "../types/shapes"
 
 interface CanvasStore {
     canvas: HTMLCanvasElement | null
     shapes: Record<string, Shape>
+    selectedShapeId: string | null
+    hoveredShapeId: string | null
     undoStack: string[]
     redoStack: string[]
     setCanvas: (newCanvas: HTMLCanvasElement) => void
     setShapes: (shapes: Record<string, Shape>) => void
+    setSelectedShapeId: (id: string | null) => void
+    setHoveredShapeId: (id: string | null) => void
     addShape: (shape: Shape) => void
-    updateShape: (shapeId:string, changes: Partial<Shape>) => void
+    updateShape: (shapeId:string, changes: ShapeChanges) => void
     markShapeDeleted: (shapeId: string) => void
     markShapeUnDeleted: (shapeId: string) => void
     pushToUndo: (elemId: string) => void
@@ -38,11 +25,15 @@ interface CanvasStore {
 export const useCanvasStore = create<CanvasStore>()((set) => ({
     canvas: null,
     shapes: {},
+    selectedShapeId: null,
+    hoveredShapeId: null,
     undoStack: [],
     redoStack: [],
     setCanvas: (newCanvas) => set(() => ({canvas: newCanvas })),
     setShapes: (shapes) => set(() =>  ({shapes: shapes})),
     addShape: (shape) => set((state) => ({shapes: {...state.shapes, [shape.id]: shape}})),
+    setSelectedShapeId: (id) => set(() => ({selectedShapeId: id})),
+    setHoveredShapeId: (id) => set(() => ({hoveredShapeId: id})),
     updateShape: (shapeId, changes) =>
         set((state) => {
             const existingShape = state.shapes[shapeId]

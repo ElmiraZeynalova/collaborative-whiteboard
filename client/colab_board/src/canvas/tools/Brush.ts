@@ -1,7 +1,7 @@
 import Tool, { type ToolOptions } from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import type { Shape } from '../../store/canvasStore'
+import type { BrushShape } from "../../types/shapes"
 
 export default class Brush extends Tool{
     readonly type = 'brush'
@@ -35,21 +35,24 @@ export default class Brush extends Tool{
 
         if (!userId) return
 
+        const shape: BrushShape = {
+            id: crypto.randomUUID(),
+            userId: userId,
+            type: this.type,
+            x: this.startX,
+            y: this.startY,
+            points: this.points,
+            strokeStyle: this.strokeStyle,
+            lineWidth: this.lineWidth,
+            fillStyle: "",
+            isDeleted: false
+        }
+
         const message = {
             type: "shape:add",
-            shape: {
-                id: crypto.randomUUID(),
-                userId: userId,
-                type: this.type,
-                x: this.startX,
-                y: this.startY,
-                points: this.points,
-                fillStyle: this.fillStyle,
-                strokeStyle: this.strokeStyle,
-                lineWidth: this.lineWidth,
-                isDeleted: false
-            }
+            shape: shape
         }
+
         const { addShape, pushToUndo } = useCanvasStore.getState()
         addShape(message.shape)
         pushToUndo(message.shape.id)
@@ -86,10 +89,10 @@ export default class Brush extends Tool{
         this.ctx.stroke()
     }
 
-    static staticDraw(ctx: CanvasRenderingContext2D, shape: Shape) {
+    static staticDraw(ctx: CanvasRenderingContext2D, shape: BrushShape) {
         if (!shape.points?.length) return
 
-        ctx.strokeStyle = shape.strokeStyle ?? 'black'
+        ctx.strokeStyle = shape.strokeStyle ?? "#000000"
         ctx.lineWidth = shape.lineWidth ?? 1
 
         ctx.beginPath()

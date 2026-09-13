@@ -1,12 +1,14 @@
 import ToolBar from "./ToolBar"
 import SettingsBar from "./SettingsBar"
 import Canvas from "./Canvas"
+import Selection from "../canvas/tools/Selection"
 import { useParams } from "react-router-dom"
 import {useEffect, useState, useRef} from 'react'
 import Modal from "./Modal"
 import { useClientStore } from "../store/clientStore"
 import { handleMessage } from "../utils/messageHandler"
 import { useCanvasStore } from "../store/canvasStore"
+import { useToolStore } from "../store/toolStore"
 import CanvasRenderer from "../canvas/CanvasRenderer"
 
 export default function Board(){
@@ -21,11 +23,10 @@ export default function Board(){
     const canvas = useCanvasStore(state => state.canvas)
     const canvasRerendererRef = useRef<CanvasRenderer | null>(null)
     const shapes = useCanvasStore(state => state.shapes)
-    const undoStack = useCanvasStore(state => state.undoStack)
-    const redoStack = useCanvasStore(state => state.redoStack)
-    console.log( "shapes: ", Object.entries(shapes))
-    console.log("undo: ", undoStack)
-    console.log("redo: ", redoStack)
+    const setTool = useToolStore(state => state.setTool)
+    const selectedShapeId = useCanvasStore(state => state.selectedShapeId)
+    const hoveredShapeId = useCanvasStore(state => state.hoveredShapeId)
+
     useEffect(() => {
         if(userName){
             const ws = new WebSocket("ws://localhost:3000")
@@ -34,6 +35,7 @@ export default function Board(){
                 ws.send(JSON.stringify({ type: "connection", boardId: id, userName: userName }))
                 setBoardId(id!)
                 setWS(ws)
+                setTool(new Selection(canvas!, ws, id!))
             }
 
             ws.onmessage = (event) => {
@@ -52,11 +54,12 @@ export default function Board(){
 
     useEffect(() => {
         if(!canvasRerendererRef.current) return
-        canvasRerendererRef.current.rerender(shapes)
-    }, [shapes])  
+        canvasRerendererRef.current.rerender(shapes, selectedShapeId, hoveredShapeId)
+    }, [shapes, selectedShapeId, hoveredShapeId])  
 
-    function handleClick(){
-        if(!userNameRef.current) return 
+    function handleSubmit(e: React.FormEvent){
+        e.preventDefault()
+        if(!userNameRef.current || userNameRef.current.value === "") return 
         setShowModal(false)
         setUserName(userNameRef.current.value)
         setUserId(crypto.randomUUID())
@@ -69,15 +72,19 @@ export default function Board(){
                 <Modal.Container>
                     <Modal.Header className="text-center text-lg font-medium">Type in your username to enter the room</Modal.Header>
                     <Modal.Content>
-                        <input 
-                            type="text" 
-                            placeholder="Username..." 
-                            className="bg-white my-4 px-3 py-2 rounded-lg w-full border border-[#aaa]"
-                            ref={userNameRef}/>
-                        <button 
-                            onClick={handleClick}
-                            className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium w-full rounded-lg px-3 py-2"
-                        >Enter</button>
+                        <form 
+                            className="flex flex-col w-full"
+                            onSubmit={handleSubmit}>
+                            <input 
+                                type="text" 
+                                placeholder="Username..." 
+                                className="bg-white my-4 px-3 py-2 rounded-lg border border-[#aaa]"
+                                ref={userNameRef}/>
+                            <button 
+                                type="submit"
+                                className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                            >Enter</button>
+                        </form>
                     </Modal.Content>
                 </Modal.Container>
             </Modal>

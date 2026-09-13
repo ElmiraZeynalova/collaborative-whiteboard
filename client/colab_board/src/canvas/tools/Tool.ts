@@ -1,4 +1,4 @@
-type ToolType = 'brush' | 'rect' | 'circle' | 'eraser' | 'line'
+type ToolType = 'brush' | 'rect' | 'circle' | 'eraser' | 'line' | 'selection'
 export type ToolOptions = {
   lineWidth: number
   fillStyle: string
@@ -15,7 +15,7 @@ export default abstract class Tool {
   boardId: string
   ws: WebSocket
   
-  constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string) {
+  constructor(canvas: HTMLCanvasElement, options: ToolOptions | undefined, ws: WebSocket, boardId: string) {
     this.canvas = canvas;
     this.boardId = boardId
     this.ws = ws
@@ -26,7 +26,7 @@ export default abstract class Tool {
     }
     this.ctx = ctx 
     this.destroyEvents()
-    this.updateOptions(options)
+    if(options) this.updateOptions(options)
 
   }
 
@@ -43,5 +43,8 @@ export default abstract class Tool {
     this.canvas.onmouseup = null
     this.canvas.onmousemove = null
     this.canvas.onmousedown = null
+    this.canvas.onpointerdown = null
+    this.canvas.onpointermove = null
+    this.canvas.onpointerup = null
   }
 }

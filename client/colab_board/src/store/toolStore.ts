@@ -12,11 +12,11 @@ interface ToolsStore {
 
 }
 
-export const useToolsStore = create<ToolsStore>()((set) => ({
+export const useToolStore = create<ToolsStore>()((set) => ({
     tool: null,
-    fillColor: "black",
-    strokeColor: "black",
-    lineWidth: 1,
+    fillColor: "#000000",
+    strokeColor: "#000000",
+    lineWidth: 0,
     setTool: (tool) => set(() => ({tool: tool})),
     setFillColor: (color) => set(() => ({fillColor: color})),
     setStrokeColor: (color) => set(() => ({strokeColor: color})),
