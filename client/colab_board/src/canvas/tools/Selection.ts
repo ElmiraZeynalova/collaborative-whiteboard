@@ -49,8 +49,11 @@ export default class Selection extends Tool{
         this.dragOffset.y = y - shape.y
 
         setSelectedShapeId(shape.id)
+        useCanvasStore.getState().setHoveredShapeId(null)
         this.isDragging = true
         this.hasMoved = false
+
+        this.canvas.setPointerCapture(e.pointerId) 
     }
 
     pointerMoveHandler(e: PointerEvent){
@@ -90,10 +93,14 @@ export default class Selection extends Tool{
         useCanvasStore.getState().updateShape(selectedShapeId, this.changes)
     }
 
-    pointerUpHandler(){
+    pointerUpHandler(e: PointerEvent){
         this.isDragging = false
         const selectedShapeId = useCanvasStore.getState().selectedShapeId
         if(selectedShapeId && this.hasMoved) this.ws.send(JSON.stringify({type: "shape:update", shape: {id: selectedShapeId, ...this.changes}}))
         this.hasMoved = false
+
+        if (this.canvas.hasPointerCapture(e.pointerId)) {  
+            this.canvas.releasePointerCapture(e.pointerId)
+        }
     }
 }

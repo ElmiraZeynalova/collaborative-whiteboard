@@ -1,4 +1,4 @@
-type ToolType = 'brush' | 'rect' | 'circle' | 'eraser' | 'line' | 'selection'
+type ToolType = 'brush' | 'rect' | 'romb' | 'ellipse' | 'eraser' | 'line' | 'selection'
 export type ToolOptions = {
   lineWidth: number
   fillStyle: string

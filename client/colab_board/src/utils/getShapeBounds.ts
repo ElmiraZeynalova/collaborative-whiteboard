@@ -12,13 +12,15 @@ export function getShapeBounds(shape: Shape): Bounds | null {
         case 'rect':
             return { x: shape.x, y: shape.y, width: shape.width, height: shape.height }
 
-        case 'circle':
+        case 'ellipse':
             return {
-                x: shape.x - shape.radius,
-                y: shape.y - shape.radius,
-                width: shape.radius * 2,
-                height: shape.radius * 2
+                x: shape.x - shape.radius.x,
+                y: shape.y - shape.radius.y,
+                width: shape.radius.x * 2,
+                height: shape.radius.y * 2
             }
+        case 'romb':
+            return { x: shape.x, y: shape.y, width: shape.width, height: shape.height }
 
         case 'line':
             return {

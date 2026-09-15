@@ -10,7 +10,7 @@ export default class Line extends Tool{
     startY: number
     endX: number
     endY: number
-    saved: string
+    saved: ImageData | null
     
     constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string){
         super(canvas, options,  ws, boardId)
@@ -20,7 +20,7 @@ export default class Line extends Tool{
         this.startY = 0
         this.endX = 0
         this.endY = 0
-        this.saved = ""
+        this.saved = null
     }
 
     listen(){
@@ -38,8 +38,7 @@ export default class Line extends Tool{
         this.endX = 0;
         this.endY = 0;
 
-        this.ctx.beginPath();
-        this.saved = this.canvas.toDataURL()
+        this.saved = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
     }
 
     mouseUpHandler(){
@@ -82,20 +81,20 @@ export default class Line extends Tool{
             this.draw(this.endX, this.endY)
         }
     }
-
+        
     draw(x: number, y: number){
-        const img = new Image()
-        img.src = this.saved
-        img.onload = () => {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height)
-            this.ctx.beginPath()
-            this.ctx.moveTo(this.startX, this.startY)
-            this.ctx.lineTo(x, y)
-            this.ctx.stroke()
-        }
-    }
+        if (!this.saved) return
+        this.ctx.putImageData(this.saved, 0, 0)
 
+        this.ctx.beginPath()
+        this.ctx.moveTo(this.startX, this.startY)
+        this.ctx.lineTo(x, y)
+
+        this.ctx.strokeStyle = this.strokeStyle
+        this.ctx.lineWidth = this.lineWidth   
+        this.ctx.lineCap = 'round'            
+        this.ctx.stroke()
+    }
     static staticDraw(ctx: CanvasRenderingContext2D, shape: LineShape){
         if(shape.startX === undefined || shape.startY === undefined) return
         

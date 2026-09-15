@@ -10,7 +10,7 @@ export default class Rect extends Tool{
     startY: number
     width: number
     height: number
-    saved: string
+    saved: ImageData | null
 
     constructor(canvas: HTMLCanvasElement, options: ToolOptions, ws: WebSocket, boardId: string){
         super(canvas, options, ws, boardId)
@@ -20,7 +20,7 @@ export default class Rect extends Tool{
         this.startY = 0
         this.width = 0
         this.height = 0
-        this.saved = ""
+        this.saved = null
     }
 
     listen(){
@@ -39,8 +39,8 @@ export default class Rect extends Tool{
         this.width = 0;
         this.height = 0;
 
-        this.ctx.beginPath();
-        this.saved = this.canvas.toDataURL()
+        //this.ctx.beginPath();
+        this.saved = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
     }
 
     mouseUpHandler(){
@@ -88,15 +88,20 @@ export default class Rect extends Tool{
     }
 
     draw(x: number, y: number, w: number, h: number){
-        const img = new Image()
-        img.src = this.saved
-        img.onload = () => {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-            this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height)
-            this.ctx.beginPath()
-            this.ctx.rect(x, y, w, h)
-            this.ctx.fill()
-            if(this.lineWidth > 0) this.ctx.stroke()
+        if (!this.saved) return
+        this.ctx.putImageData(this.saved, 0, 0)
+
+        this.ctx.beginPath()
+        this.ctx.rect(x, y, w, h)
+        this.ctx.closePath()
+
+        this.ctx.fillStyle = this.fillStyle
+        this.ctx.fill()
+
+        if(this.lineWidth > 0) {
+            this.ctx.strokeStyle = this.strokeStyle
+            this.ctx.lineWidth = this.lineWidth
+            this.ctx.stroke()
         }
     }
 

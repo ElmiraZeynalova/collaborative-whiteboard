@@ -28,6 +28,9 @@ export default class Eraser extends Tool{
     mouseUpHandler(){
         this.mouseDown = false
 
+        if (this.points.length === 0) {
+            return;
+        }
         const userId = useClientStore.getState().userId
 
         if (!userId) return
@@ -39,7 +42,7 @@ export default class Eraser extends Tool{
             x: this.startX,
             y: this.startY,
             points: this.points,
-            strokeStyle: "#FFFFFF",
+            strokeStyle:  "#FFFFFF",
             lineWidth: this.lineWidth,
             fillStyle: "",
             isDeleted: false
@@ -49,6 +52,7 @@ export default class Eraser extends Tool{
             type: "shape:add",
             shape: shape
         }
+
         const { addShape, pushToUndo } = useCanvasStore.getState()
         addShape(message.shape)
         pushToUndo(message.shape.id)
@@ -60,11 +64,15 @@ export default class Eraser extends Tool{
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+
+            const last = this.points.length > 0
+                ? this.points[this.points.length - 1]
+                : { x: this.startX, y: this.startY }
+
             this.points.push({ x, y })
-            this.draw(x, y)
+            this.draw(last.x, last.y, x, y)
         }
     }
-
 
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
@@ -79,27 +87,32 @@ export default class Eraser extends Tool{
         this.ctx.moveTo(this.startX, this.startY);
     }
 
-
-    draw(x: number, y: number){
-        this.ctx.strokeStyle = "#FFFFFF"
-        this.ctx.lineTo(x, y)
+    draw(fromX: number, fromY: number, toX: number, toY: number){
+        this.ctx.strokeStyle =  "#FFFFFF"
+        this.ctx.lineWidth = this.lineWidth
+        this.ctx.lineCap = 'round'
+        this.ctx.beginPath()          
+        this.ctx.moveTo(fromX, fromY)
+        this.ctx.lineTo(toX, toY)
         this.ctx.stroke()
     }
 
     static staticDraw(ctx: CanvasRenderingContext2D, shape: EraserShape) {
         if (!shape.points?.length) return
 
-        ctx.strokeStyle = "#FFFFFF"
+        ctx.strokeStyle =  "#FFFFFF"
         ctx.lineWidth = shape.lineWidth ?? 1
+        ctx.lineCap = 'round'      
+        ctx.lineJoin = 'round'
 
         ctx.beginPath()
-
         ctx.moveTo(shape.x, shape.y)
 
-        for (const point of shape.points.slice(1)) {
+        for (const point of shape.points) {   
             ctx.lineTo(point.x, point.y)
         }
 
         ctx.stroke()
     }
+
 }

@@ -15,10 +15,11 @@ export type ShapeChanges = {
 
 export type Shape =
   | RectShape
-  | CircleShape
+  | EllipseShape
   | LineShape
   | BrushShape
   | EraserShape
+  | RombShape
 
 export type BaseShape = {
     id: string
@@ -37,9 +38,15 @@ export type RectShape = BaseShape & {
     height: number
 }
 
-export type CircleShape = BaseShape & {
-    type: 'circle'
-    radius: number
+export type RombShape = BaseShape & {
+    type: 'romb'
+    width: number
+    height: number
+}
+
+export type EllipseShape = BaseShape & {
+    type: 'ellipse'
+    radius: {x: number, y: number}
 }
 
 export type LineShape = BaseShape & {

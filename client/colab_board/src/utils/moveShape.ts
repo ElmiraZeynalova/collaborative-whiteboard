@@ -4,10 +4,19 @@ export function moveShape(shape: Shape, dx: number, dy: number): ShapeChanges{
     switch(shape.type){
         case "rect":
             return {x: shape.x + dx, y: shape.y + dy}
-        case "circle":
+        case "ellipse":
+            return {x: shape.x + dx, y: shape.y + dy}
+        case "romb":
             return {x: shape.x + dx, y: shape.y + dy}
         case "line":
             return {startX: shape.startX + dx, startY: shape.startY + dy, x: shape.x + dx, y: shape.y + dy}
+        case "brush":
+        case "eraser":
+            return {
+                x: shape.x + dx,
+                y: shape.y + dy,
+                points: shape.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
+            }
     }
     return {}
 }

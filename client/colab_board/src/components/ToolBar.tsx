@@ -2,13 +2,14 @@ import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from '../store/canvasStore'
 import Brush from '../canvas/tools/Brush'
 import Rect from '../canvas/tools/Rect'
-import Circle from '../canvas/tools/Circle'
+import Ellipse from '../canvas/tools/Ellipse'
 import Eraser from '../canvas/tools/Eraser'
 import Line from '../canvas/tools/Line'
 import Selection from '../canvas/tools/Selection'
 import {useEffect} from 'react'
 import { useClientStore } from '../store/clientStore'
 import { Icon } from '@iconify/react'
+import Romb from '../canvas/tools/Romb'
 
 export default function ToolBar(){
     const setTool = useToolStore(state => state.setTool)
@@ -70,14 +71,14 @@ export default function ToolBar(){
                     onClick={() => {
                         if (!canvas || !ws|| !boardId) return
                         setTool(new Selection(canvas, ws, boardId))
-                    }}><Icon icon="hugeicons:cursor-add-selection-02" width={24} height={24} />
+                    }}><Icon icon="tabler:pointer-2" width={22} height={22} />
                 </button>
                 <button 
                     className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'brush' ? "border-2 border-blue-400" : "bg-white"}`}
                     onClick={() => {
                         if (!canvas || !ws|| !boardId) return
                         setTool(new Brush(canvas, {lineWidth, fillStyle, strokeStyle}, ws, boardId))
-                    }}><Icon icon="ep:brush" width={22} height={22} />
+                    }}><Icon icon="mynaui:pencil" width={24} height={24} />
                 </button>
                 <button 
                     className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'rect' ? "border-2 border-blue-400" : "bg-white"}`}
@@ -87,12 +88,20 @@ export default function ToolBar(){
                     }}><Icon icon="ph:rectangle" width={24} height={24} />
                 </button>
                 <button 
-                    className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'circle' ? "border-2 border-blue-400" : "bg-white"}`}
+                    className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'ellipse' ? "border-2 border-blue-400" : "bg-white"}`}
                     onClick={() => {
                         if (!canvas || !ws|| !boardId) return
-                        setTool(new Circle(canvas, {lineWidth, fillStyle, strokeStyle}, ws, boardId))
+                        setTool(new Ellipse(canvas, {lineWidth, fillStyle, strokeStyle}, ws, boardId))
                     }}
-                    ><Icon icon="iconoir:circle" width={22} height={22} />
+                    ><Icon icon="lucide:circle" width={22} height={22} />
+                </button>
+                <button 
+                    className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'romb' ? "border-2 border-blue-400" : "bg-white"}`}
+                    onClick={() => {
+                        if (!canvas || !ws|| !boardId) return
+                        setTool(new Romb(canvas, {lineWidth, fillStyle, strokeStyle}, ws, boardId))
+                    }}
+                    ><Icon icon="lucide:diamond" width={24} height={24} />
                 </button>
                 <button 
                     className={`cursor-pointer w-7 h-7 p-1 ${tool?.type === 'eraser' ? "border-2 border-blue-400" : "bg-white"}`}
@@ -108,7 +117,7 @@ export default function ToolBar(){
                         if (!canvas || !ws|| !boardId) return
                         setTool(new Line(canvas, {lineWidth, fillStyle, strokeStyle}, ws, boardId))
                     }}
-                    ><Icon icon="teenyicons:line-outline" width={20} height={20} />
+                    ><Icon icon="fluent:line-horizontal-1-20-filled" width={24} height={24} />
                 </button>
             </div>
             <div className="flex gap-3 items-center">
@@ -126,3 +135,6 @@ export default function ToolBar(){
         </div>
     )
 }
+//<Icon icon="bi:arrow-left" width={24} height={24} />
+//<Icon icon="ph:text" width={24} height={24} />
+//<Icon icon="ph:sticker" width={24} height={24} />

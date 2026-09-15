@@ -64,11 +64,15 @@ export default class Brush extends Tool{
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
+
+            const last = this.points.length > 0
+                ? this.points[this.points.length - 1]
+                : { x: this.startX, y: this.startY }
+
             this.points.push({ x, y })
-            this.draw(x, y)
+            this.draw(last.x, last.y, x, y)
         }
     }
-
 
     mouseDownHandler(e: MouseEvent) {
         this.mouseDown = true;
@@ -83,26 +87,31 @@ export default class Brush extends Tool{
         this.ctx.moveTo(this.startX, this.startY);
     }
 
-
-    draw(x: number, y: number){
-        this.ctx.lineTo(x, y)
+    draw(fromX: number, fromY: number, toX: number, toY: number){
+        this.ctx.strokeStyle = this.strokeStyle
+        this.ctx.lineWidth = this.lineWidth
+        this.ctx.lineCap = 'round'
+        this.ctx.beginPath()          
+        this.ctx.moveTo(fromX, fromY)
+        this.ctx.lineTo(toX, toY)
         this.ctx.stroke()
     }
-
     static staticDraw(ctx: CanvasRenderingContext2D, shape: BrushShape) {
         if (!shape.points?.length) return
 
         ctx.strokeStyle = shape.strokeStyle ?? "#000000"
         ctx.lineWidth = shape.lineWidth ?? 1
+        ctx.lineCap = 'round'      
+        ctx.lineJoin = 'round'
 
         ctx.beginPath()
-
         ctx.moveTo(shape.x, shape.y)
 
-        for (const point of shape.points.slice(1)) {
+        for (const point of shape.points) {   
             ctx.lineTo(point.x, point.y)
         }
 
         ctx.stroke()
     }
+
 }
