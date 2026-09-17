@@ -5,114 +5,114 @@ import type { EraserShape } from "../../types/shapes"
 
 export default class Eraser extends Tool{
     readonly type = 'eraser'
-    mouseDown: boolean
-    startX: number
-    startY: number
-    points: { x: number; y: number }[] 
+    // mouseDown: boolean
+    // startX: number
+    // startY: number
+    // points: { x: number; y: number }[] 
 
-    constructor(canvas: HTMLCanvasElement, options: ToolOptions,  ws: WebSocket, boardId: string){
-        super(canvas, options,  ws, boardId)
-        this.mouseDown = false
-        this.listen()
-        this.startX = 0
-        this.startY = 0
-        this.points = []
-    }
+    // constructor(canvas: HTMLCanvasElement, options: ToolOptions,  ws: WebSocket, boardId: string){
+    //     super(canvas, options,  ws, boardId)
+    //     this.mouseDown = false
+    //     this.listen()
+    //     this.startX = 0
+    //     this.startY = 0
+    //     this.points = []
+    // }
 
-    listen(){
-        this.canvas.onmouseup = this.mouseUpHandler.bind(this)
-        this.canvas.onmousemove = this.mouseMoveHandler.bind(this)
-        this.canvas.onmousedown = this.mouseDownHandler.bind(this)
-    }
+    // listen(){
+    //     this.canvas.onmouseup = this.mouseUpHandler.bind(this)
+    //     this.canvas.onmousemove = this.mouseMoveHandler.bind(this)
+    //     this.canvas.onmousedown = this.mouseDownHandler.bind(this)
+    // }
 
-    mouseUpHandler(){
-        this.mouseDown = false
+    // mouseUpHandler(){
+    //     this.mouseDown = false
 
-        if (this.points.length === 0) {
-            return;
-        }
-        const userId = useClientStore.getState().userId
+    //     if (this.points.length === 0) {
+    //         return;
+    //     }
+    //     const userId = useClientStore.getState().userId
 
-        if (!userId) return
+    //     if (!userId) return
 
-        const shape: EraserShape = {
-            id: crypto.randomUUID(),
-            userId: userId,
-            type: this.type,
-            x: this.startX,
-            y: this.startY,
-            points: this.points,
-            strokeStyle:  "#FFFFFF",
-            lineWidth: this.lineWidth,
-            fillStyle: "",
-            isDeleted: false
-        }
+    //     const shape: EraserShape = {
+    //         id: crypto.randomUUID(),
+    //         userId: userId,
+    //         type: this.type,
+    //         x: this.startX,
+    //         y: this.startY,
+    //         points: this.points,
+    //         strokeStyle:  "#FFFFFF",
+    //         lineWidth: this.lineWidth,
+    //         fillStyle: "",
+    //         isDeleted: false
+    //     }
 
-        const message = {
-            type: "shape:add",
-            shape: shape
-        }
+    //     const message = {
+    //         type: "shape:add",
+    //         shape: shape
+    //     }
 
-        const { addShape, pushToUndo } = useCanvasStore.getState()
-        addShape(message.shape)
-        pushToUndo(message.shape.id)
-        this.ws.send(JSON.stringify(message))
-    }
+    //     const { addShape, pushToUndo } = useCanvasStore.getState()
+    //     addShape(message.shape)
+    //     pushToUndo(message.shape.id)
+    //     this.ws.send(JSON.stringify(message))
+    // }
 
-    mouseMoveHandler(e: MouseEvent){
-        if(this.mouseDown){
-            const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+    // mouseMoveHandler(e: MouseEvent){
+    //     if(this.mouseDown){
+    //         const rect = this.canvas.getBoundingClientRect();
+    //         const x = e.clientX - rect.left;
+    //         const y = e.clientY - rect.top;
 
-            const last = this.points.length > 0
-                ? this.points[this.points.length - 1]
-                : { x: this.startX, y: this.startY }
+    //         const last = this.points.length > 0
+    //             ? this.points[this.points.length - 1]
+    //             : { x: this.startX, y: this.startY }
 
-            this.points.push({ x, y })
-            this.draw(last.x, last.y, x, y)
-        }
-    }
+    //         this.points.push({ x, y })
+    //         this.draw(last.x, last.y, x, y)
+    //     }
+    // }
 
-    mouseDownHandler(e: MouseEvent) {
-        this.mouseDown = true;
+    // mouseDownHandler(e: MouseEvent) {
+    //     this.mouseDown = true;
 
-        const rect = this.canvas.getBoundingClientRect();
+    //     const rect = this.canvas.getBoundingClientRect();
 
-        this.startX = e.clientX - rect.left;
-        this.startY = e.clientY - rect.top;
+    //     this.startX = e.clientX - rect.left;
+    //     this.startY = e.clientY - rect.top;
 
-        this.points = []
-        this.ctx.beginPath();
-        this.ctx.moveTo(this.startX, this.startY);
-    }
+    //     this.points = []
+    //     this.ctx.beginPath();
+    //     this.ctx.moveTo(this.startX, this.startY);
+    // }
 
-    draw(fromX: number, fromY: number, toX: number, toY: number){
-        this.ctx.strokeStyle =  "#FFFFFF"
-        this.ctx.lineWidth = this.lineWidth
-        this.ctx.lineCap = 'round'
-        this.ctx.beginPath()          
-        this.ctx.moveTo(fromX, fromY)
-        this.ctx.lineTo(toX, toY)
-        this.ctx.stroke()
-    }
+    // draw(fromX: number, fromY: number, toX: number, toY: number){
+    //     this.ctx.strokeStyle =  "#FFFFFF"
+    //     this.ctx.lineWidth = this.lineWidth
+    //     this.ctx.lineCap = 'round'
+    //     this.ctx.beginPath()          
+    //     this.ctx.moveTo(fromX, fromY)
+    //     this.ctx.lineTo(toX, toY)
+    //     this.ctx.stroke()
+    // }
 
-    static staticDraw(ctx: CanvasRenderingContext2D, shape: EraserShape) {
-        if (!shape.points?.length) return
+    // static staticDraw(ctx: CanvasRenderingContext2D, shape: EraserShape) {
+    //     if (!shape.points?.length) return
 
-        ctx.strokeStyle =  "#FFFFFF"
-        ctx.lineWidth = shape.lineWidth ?? 1
-        ctx.lineCap = 'round'      
-        ctx.lineJoin = 'round'
+    //     ctx.strokeStyle =  "#FFFFFF"
+    //     ctx.lineWidth = shape.lineWidth ?? 1
+    //     ctx.lineCap = 'round'      
+    //     ctx.lineJoin = 'round'
 
-        ctx.beginPath()
-        ctx.moveTo(shape.x, shape.y)
+    //     ctx.beginPath()
+    //     ctx.moveTo(shape.x, shape.y)
 
-        for (const point of shape.points) {   
-            ctx.lineTo(point.x, point.y)
-        }
+    //     for (const point of shape.points) {   
+    //         ctx.lineTo(point.x, point.y)
+    //     }
 
-        ctx.stroke()
-    }
+    //     ctx.stroke()
+    // }
 
 }

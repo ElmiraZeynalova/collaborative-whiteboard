@@ -1,1 +1,23 @@
 @import "tailwindcss";
+
+@layer base {
+  html,
+  body {
+    @apply m-0 p-0 overflow-hidden;
+  }
+}
+
+input[type="color"] {
+  border: none;
+  padding: 0;
+  border-radius: 8px;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 8px;
+}

@@ -2,7 +2,7 @@ import {type Shape} from "../types/shapes"
 import Rect from "./tools/Rect"
 import Ellipse from "./tools/Ellipse"
 import Line from "./tools/Line"
-import Brush from "./tools/Brush"
+import Brush from "./tools/Pencil"
 import Eraser from "./tools/Eraser"
 import Romb from "./tools/Romb"
 

@@ -1,5 +1,5 @@
 import ToolBar from "./ToolBar"
-import SettingsBar from "./SettingsBar"
+import SettingsBar from "./SettingsBar/SettingsBar"
 import Canvas from "./Canvas"
 import Selection from "../canvas/tools/Selection"
 import { useParams } from "react-router-dom"
@@ -10,6 +10,7 @@ import { handleMessage } from "../utils/messageHandler"
 import { useCanvasStore } from "../store/canvasStore"
 import { useToolStore } from "../store/toolStore"
 import CanvasRenderer from "../canvas/CanvasRenderer"
+import UndoRedoBar from "./UndoRedoBar"
 
 export default function Board(){
     const {id} = useParams()
@@ -24,6 +25,7 @@ export default function Board(){
     const canvasRerendererRef = useRef<CanvasRenderer | null>(null)
     const shapes = useCanvasStore(state => state.shapes)
     const setTool = useToolStore(state => state.setTool)
+    const tool = useToolStore(state => state.tool)
     const selectedShapeId = useCanvasStore(state => state.selectedShapeId)
     const hoveredShapeId = useCanvasStore(state => state.hoveredShapeId)
 
@@ -35,7 +37,7 @@ export default function Board(){
                 ws.send(JSON.stringify({ type: "connection", boardId: id, userName: userName }))
                 setBoardId(id!)
                 setWS(ws)
-                setTool(new Selection(canvas!, ws, id!))
+                setTool(new Selection())
             }
 
             ws.onmessage = (event) => {
@@ -89,11 +91,18 @@ export default function Board(){
                 </Modal.Container>
             </Modal>
 
-            <div className="flex flex-col m-0 p-0 w-screen h-screen">
-                <ToolBar/>
-                <SettingsBar/>
+            <div>
                 <Canvas/>
+                <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2">
+                    <div className="flex-1" />
+                    <ToolBar/>
+                    <div className="flex-1 flex justify-end">
+                        <UndoRedoBar/>
+                    </div>
+                </div>
+                {(tool?.type !== 'selection' && tool) && <SettingsBar/>}
             </div>
         </>
     )
 }
+//если есть селектед шейп при селекшин интрументе то показівать нужній сеттингбар для єдита фигурі
