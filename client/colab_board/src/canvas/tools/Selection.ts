@@ -1,8 +1,7 @@
 import Tool from './Tool'
 import {type Shape, type ShapeChanges} from '../../types/shapes'
 import { useCanvasStore } from '../../store/canvasStore'
-import {hitTest} from '../../utils/hitTest'
-import { moveShape } from '../../utils/moveShape'
+
 
 
 export default class Selection extends Tool{

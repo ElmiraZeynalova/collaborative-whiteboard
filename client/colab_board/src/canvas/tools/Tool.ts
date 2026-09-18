@@ -1,4 +1,5 @@
-type ToolType = 'pencil' | 'rect' | 'romb' | 'ellipse' | 'eraser' | 'line' | 'selection' | 'arrow' | 'text' | 'sticker'
+export type ToolType = 'pencil' | 'rect' | 'romb' | 'ellipse' | 'eraser' | 'line' | 'selection' | 'arrow' | 'text' | 'sticker'
+
 export type ToolOptions = {
   lineWidth: number
   fillStyle: string
@@ -7,44 +8,8 @@ export type ToolOptions = {
 
 export default abstract class Tool {
   abstract readonly type: ToolType
-  // canvas: HTMLCanvasElement
-  // ctx: CanvasRenderingContext2D
-  // lineWidth!: number
-  // fillStyle!: string
-  // strokeStyle!: string
-  // boardId: string
-  // ws: WebSocket
-  
-  // constructor(canvas: HTMLCanvasElement, options: ToolOptions | undefined, ws: WebSocket, boardId: string) {
-  //   this.canvas = canvas;
-  //   this.boardId = boardId
-  //   this.ws = ws
 
-  //   const ctx = canvas.getContext('2d')
-  //   if (!ctx) {
-  //       throw new Error('Could not get canvas context');
-  //   }
-  //   this.ctx = ctx 
-  //   this.destroyEvents()
-  //   if(options) this.updateOptions(options)
-
-  // }
-
-  // updateOptions(options:  ToolOptions){
-  //   this.lineWidth = options.lineWidth
-  //   this.fillStyle = options.fillStyle
-  //   this.strokeStyle = options.strokeStyle
-  //   this.ctx.lineWidth = this.lineWidth
-  //   this.ctx.fillStyle = this.fillStyle
-  //   this.ctx.strokeStyle = this.strokeStyle
-  // }
-
-  // destroyEvents(){
-  //   this.canvas.onmouseup = null
-  //   this.canvas.onmousemove = null
-  //   this.canvas.onmousedown = null
-  //   this.canvas.onpointerdown = null
-  //   this.canvas.onpointermove = null
-  //   this.canvas.onpointerup = null
-  // }
+  onPointerDown( pos: { x: number; y: number }): void {}
+  onPointerMove( shapeId: string, pos: { x: number; y: number }): void {}
+  onPointerUp(shapeId: string): void {}
 }

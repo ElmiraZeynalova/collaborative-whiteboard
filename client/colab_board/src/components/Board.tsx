@@ -7,9 +7,7 @@ import {useEffect, useState, useRef} from 'react'
 import Modal from "./Modal"
 import { useClientStore } from "../store/clientStore"
 import { handleMessage } from "../utils/messageHandler"
-import { useCanvasStore } from "../store/canvasStore"
 import { useToolStore } from "../store/toolStore"
-import CanvasRenderer from "../canvas/CanvasRenderer"
 import UndoRedoBar from "./UndoRedoBar"
 
 export default function Board(){
@@ -21,13 +19,8 @@ export default function Board(){
     const userName = useClientStore(state => state.userName)
     const setBoardId = useClientStore(state => state.setBoardId)
     const setWS = useClientStore(state => state.setWS)
-    const canvas = useCanvasStore(state => state.canvas)
-    const canvasRerendererRef = useRef<CanvasRenderer | null>(null)
-    const shapes = useCanvasStore(state => state.shapes)
     const setTool = useToolStore(state => state.setTool)
     const tool = useToolStore(state => state.tool)
-    const selectedShapeId = useCanvasStore(state => state.selectedShapeId)
-    const hoveredShapeId = useCanvasStore(state => state.hoveredShapeId)
 
     useEffect(() => {
         if(userName){
@@ -49,15 +42,6 @@ export default function Board(){
         }
     }, [userName, id]);
 
-    useEffect(() => {
-        if(!canvas) return
-        canvasRerendererRef.current = new CanvasRenderer(canvas) 
-    }, [canvas])
-
-    useEffect(() => {
-        if(!canvasRerendererRef.current) return
-        canvasRerendererRef.current.rerender(shapes, selectedShapeId, hoveredShapeId)
-    }, [shapes, selectedShapeId, hoveredShapeId])  
 
     function handleSubmit(e: React.FormEvent){
         e.preventDefault()

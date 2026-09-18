@@ -28,25 +28,27 @@ export type BaseShape = {
     x: number
     y: number
     strokeStyle: string
-    lineWidth: number
-    fillStyle?: string
+    strokeWidth: number
 }
 
 export type RectShape = BaseShape & {
     type: 'rect'
     width: number
     height: number
+    fillStyle: string
 }
 
 export type RombShape = BaseShape & {
     type: 'romb'
     width: number
     height: number
+    fillStyle: string
 }
 
 export type EllipseShape = BaseShape & {
     type: 'ellipse'
     radius: {x: number, y: number}
+    fillStyle: string
 }
 
 export type LineShape = BaseShape & {
