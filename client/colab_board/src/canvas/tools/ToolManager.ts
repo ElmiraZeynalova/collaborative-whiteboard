@@ -16,7 +16,7 @@ const TOOL_MAP: Record<string, () => Tool> = {
     ellipse: () => new Ellipse(),
     romb: () => new Romb(),
     line: () => new Line(),
-    brush: () => new Pencil(),
+    pencil: () => new Pencil(),
     selection: () => new Selection(),
     arrow: () => new Arrow(),
     sticker: () => new Sticker(),
@@ -24,7 +24,7 @@ const TOOL_MAP: Record<string, () => Tool> = {
     eraser: () => new Eraser()
 }
 
-export function getToolInstance(tool: ToolType){
-    const instance = TOOL_MAP[tool]()
-    return instance
+export function getToolInstance(tool: ToolType) {
+    const factory = TOOL_MAP[tool]
+    return factory ? factory() : null
 }

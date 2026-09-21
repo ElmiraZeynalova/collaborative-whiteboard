@@ -1,10 +1,10 @@
-import { useToolStore } from "../../../store/toolStore";
+import { useToolStore, type TextAlign } from "../../../store/toolStore";
 import { Icon } from '@iconify/react'
 
 const textAlignIcons = {
-    "start": <Icon icon="pixelarticons:text-align-left" color="#5F5F5F" width={18} height={18} />,
+    "left": <Icon icon="pixelarticons:text-align-left" color="#5F5F5F" width={18} height={18} />,
     "center": <Icon icon="pixelarticons:text-align-center" color="#5F5F5F" width={18} height={18} />,
-    "end": <Icon icon="pixelarticons:text-align-right" color="#5F5F5F" width={18} height={18} />
+    "right": <Icon icon="pixelarticons:text-align-right" color="#5F5F5F" width={18} height={18} />
 }
 
 export default function TextAlign(){
@@ -14,7 +14,7 @@ export default function TextAlign(){
     return(
         <div className="flex gap-2 items-center">
             <p className="text-[#686868] whitespace-nowrap">Text align</p>
-            <div className="flex gap-2 items-center">{(["start", "center", "end"] as const).map(item => (
+            <div className="flex gap-2 items-center">{(["left", "center", "right"] as TextAlign[]).map(item => (
                 <button 
                     key={item}
                     onClick={() => setTextAlign(item)}

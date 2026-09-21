@@ -77,7 +77,7 @@ export default function Board(){
 
             <div>
                 <Canvas/>
-                <div className="absolute bottom-3 left-3 right-3 z-10 flex items-center justify-between gap-2">
+                <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between gap-2">
                     <div className="flex-1" />
                     <ToolBar/>
                     <div className="flex-1 flex justify-end">

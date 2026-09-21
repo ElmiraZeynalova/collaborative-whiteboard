@@ -10,10 +10,26 @@ import Text from '../canvas/tools/Text'
 import Sticker from '../canvas/tools/Sticker'
 import Pencil from '../canvas/tools/Pencil'
 import { Icon } from '@iconify/react'
+import {useEffect} from 'react'
 
 export default function ToolBar(){
     const setTool = useToolStore(state => state.setTool)
     const tool = useToolStore(state => state.tool)
+    const setStrokeWidth = useToolStore(state => state.setStrokeWidth)
+    const setStrokeColor = useToolStore(state => state.setStrokeColor)
+    const setFillColor = useToolStore(state => state.setFillColor)
+    const setFontSize = useToolStore(state => state.setFontSize)
+    const setTextAlign = useToolStore(state => state.setTextAlign)
+
+    useEffect(() => {
+        if(!tool) return 
+        ["pencil", "eraser", "line", "arrow"].includes(tool.type) ? setStrokeWidth(1) : setStrokeWidth(0)
+
+        setFillColor("#000000")
+        setStrokeColor("#000000")
+        setFontSize("S")
+        setTextAlign("left")
+    }, [tool])
 
     return(
         <div className="px-3 py-1 flex items-center gap-4 rounded-xl drop-shadow-md bg-white border border-black/15">

@@ -42,11 +42,11 @@ export default class Rect extends Tool{
         const shape = useCanvasStore.getState().shapes[shapeId]
 
         if (!shape || shape.type !== this.type) return
-        const thisRect: RectShape = shape
+        const thisShape: RectShape = shape
 
         const changes: ShapeChanges = {
-            width: pos.x - thisRect.x,
-            height: pos.y - thisRect.y
+            width: pos.x - thisShape.x,
+            height: pos.y - thisShape.y
         }
         updateShape(shapeId, changes)
     }

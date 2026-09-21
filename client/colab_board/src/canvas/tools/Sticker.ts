@@ -1,6 +1,71 @@
-import Tool, { type ToolOptions } from './Tool'
+import Tool from './Tool'
+import { useToolStore } from '../../store/toolStore';
+import { useCanvasStore } from '../../store/canvasStore';
+import { useClientStore } from '../../store/clientStore';
+import { type StickerShape } from '../../types/shapes';
 
 
 export default class Sticker extends Tool{
     readonly type = 'sticker'
+    
+    onPointerDown(pos: { x: number; y: number }): void {
+        const addShape = useCanvasStore.getState().addShape
+        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+        const setEditingTextId = useCanvasStore.getState().setEditingTextId
+        const userId = useClientStore.getState().userId
+        if(!userId) return
+
+
+        const fillColor = useToolStore.getState().fillColor
+        const strokeColor = useToolStore.getState().strokeColor
+        const strokeWidth = useToolStore.getState().strokeWidth
+        const fontSize = useToolStore.getState().fontSize
+
+        let fontSizeNumber 
+        if(fontSize === "S"){
+            fontSizeNumber = 14
+        }else if(fontSize === "M"){
+            fontSizeNumber = 20
+        }else if(fontSize === "L"){
+            fontSizeNumber = 30
+        }else if(fontSize === "XL"){
+            fontSizeNumber = 40
+        }
+
+        const shapeId =  crypto.randomUUID()
+        setCurrentlyDrawingShapeId(shapeId)
+
+        const stickerShape: StickerShape = {
+            id: shapeId,
+            userId: userId,
+            type: this.type,
+            isDeleted: false,
+            x: pos.x,
+            y: pos.y,
+            fillStyle: fillColor,
+            strokeStyle: strokeColor,
+            strokeWidth: strokeWidth,
+            fontSize: fontSizeNumber ?? 14,
+            text: "",
+            width: 200, 
+            height: 200,
+        }
+
+        addShape(stickerShape)
+        setEditingTextId(shapeId)
+
+    }
+
+    onPointerUp(shapeId: string): void {
+        const ws = useClientStore.getState().ws
+        const shape = useCanvasStore.getState().shapes[shapeId]
+        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+
+        const message = {
+            type: "shape:add",
+            shape: shape
+        }
+        ws?.send(JSON.stringify(message))
+        setCurrentlyDrawingShapeId(null)
+    }
 }

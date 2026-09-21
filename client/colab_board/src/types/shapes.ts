@@ -1,9 +1,11 @@
+import { type TextAlign } from "../store/toolStore"
+
 export type ShapeChanges = {
     x?: number
     y?: number
     width?: number
     height?: number
-    radius?: number
+    radius?: {x: number, y: number}
     startX?: number
     startY?: number
     points?: {x:number, y:number}[]
@@ -11,15 +13,23 @@ export type ShapeChanges = {
     strokeStyle?: string
     lineWidth?: number
     isDeleted?: boolean
+    fontSize?: number
+    textAlign?: TextAlign
+    text?: string
+    
 }
 
 export type Shape =
   | RectShape
   | EllipseShape
   | LineShape
-  | BrushShape
+  | PencilShape
   | EraserShape
   | RombShape
+  | ArrowShape
+  | TextShape
+  | StickerShape
+
 
 export type BaseShape = {
     id: string
@@ -29,6 +39,30 @@ export type BaseShape = {
     y: number
     strokeStyle: string
     strokeWidth: number
+}
+
+export type StickerShape = BaseShape & {
+    type: 'sticker'
+    fillStyle: string
+    fontSize: number
+    text: string
+    height: number
+    width: number
+}
+
+export type TextShape = BaseShape & {
+    type: 'text'
+    fontSize: number
+    textAlign: TextAlign
+    width: number
+    text: string
+}
+
+export type ArrowShape = BaseShape & {
+    type: 'arrow'
+    startX: number
+    startY: number
+    fillStyle: string
 }
 
 export type RectShape = BaseShape & {
@@ -57,8 +91,8 @@ export type LineShape = BaseShape & {
     startY: number
 }
 
-export type BrushShape = BaseShape & {
-    type: 'brush'
+export type PencilShape = BaseShape & {
+    type: 'pencil'
     points: {x:number, y:number}[]
 }
 

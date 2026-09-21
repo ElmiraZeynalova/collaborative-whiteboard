@@ -28,7 +28,7 @@ export default class CanvasRenderer {
             if (shape.isDeleted) continue
 
             const isHighlighted = shape.id === selectedShapeId || shape.id === hoveredShapeId
-            const isLineLike = shape.type === 'line' || shape.type === 'brush' || shape.type === 'eraser'
+            const isLineLike = shape.type === 'line' || shape.type === 'pencil' || shape.type === 'eraser'
 
             if (isHighlighted && isLineLike) {
                 this.drawHighlight(shape, selectedShapeId, hoveredShapeId)

@@ -1,117 +1,64 @@
-import Tool, { type ToolOptions } from './Tool'
+import Tool from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import type { BrushShape } from "../../types/shapes"
+import { useToolStore } from '../../store/toolStore'
+import type { PencilShape, ShapeChanges } from "../../types/shapes"
 
 export default class Pencil extends Tool{
     readonly type = 'pencil'
-    // mouseDown: boolean
-    // startX: number
-    // startY: number
-    // points: { x: number; y: number }[] 
 
-    // constructor(canvas: HTMLCanvasElement, options: ToolOptions,  ws: WebSocket, boardId: string){
-    //     super(canvas, options,  ws, boardId)
-    //     this.mouseDown = false
-    //     this.listen()
-    //     this.startX = 0
-    //     this.startY = 0
-    //     this.points = []
-    // }
+    onPointerDown(pos: { x: number; y: number }): void {
+        const addShape = useCanvasStore.getState().addShape
+        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+        const userId = useClientStore.getState().userId
+        if(!userId) return
 
-    // listen(){
-    //     this.canvas.onmouseup = this.mouseUpHandler.bind(this)
-    //     this.canvas.onmousemove = this.mouseMoveHandler.bind(this)
-    //     this.canvas.onmousedown = this.mouseDownHandler.bind(this)
-    // }
+        const strokeColor = useToolStore.getState().strokeColor
+        const strokeWidth = useToolStore.getState().strokeWidth
 
-    // mouseUpHandler(){
-    //     this.mouseDown = false
+        const shapeId =  crypto.randomUUID()
+        setCurrentlyDrawingShapeId(shapeId)
 
-    //     if (this.points.length === 0) {
-    //         return;
-    //     }
-    //     const userId = useClientStore.getState().userId
+        const pencilShape: PencilShape = {
+            id: shapeId,
+            userId: userId,
+            type: this.type,
+            isDeleted: false,
+            x: pos.x,
+            y: pos.y,
+            points: [{x: pos.x, y: pos.y}],
+            strokeStyle: strokeColor,
+            strokeWidth: strokeWidth,
+        }
 
-    //     if (!userId) return
+        addShape(pencilShape)
+    }
 
-    //     const shape: BrushShape = {
-    //         id: crypto.randomUUID(),
-    //         userId: userId,
-    //         type: this.type,
-    //         x: this.startX,
-    //         y: this.startY,
-    //         points: this.points,
-    //         strokeStyle: this.strokeStyle,
-    //         lineWidth: this.lineWidth,
-    //         fillStyle: "",
-    //         isDeleted: false
-    //     }
+    onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
+        const updateShape = useCanvasStore.getState().updateShape
+        const shape = useCanvasStore.getState().shapes[shapeId]
 
-    //     const message = {
-    //         type: "shape:add",
-    //         shape: shape
-    //     }
+        if (!shape || shape.type !== this.type) return
+        const thisShape: PencilShape = shape
 
-    //     const { addShape, pushToUndo } = useCanvasStore.getState()
-    //     addShape(message.shape)
-    //     pushToUndo(message.shape.id)
-    //     this.ws.send(JSON.stringify(message))
-    // }
+        const changes: ShapeChanges = {
+            points: [...thisShape.points, {x: pos.x, y: pos.y}]
+        }
+        updateShape(shapeId, changes)
+    }
 
-    // mouseMoveHandler(e: MouseEvent){
-    //     if(this.mouseDown){
-    //         const rect = this.canvas.getBoundingClientRect();
-    //         const x = e.clientX - rect.left;
-    //         const y = e.clientY - rect.top;
+    onPointerUp(shapeId: string): void {
+        const ws = useClientStore.getState().ws
+        const shape = useCanvasStore.getState().shapes[shapeId]
+        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
 
-    //         const last = this.points.length > 0
-    //             ? this.points[this.points.length - 1]
-    //             : { x: this.startX, y: this.startY }
+        const message = {
+            type: "shape:add",
+            shape: shape
+        }
 
-    //         this.points.push({ x, y })
-    //         this.draw(last.x, last.y, x, y)
-    //     }
-    // }
-
-    // mouseDownHandler(e: MouseEvent) {
-    //     this.mouseDown = true;
-
-    //     const rect = this.canvas.getBoundingClientRect();
-
-    //     this.startX = e.clientX - rect.left;
-    //     this.startY = e.clientY - rect.top;
-
-    //     this.points = []
-    //     this.ctx.beginPath();
-    //     this.ctx.moveTo(this.startX, this.startY);
-    // }
-
-    // draw(fromX: number, fromY: number, toX: number, toY: number){
-    //     this.ctx.strokeStyle = this.strokeStyle
-    //     this.ctx.lineWidth = this.lineWidth
-    //     this.ctx.lineCap = 'round'
-    //     this.ctx.beginPath()          
-    //     this.ctx.moveTo(fromX, fromY)
-    //     this.ctx.lineTo(toX, toY)
-    //     this.ctx.stroke()
-    // }
-    // static staticDraw(ctx: CanvasRenderingContext2D, shape: BrushShape) {
-    //     if (!shape.points?.length) return
-
-    //     ctx.strokeStyle = shape.strokeStyle ?? "#000000"
-    //     ctx.lineWidth = shape.lineWidth ?? 1
-    //     ctx.lineCap = 'round'      
-    //     ctx.lineJoin = 'round'
-
-    //     ctx.beginPath()
-    //     ctx.moveTo(shape.x, shape.y)
-
-    //     for (const point of shape.points) {   
-    //         ctx.lineTo(point.x, point.y)
-    //     }
-
-    //     ctx.stroke()
-    // }
-
+        ws?.send(JSON.stringify(message))
+        setCurrentlyDrawingShapeId(null)
+    }
 }
+

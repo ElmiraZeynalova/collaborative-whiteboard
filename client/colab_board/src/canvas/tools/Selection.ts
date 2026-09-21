@@ -6,6 +6,7 @@ import { useCanvasStore } from '../../store/canvasStore'
 
 export default class Selection extends Tool{
     readonly type = 'selection'
+}
     // private isDragging = false
     // private hasMoved = false
     // shape: null | Shape
@@ -102,4 +103,3 @@ export default class Selection extends Tool{
     //         this.canvas.releasePointerCapture(e.pointerId)
     //     }
     // }
-}

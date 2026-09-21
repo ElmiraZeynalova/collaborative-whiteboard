@@ -6,6 +6,7 @@ interface CanvasStore {
     shapes: Record<string, Shape>
     selectedShapeId: string | null
     currentlyDrawingShapeId: string | null
+    editingTextId: string | null
     hoveredShapeId: string | null
     undoStack: string[]
     redoStack: string[]
@@ -13,6 +14,7 @@ interface CanvasStore {
     setShapes: (shapes: Record<string, Shape>) => void
     setSelectedShapeId: (id: string | null) => void
     setCurrentlyDrawingShapeId: (id: string | null) => void
+    setEditingTextId: (id: string | null) => void
     setHoveredShapeId: (id: string | null) => void
     addShape: (shape: Shape) => void
     updateShape: (shapeId:string, changes: ShapeChanges) => void
@@ -29,15 +31,17 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     shapes: {},
     selectedShapeId: null,
     currentlyDrawingShapeId: null,
+    editingTextId: null,
     hoveredShapeId: null,
     undoStack: [],
     redoStack: [],
-    setCanvas: (newCanvas) => set(() => ({canvas: newCanvas })),
-    setShapes: (shapes) => set(() =>  ({shapes: shapes})),
+    setCanvas: (newCanvas) => set({canvas: newCanvas }),
+    setShapes: (shapes) => set({shapes: shapes}),
     addShape: (shape) => set((state) => ({shapes: {...state.shapes, [shape.id]: shape}})),
-    setSelectedShapeId: (id) => set(() => ({selectedShapeId: id})),
-    setCurrentlyDrawingShapeId: (id) => set(() => ({currentlyDrawingShapeId: id})),
-    setHoveredShapeId: (id) => set(() => ({hoveredShapeId: id})),
+    setSelectedShapeId: (id) => set({selectedShapeId: id}),
+    setCurrentlyDrawingShapeId: (id) => set({currentlyDrawingShapeId: id}),
+    setEditingTextId: (id) => set({editingTextId: id}),
+    setHoveredShapeId: (id) => set({hoveredShapeId: id}),
     updateShape: (shapeId, changes) =>
         set((state) => {
             const existingShape = state.shapes[shapeId]
