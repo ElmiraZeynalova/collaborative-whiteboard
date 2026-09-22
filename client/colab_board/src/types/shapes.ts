@@ -1,5 +1,13 @@
 import { type TextAlign } from "../store/toolStore"
 
+export interface SelectionRectangleState {
+    visible: boolean
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+}
+
 export type ShapeChanges = {
     x?: number
     y?: number
@@ -39,6 +47,7 @@ export type BaseShape = {
     y: number
     strokeStyle: string
     strokeWidth: number
+    rotation?: number
 }
 
 export type StickerShape = BaseShape & {

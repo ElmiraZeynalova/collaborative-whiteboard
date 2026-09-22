@@ -1,30 +1,49 @@
 import { type Shape } from "../types/shapes"
 import PencilShapeRenderer from "./PencilShapeRenderer"
 import RombShapeRenderer from './RombShapeRenderer'
-import {Rect, Text, Line, Ellipse, Arrow, Group} from 'react-konva'
-import { useCanvasStore } from "../store/canvasStore"
+import {Rect, Text, Ellipse, Group} from 'react-konva'
+import type { KonvaEventObject, Node } from 'konva/lib/Node'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
+import { registerShapeNode } from '../canvas/shapeNodeRegistry'
+import { handleShapeDragEnd } from '../canvas/shapeInteractions'
+import { useToolStore } from '../store/toolStore'
+import { useCanvasStore } from "../store/canvasStore"
+import LineShapeRenderer from "./LineShapeRenderer"
 
 export default function ShapeRenderer({shape}: {shape: Shape}){
+    const tool = useToolStore(state => state.tool)
+    const isSelectable = tool?.type === 'selection'
     const editingTextId = useCanvasStore(state => state.editingTextId)
     const setEditingTextId = useCanvasStore(state => state.setEditingTextId)
+    const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
+    const isSelected = selectedShapesIds.includes(shape.id)
+
+    const commonProps = {
+        id: shape.id,
+        ref: (node: Node | null) => registerShapeNode(shape.id, node),
+        draggable: isSelectable,
+        onDragEnd: (e: KonvaEventObject<DragEvent>) => handleShapeDragEnd(shape, e.target),
+    }
 
     switch(shape.type){
         case 'ellipse':
-            return(
-                <Ellipse
-                    x={shape.x}
-                    y={shape.y}
-                    radiusX={shape.radius.x}
-                    radiusY={shape.radius.y}
-                    fill={shape.fillStyle}
-                    stroke={shape.strokeStyle}
-                    strokeWidth={shape.strokeWidth}
-                />
-            )
+           return(
+            <Ellipse
+                {...commonProps}
+                x={shape.x}
+                y={shape.y}
+                radiusX={shape.radius.x}
+                radiusY={shape.radius.y}
+                fill={shape.fillStyle}
+                stroke={shape.strokeStyle}
+                strokeWidth={shape.strokeWidth}
+                rotation={shape.rotation ?? 0}
+
+            />)
         case 'rect':
             return(
                 <Rect
+                    {...commonProps}
                     x={shape.x}
                     y={shape.y}
                     width={shape.width}
@@ -32,40 +51,23 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
                     fill={shape.fillStyle}
                     stroke={shape.strokeStyle}
                     strokeWidth={shape.strokeWidth}
+                    rotation={shape.rotation ?? 0}
                 />
             )
         case 'line':
-            return(
-                <Line
-                    points={[shape.startX, shape.startY, shape.x, shape.y]}
-                    stroke={shape.strokeStyle}
-                    strokeWidth={shape.strokeWidth}
-                    lineCap="round"
-                    lineJoin="round"
-                />
-            )
-        case 'arrow':
-            return(
-                <Arrow
-                    x={shape.startX}
-                    y={shape.startY}
-                    points={[0, 0, shape.x - shape.startX, shape.y - shape.startY]}
-                    pointerLength={10 + shape.strokeWidth}
-                    pointerWidth={10 + shape.strokeWidth}
-                    fill={shape.fillStyle}
-                    stroke={shape.strokeStyle}
-                    strokeWidth={shape.strokeWidth}
-                />
-        )
+            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps}/>
+        case 'arrow': 
+            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps}/>
         case 'pencil': 
         case 'eraser':
             return <PencilShapeRenderer shape={shape}/>
         case 'romb':
-            return <RombShapeRenderer shape={shape}/>
+            return <RombShapeRenderer shape={shape} commonProps={commonProps}/>
         case 'text':
             if(shape.id === editingTextId) return null
             return(
                 <Text
+                    {...commonProps}
                     x={shape.x}
                     y={shape.y}
                     width={shape.width}
@@ -75,21 +77,23 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
                     fontFamily="Calibri"
                     fill={shape.strokeStyle}
                     lineHeight={1.2}
+                    rotation={shape.rotation ?? 0}
                     onDblClick={() => setEditingTextId(shape.id)}
                 />
             )
         case 'sticker':
             const formattedDate = new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                
+                    month: 'short',
+                    day: 'numeric',
                 });
             return(
                 <Group
+                    {...commonProps}
                     x={shape.x}
                     y={shape.y}
                     width={shape.width}
                     height={shape.height}
+                    rotation={shape.rotation ?? 0}
                 >
                     <Rect
                         x={0}

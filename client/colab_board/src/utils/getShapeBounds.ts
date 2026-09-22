@@ -30,7 +30,7 @@ export function getShapeBounds(shape: Shape): Bounds | null {
                 height: Math.abs(shape.y - shape.startY)
             }
 
-        case 'brush':
+        case 'pencil':
         case 'eraser': {
             if (!shape.points?.length) return null
             const xs = shape.points.map(p => p.x)
@@ -42,6 +42,17 @@ export function getShapeBounds(shape: Shape): Bounds | null {
                 height: Math.max(...ys) - Math.min(...ys)
             }
         }
+        case 'sticker':
+            return { x: shape.x, y: shape.y, width: shape.width, height: shape.height }
+        case 'text':
+            return { x: shape.x, y: shape.y, width: shape.width ?? 100, height: shape.fontSize * 1.5 }
+        case 'arrow':
+            return {
+                x: Math.min(shape.startX, shape.x),
+                y: Math.min(shape.startY, shape.y),
+                width: Math.abs(shape.x - shape.startX),
+                height: Math.abs(shape.y - shape.startY)
+            }
 
         default:
             return null

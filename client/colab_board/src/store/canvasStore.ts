@@ -1,47 +1,52 @@
 import { create } from 'zustand'
 import {type Shape, type ShapeChanges} from "../types/shapes"
+import { type SelectionRectangleState } from '../types/shapes'
 
 interface CanvasStore {
     canvas: HTMLCanvasElement | null
+    scale: number
     shapes: Record<string, Shape>
-    selectedShapeId: string | null
     currentlyDrawingShapeId: string | null
     editingTextId: string | null
-    hoveredShapeId: string | null
-    undoStack: string[]
-    redoStack: string[]
+    selectedShapesIds: string[]
+    selectionRectangle: SelectionRectangleState
+    setSelectedShapesIds: (ids: string[]) => void
+    setSelectionRectangle: (rect: SelectionRectangleState) => void
+    // undoStack: string[]
+    // redoStack: string[]
     setCanvas: (newCanvas: HTMLCanvasElement) => void
+    setScale: (scale: number) => void
     setShapes: (shapes: Record<string, Shape>) => void
-    setSelectedShapeId: (id: string | null) => void
     setCurrentlyDrawingShapeId: (id: string | null) => void
     setEditingTextId: (id: string | null) => void
-    setHoveredShapeId: (id: string | null) => void
     addShape: (shape: Shape) => void
     updateShape: (shapeId:string, changes: ShapeChanges) => void
-    markShapeDeleted: (shapeId: string) => void
-    markShapeUnDeleted: (shapeId: string) => void
-    pushToUndo: (elemId: string) => void
-    pushToRedo: (elemId: string) => void
-    undo: () => string | undefined
-    redo: () => string | undefined
+
+    // pushToUndo: (elemId: string) => void
+    // pushToRedo: (elemId: string) => void
+    // undo: () => string | undefined
+    // redo: () => string | undefined
 }
 
 export const useCanvasStore = create<CanvasStore>()((set) => ({
     canvas: null,
+    scale: 1,
     shapes: {},
-    selectedShapeId: null,
     currentlyDrawingShapeId: null,
     editingTextId: null,
-    hoveredShapeId: null,
-    undoStack: [],
-    redoStack: [],
+    selectedShapesIds: [],
+    selectionRectangle: { visible: false, x1: 0, y1: 0, x2: 0, y2: 0 },
+    setSelectedShapesIds: (ids) => set({ selectedShapesIds: ids }),
+    setSelectionRectangle: (rect) => set({ selectionRectangle: rect }),
+    // undoStack: [],
+    // redoStack: [],
     setCanvas: (newCanvas) => set({canvas: newCanvas }),
+    setScale: (scale) => set({ scale }),
     setShapes: (shapes) => set({shapes: shapes}),
     addShape: (shape) => set((state) => ({shapes: {...state.shapes, [shape.id]: shape}})),
-    setSelectedShapeId: (id) => set({selectedShapeId: id}),
     setCurrentlyDrawingShapeId: (id) => set({currentlyDrawingShapeId: id}),
     setEditingTextId: (id) => set({editingTextId: id}),
-    setHoveredShapeId: (id) => set({hoveredShapeId: id}),
+
     updateShape: (shapeId, changes) =>
         set((state) => {
             const existingShape = state.shapes[shapeId]
@@ -62,71 +67,54 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
                 },
             }
     }),
-    markShapeDeleted: (shapeId) => set(state => ({
-        shapes: {
-            ...state.shapes,
-            [shapeId]: {
-            ...state.shapes[shapeId],
-            isDeleted: true
-            }
-        }
-    })),
-    markShapeUnDeleted: (shapeId) => set(state => ({
-        shapes: {
-            ...state.shapes,
-            [shapeId]: {
-            ...state.shapes[shapeId],
-            isDeleted: false
-            }
-        }
-    })),
-    pushToUndo: (elemId) => set((state) => ({undoStack: [...state.undoStack, elemId]})),
-    pushToRedo: (elemId) => set((state) => ({redoStack: [...state.redoStack, elemId]})),
 
-    undo: (): string | undefined => {
-        const state = useCanvasStore.getState()
-        const lastItem = state.undoStack[state.undoStack.length - 1]
+    // pushToUndo: (elemId) => set((state) => ({undoStack: [...state.undoStack, elemId]})),
+    // pushToRedo: (elemId) => set((state) => ({redoStack: [...state.redoStack, elemId]})),
 
-        if (!lastItem || !state.shapes[lastItem]) {
-            return
-        }
+    // undo: (): string | undefined => {
+    //     const state = useCanvasStore.getState()
+    //     const lastItem = state.undoStack[state.undoStack.length - 1]
 
-        set((currentState) => ({
-            undoStack: currentState.undoStack.slice(0, -1),
-            redoStack: [...currentState.redoStack, lastItem],
-            shapes: {
-                ...currentState.shapes,
-                [lastItem]: {
-                    ...currentState.shapes[lastItem],
-                    isDeleted: true,
-                },
-            },
-        }))
-        return lastItem
-    },
+    //     if (!lastItem || !state.shapes[lastItem]) {
+    //         return
+    //     }
 
-    redo: (): string | undefined => {
-        const state = useCanvasStore.getState()
-        const lastItem = state.redoStack[state.redoStack.length - 1]
+    //     set((currentState) => ({
+    //         undoStack: currentState.undoStack.slice(0, -1),
+    //         redoStack: [...currentState.redoStack, lastItem],
+    //         shapes: {
+    //             ...currentState.shapes,
+    //             [lastItem]: {
+    //                 ...currentState.shapes[lastItem],
+    //                 isDeleted: true,
+    //             },
+    //         },
+    //     }))
+    //     return lastItem
+    // },
 
-        if (!lastItem || !state.shapes[lastItem]) {
-            return
-        }
+    // redo: (): string | undefined => {
+    //     const state = useCanvasStore.getState()
+    //     const lastItem = state.redoStack[state.redoStack.length - 1]
 
-        set((currentState) => ({
-            redoStack: currentState.redoStack.slice(0, -1),
-            undoStack: [...currentState.undoStack, lastItem],
-            shapes: {
-                ...currentState.shapes,
-                [lastItem]: {
-                    ...currentState.shapes[lastItem],
-                    isDeleted: false,
-                },
-            },
-        }))
+    //     if (!lastItem || !state.shapes[lastItem]) {
+    //         return
+    //     }
 
-        return lastItem
-    },
+    //     set((currentState) => ({
+    //         redoStack: currentState.redoStack.slice(0, -1),
+    //         undoStack: [...currentState.undoStack, lastItem],
+    //         shapes: {
+    //             ...currentState.shapes,
+    //             [lastItem]: {
+    //                 ...currentState.shapes[lastItem],
+    //                 isDeleted: false,
+    //             },
+    //         },
+    //     }))
+
+    //     return lastItem
+    // },
 }))
 
 

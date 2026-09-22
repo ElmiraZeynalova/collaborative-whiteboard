@@ -1,4 +1,4 @@
-import {type RectShape, type EllipseShape, type LineShape, type RombShape, type BrushShape, type EraserShape, type Shape} from '../types/shapes'
+import {type RectShape, type EllipseShape, type LineShape, type RombShape, type PencilShape, type EraserShape, type StickerShape, type TextShape, type ArrowShape, type Shape} from '../types/shapes'
 import { getShapeBounds } from './getShapeBounds'
 
 export function isPointInsideShape(shape: Shape, x: number, y: number): boolean{
@@ -9,22 +9,40 @@ export function isPointInsideShape(shape: Shape, x: number, y: number): boolean{
             return isPointInsideEllipse(shape, x, y)
         case "romb":
             return isPointInsideRomb(shape, x, y)
+        case "sticker":
+            return isPointInsideSticker(shape, x, y)
+        case "text":
+            return isPointInsideText(shape, x, y)
         case "line":
             return isPointNearLine(shape, x, y)
-        case "brush":
+        case "arrow":
+            return isPointNearLine(shape, x, y)   
+        case "pencil":
         case "eraser": {
             const bounds = getShapeBounds(shape)
             if (!bounds) return false
             const inBox = x >= bounds.x - 5 && x <= bounds.x + bounds.width + 5 &&
                           y >= bounds.y - 5 && y <= bounds.y + bounds.height + 5
             if (!inBox) return false
-            return isPointNearBrush(shape, x, y)
+            return isPointNearPencil(shape, x, y)
         }
     }
     return false
 }
 
-function isPointNearLine(shape: LineShape, x: number, y: number): boolean {
+function isPointInsideSticker(shape: StickerShape, x: number, y: number): boolean {
+    return x >= shape.x && x <= shape.x + shape.width &&
+           y >= shape.y && y <= shape.y + shape.height
+}
+
+function isPointInsideText(shape: TextShape, x: number, y: number): boolean {
+    const approxHeight = shape.fontSize * 1.5
+    const approxWidth = shape.width ?? 100
+    return x >= shape.x && x <= shape.x + approxWidth &&
+           y >= shape.y && y <= shape.y + approxHeight
+}
+
+function isPointNearLine(shape: LineShape | ArrowShape, x: number, y: number): boolean {
     const tolerance = 5
     return distanceToSegment(x, y, shape.startX, shape.startY, shape.x, shape.y) <= tolerance
 }
@@ -58,10 +76,10 @@ function isPointInsideRomb(shape: RombShape, x: number, y: number): boolean {
     return dx + dy <= 1
 }
 
-function isPointNearBrush(shape: BrushShape | EraserShape, x: number, y: number): boolean {
+function isPointNearPencil(shape: PencilShape | EraserShape, x: number, y: number): boolean {
     if (!shape.points?.length) return false
 
-    const tolerance = (shape.lineWidth ?? 1) / 2 + 5 
+    const tolerance = (shape.strokeWidth ?? 1) / 2 + 5 
 
     const allPoints = [{ x: shape.x, y: shape.y }, ...shape.points]
 

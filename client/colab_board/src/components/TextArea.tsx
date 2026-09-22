@@ -10,7 +10,7 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const shapes = useCanvasStore((state) => state.shapes)
     const updateShape = useCanvasStore((state) => state.updateShape)
     const ws = useClientStore((state) => state.ws)
-
+    const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
 
     const shape = editingTextId ? shapes[editingTextId] : null
@@ -29,7 +29,6 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
         return null
     }
 
-    const scale = stage.scaleX()
     const stagePos = stage.position()
     const isSticker = shape.type === 'sticker'
 
@@ -43,7 +42,13 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
         const value = textAreaRef.current?.value ?? ''
 
         if (value.trim() !== '') {
-            updateShape(shape.id, { text: value })
+            const changes = isSticker
+                ? { text: value }
+                : {
+                    text: value,
+                    width: textAreaRef.current?.offsetWidth ?? 0,
+                }
+            updateShape(shape.id, changes)
 
             const updatedShape = useCanvasStore.getState().shapes[shape.id]
 

@@ -8,9 +8,14 @@ export function moveShape(shape: Shape, dx: number, dy: number): ShapeChanges{
             return {x: shape.x + dx, y: shape.y + dy}
         case "romb":
             return {x: shape.x + dx, y: shape.y + dy}
+        case "sticker":
+            return {x: shape.x + dx, y: shape.y + dy}
+        case "text":
+            return {x: shape.x + dx, y: shape.y + dy}
         case "line":
+        case "arrow":
             return {startX: shape.startX + dx, startY: shape.startY + dy, x: shape.x + dx, y: shape.y + dy}
-        case "brush":
+        case "pencil":
         case "eraser":
             return {
                 x: shape.x + dx,

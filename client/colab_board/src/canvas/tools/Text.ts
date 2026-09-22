@@ -44,7 +44,7 @@ export default class Text extends Tool{
             fontSize: fontSizeNumber ?? 14,
             textAlign: textAlign,
             text: "",
-            width: window.innerWidth,
+            width: 0,
         }
 
         addShape(textShape)
