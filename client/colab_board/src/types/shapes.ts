@@ -1,4 +1,4 @@
-import { type TextAlign } from "../store/toolStore"
+import { type TextAlign, type FontSize } from "../store/toolStore"
 
 export interface SelectionRectangleState {
     visible: boolean
@@ -19,9 +19,9 @@ export type ShapeChanges = {
     points?: {x:number, y:number}[]
     fillStyle?: string
     strokeStyle?: string
-    lineWidth?: number
+    strokeWidth?: number
     isDeleted?: boolean
-    fontSize?: number
+    fontSize?: FontSize
     textAlign?: TextAlign
     text?: string
     
@@ -53,7 +53,7 @@ export type BaseShape = {
 export type StickerShape = BaseShape & {
     type: 'sticker'
     fillStyle: string
-    fontSize: number
+    fontSize: FontSize
     text: string
     height: number
     width: number
@@ -61,7 +61,7 @@ export type StickerShape = BaseShape & {
 
 export type TextShape = BaseShape & {
     type: 'text'
-    fontSize: number
+    fontSize: FontSize
     textAlign: TextAlign
     width: number
     text: string

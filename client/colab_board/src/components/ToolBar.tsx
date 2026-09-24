@@ -11,24 +11,17 @@ import Sticker from '../canvas/tools/Sticker'
 import Pencil from '../canvas/tools/Pencil'
 import { Icon } from '@iconify/react'
 import {useEffect} from 'react'
+import { refreshSettingsBar } from '../utils/refreshSettingsBar'
 
 export default function ToolBar(){
     const setTool = useToolStore(state => state.setTool)
     const tool = useToolStore(state => state.tool)
-    const setStrokeWidth = useToolStore(state => state.setStrokeWidth)
-    const setStrokeColor = useToolStore(state => state.setStrokeColor)
-    const setFillColor = useToolStore(state => state.setFillColor)
-    const setFontSize = useToolStore(state => state.setFontSize)
-    const setTextAlign = useToolStore(state => state.setTextAlign)
-
+    const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
+    
     useEffect(() => {
         if(!tool) return 
-        ["pencil", "eraser", "line", "arrow"].includes(tool.type) ? setStrokeWidth(1) : setStrokeWidth(0)
-
-        setFillColor("#000000")
-        setStrokeColor("#000000")
-        setFontSize("S")
-        setTextAlign("left")
+        setToolSettingChangedByUser(false)
+        refreshSettingsBar(tool.type)
     }, [tool])
 
     return(

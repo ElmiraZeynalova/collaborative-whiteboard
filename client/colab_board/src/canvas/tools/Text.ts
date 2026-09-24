@@ -19,17 +19,6 @@ export default class Text extends Tool{
         const fontSize = useToolStore.getState().fontSize
         const textAlign = useToolStore.getState().textAlign
 
-        let fontSizeNumber 
-        if(fontSize === "S"){
-            fontSizeNumber = 14
-        }else if(fontSize === "M"){
-            fontSizeNumber = 20
-        }else if(fontSize === "L"){
-            fontSizeNumber = 30
-        }else if(fontSize === "XL"){
-            fontSizeNumber = 40
-        }
-
         const shapeId =  crypto.randomUUID()
 
         const textShape: TextShape = {
@@ -41,7 +30,7 @@ export default class Text extends Tool{
             y: pos.y,
             strokeStyle: strokeColor,
             strokeWidth: strokeWidth,
-            fontSize: fontSizeNumber ?? 14,
+            fontSize: fontSize,
             textAlign: textAlign,
             text: "",
             width: 0,

@@ -3,6 +3,7 @@ import { useClientStore } from "../store/clientStore"
 import {useEffect, useRef} from 'react'
 import type Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
+import { getFontSizeNumber } from "./ShapeRenderer"
 
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)
@@ -83,7 +84,7 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     }
 
     const commonTextAreaStyle: React.CSSProperties = {
-        fontSize: shape.fontSize * scale,
+        fontSize: getFontSizeNumber(shape.fontSize) ?? 14 * scale,
         color: shape.strokeStyle,
         background: 'transparent',
         fontFamily: 'Calibri, sans-serif',

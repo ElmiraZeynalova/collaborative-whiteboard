@@ -1,9 +1,11 @@
 import { useToolStore } from '../../store/toolStore'
+import { useCanvasStore } from '../../store/canvasStore'
 import EraserSettings from './settings/EraserSettings'
 import ShapeSettings from './settings/ShapeSettings'
 import TextSettings from './settings/TextSettings'
 import LineSettings from './settings/LineSettings'
 import StickerSettings from './settings/StickerSettings'
+import AllSettings from './settings/AllSettings'
 import { Icon } from '@iconify/react'
 import {useState} from 'react'
 import Menu from '../Menu'
@@ -17,12 +19,28 @@ const bars: Record<string, React.ComponentType> = {
     eraser: EraserSettings,
     line: LineSettings,
     arrow: ShapeSettings,
-    sticker: StickerSettings
+    sticker: StickerSettings,
+    all: AllSettings
 }
 export default function SettingsBar(){
     const tool = useToolStore(state => state.tool)
-    const Settings = bars[tool?.type]
+    if(!tool) return
+    const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
+    const shapes = useCanvasStore(state => state.shapes)
+
+    let Settings
+
+    if (tool.type !== 'selection') {
+        Settings = bars[tool.type]
+    } else if (selectedShapesIds.length === 1) {
+        const type = shapes[selectedShapesIds[0]].type
+        Settings = bars[type]
+    } else if (selectedShapesIds.length > 1) {
+        Settings = bars.all
+    }
+    
     const [showMenu, setShowMenu] = useState<boolean>(false)
+
 
     return(
         <div className="absolute bottom-16 left-[50%] z-10 translate-x-[-50%] px-3 py-2 flex items-center gap-4 rounded-xl drop-shadow-md bg-white border border-black/15">

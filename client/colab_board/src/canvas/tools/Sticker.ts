@@ -21,17 +21,6 @@ export default class Sticker extends Tool{
         const strokeWidth = useToolStore.getState().strokeWidth
         const fontSize = useToolStore.getState().fontSize
 
-        let fontSizeNumber 
-        if(fontSize === "S"){
-            fontSizeNumber = 14
-        }else if(fontSize === "M"){
-            fontSizeNumber = 20
-        }else if(fontSize === "L"){
-            fontSizeNumber = 30
-        }else if(fontSize === "XL"){
-            fontSizeNumber = 40
-        }
-
         const shapeId =  crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
@@ -45,7 +34,7 @@ export default class Sticker extends Tool{
             fillStyle: fillColor,
             strokeStyle: strokeColor,
             strokeWidth: strokeWidth,
-            fontSize: fontSizeNumber ?? 14,
+            fontSize: fontSize,
             text: "",
             width: 200, 
             height: 200,

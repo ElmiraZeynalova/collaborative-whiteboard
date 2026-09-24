@@ -9,6 +9,7 @@ import { useClientStore } from "../store/clientStore"
 import { handleMessage } from "../utils/messageHandler"
 import { useToolStore } from "../store/toolStore"
 import UndoRedoBar from "./UndoRedoBar"
+import { useCanvasStore } from "../store/canvasStore"
 
 export default function Board(){
     const {id} = useParams()
@@ -21,6 +22,7 @@ export default function Board(){
     const setWS = useClientStore(state => state.setWS)
     const setTool = useToolStore(state => state.setTool)
     const tool = useToolStore(state => state.tool)
+    const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
 
     useEffect(() => {
         if(userName){
@@ -84,7 +86,7 @@ export default function Board(){
                         <UndoRedoBar/>
                     </div>
                 </div>
-                {(tool?.type !== 'selection' && tool) && <SettingsBar/>}
+                {tool && (tool.type !== 'selection' || selectedShapesIds.length > 0) && <SettingsBar/>}
             </div>
         </>
     )

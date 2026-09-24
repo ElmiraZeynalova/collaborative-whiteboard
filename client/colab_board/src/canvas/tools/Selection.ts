@@ -1,16 +1,23 @@
 import Tool, { type PointerModifiers } from './Tool'
 import { useCanvasStore } from '../../store/canvasStore'
+import { updateSettingsBar } from '../../utils/updateSettingsBar';
+import {refreshSettingsBar} from '../../utils/refreshSettingsBar'
+import { useToolStore } from '../../store/toolStore';
 
 export default class Selection extends Tool {
     readonly type = 'selection'
 
-    onPointerDown(pos: { x: number; y: number }, modifiers?: PointerModifiers,  targetId?: string): void {
+    onPointerDown(
+        _pos?: { x: number; y: number },
+        modifiers?: PointerModifiers,
+        targetId?: string,
+    ): void {
         const {selectedShapesIds, setSelectedShapesIds } = useCanvasStore.getState()
 
 
-    const shape = targetId
-        ? useCanvasStore.getState().shapes[targetId]
-        : null
+        const shape = targetId
+            ? useCanvasStore.getState().shapes[targetId]
+            : null
 
         const metaPressed = !!(modifiers?.shiftKey || modifiers?.ctrlKey || modifiers?.metaKey)
 
@@ -25,11 +32,19 @@ export default class Selection extends Tool {
 
         if (!metaPressed && !isSelected) {
             setSelectedShapesIds([shape.id])
+            useToolStore.getState().setToolSettingChangedByUser(false)
+            updateSettingsBar(shape)
         } else if (metaPressed && isSelected) {
             setSelectedShapesIds(selectedShapesIds.filter(id => id !== shape.id))
         } else if (metaPressed && !isSelected) {
-            setSelectedShapesIds([...selectedShapesIds, shape.id])
+            const newSelectedIds = [...selectedShapesIds, shape.id]
+            setSelectedShapesIds(newSelectedIds)
+            if (newSelectedIds.length === 2) {
+                useToolStore.getState().setToolSettingChangedByUser(false)
+                refreshSettingsBar(this.type)
+            }
         }
+
     }
 
     onPointerMove(): void {}

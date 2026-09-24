@@ -10,6 +10,8 @@ import Tool from '../canvas/tools/Tool'
 import TextArea from './TextArea'
 import { getShapeNodes } from '../canvas/shapeNodeRegistry'
 import { handleTransformEnd } from '../canvas/shapeInteractions'
+import { useClientStore } from '../store/clientStore'
+import type { ShapeChanges } from '../types/shapes'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
@@ -22,12 +24,21 @@ export default function Canvas() {
     const toolInstanceRef = useRef<Tool | null>(null)
     const currentlyDrawingShapeId = useCanvasStore(state => state.currentlyDrawingShapeId)
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
+    const setSelectedShapesIds = useCanvasStore(state => state.setSelectedShapesIds)
     const selectionRectangle = useCanvasStore(state => state.selectionRectangle)
     const isDraggableStage = tool?.type === 'selection' && selectedShapesIds.length === 0
     const editingTextId = useCanvasStore(state => state.editingTextId)
     const [stageReady, setStageReady] = useState(false)
     const setScale = useCanvasStore(state => state.setScale)
     const transformerRef = useRef<Konva.Transformer | null>(null)
+    const fillColor = useToolStore(state => state.fillColor)
+    const strokeColor = useToolStore(state => state.strokeColor)
+    const strokeWidth = useToolStore(state => state.strokeWidth)
+    const fontSize = useToolStore(state => state.fontSize)
+    const textAlign = useToolStore(state => state.textAlign)
+    const ws = useClientStore(state => state.ws)
+    const updateShape = useCanvasStore(state => state.updateShape)
+
     useEffect(() => {
         if (!transformerRef.current) return
 
@@ -64,7 +75,66 @@ export default function Canvas() {
 
     useEffect(() => {
         toolInstanceRef.current = getToolInstance(tool?.type)
+        setSelectedShapesIds([])
     }, [tool?.type])
+
+    useEffect(() => {
+        if (!useToolStore.getState().toolSettingChangedByUser) return
+        if(selectedShapesIds.length === 0) return
+
+        for(const id of selectedShapesIds){
+            const changes = figureChanges(id)
+            if(!changes) return
+            updateShape(id, changes)
+            const updatedShape = useCanvasStore.getState().shapes[id]
+            const message = {
+                type: "shape:update",
+                shape: updatedShape
+            }
+            ws?.send(JSON.stringify(message))
+        }
+
+    }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds])
+
+    function figureChanges(id: string) {
+        const changedSetting = useToolStore.getState().toolSettingChanged
+        const shape = shapes[id]
+        let changes: ShapeChanges = {}
+
+        switch (changedSetting) {
+            case 'fillColor':
+                if (
+                    shape.type === 'rect' ||
+                    shape.type === 'ellipse' ||
+                    shape.type === 'romb' ||
+                    shape.type === 'sticker'
+                ) {
+                    changes = { fillStyle: fillColor }
+                }
+                break
+
+            case 'strokeColor':
+                changes = { strokeStyle: strokeColor }
+                break
+
+            case 'strokeWidth':
+                changes = { strokeWidth }
+                break
+
+            case 'fontSize':
+                if (shape.type === 'text' || shape.type === 'sticker') {
+                    changes = { fontSize }
+                }
+                break
+
+            case 'textAlign':
+                if (shape.type === 'text') {
+                    changes = { textAlign }
+                }
+                break
+        }
+        return changes
+    }
 
     const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
         e.evt.preventDefault()

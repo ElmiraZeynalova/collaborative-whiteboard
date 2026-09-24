@@ -16,7 +16,7 @@ export default function Modal({ children, open, closeModal }: Props) {
 
     return createPortal(
         <ModalContext value={closeModal}>
-            <div className="fixed inset-0 z-[1000]">
+            <div className="fixed inset-0 z-1000">
                 {children}
             </div>
         </ModalContext>,
@@ -26,7 +26,7 @@ export default function Modal({ children, open, closeModal }: Props) {
 
 Modal.Container = function Container({ children, className }: { children: ReactNode, className?: string }) {
     return (
-        <div className={className ?? "bg-[#f3f3f3] rounded-[18px] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] border-0 outline-0 p-3"}>
+        <div className={className ?? "bg-[#f3f3f3] rounded-[18px] fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-1 border-0 outline-0 p-3"}>
             {children}
         </div>
     )

@@ -10,6 +10,19 @@ import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from "../store/canvasStore"
 import LineShapeRenderer from "./LineShapeRenderer"
 
+export function getFontSizeNumber(fontSize: string){
+    let fontSizeNumber 
+    if(fontSize === "S"){
+        fontSizeNumber = 14
+    }else if(fontSize === "M"){
+        fontSizeNumber = 20
+    }else if(fontSize === "L"){
+        fontSizeNumber = 30
+    }else if(fontSize === "XL"){
+        fontSizeNumber = 40
+    }
+    return fontSizeNumber
+}
 export default function ShapeRenderer({shape}: {shape: Shape}){
     const tool = useToolStore(state => state.tool)
     const isSelectable = tool?.type === 'selection'
@@ -60,7 +73,7 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
             return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps}/>
         case 'pencil': 
         case 'eraser':
-            return <PencilShapeRenderer shape={shape}/>
+            return <PencilShapeRenderer shape={shape} commonProps={commonProps}/>
         case 'romb':
             return <RombShapeRenderer shape={shape} commonProps={commonProps}/>
         case 'text':
@@ -73,7 +86,7 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
                     width={shape.width}
                     align={shape.textAlign}
                     text={shape.text}
-                    fontSize={shape.fontSize}
+                    fontSize={getFontSizeNumber(shape.fontSize)}
                     fontFamily="Calibri"
                     fill={shape.strokeStyle}
                     lineHeight={1.2}
@@ -119,7 +132,7 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
                         align="center"
                         verticalAlign="middle"
                         text={shape.text}
-                        fontSize={shape.fontSize}
+                        fontSize={getFontSizeNumber(shape.fontSize)}
                         fontFamily="Calibri"
                         fill={shape.strokeStyle}
                         lineHeight={1.2}

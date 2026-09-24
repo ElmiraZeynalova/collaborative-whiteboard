@@ -11,10 +11,6 @@ type Message =
       shape: Shape
     }
   | {
-      type: "shape:delete"
-      shape: {id: string}
-    }
-  | {
         type: "shape:update"
         shape: ShapeChanges & {id: string}
     }
@@ -25,7 +21,7 @@ type Message =
 
 
 export function handleMessage(message: Message){
-    const {setShapes, addShape, updateShape, markShapeDeleted} = useCanvasStore.getState()
+    const {setShapes, addShape, updateShape} = useCanvasStore.getState()
 
     switch(message.type){
         case "connection":
@@ -41,9 +37,6 @@ export function handleMessage(message: Message){
         case "shape:update":
             console.log("updating sent shape...")
             updateShape(message.shape.id, message.shape)
-            break
-        case "shape:delete":
-            markShapeDeleted(message.shape.id)
             break
 
     }

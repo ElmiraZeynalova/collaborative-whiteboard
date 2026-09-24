@@ -16,29 +16,20 @@ function getDragDelta(shape: Shape, node: Konva.Node) {
     if (ABSOLUTE_POSITION_TYPES.includes(shape.type)) {
         return { dx: node.x() - shape.x, dy: node.y() - shape.y, resetNode: false }
     }
+    if (shape.type === 'pencil' || shape.type === 'eraser') {
+        return {
+            dx: node.x(),
+            dy: node.y(),
+            resetNode: true
+        }
+    }
     return { dx: node.x(), dy: node.y(), resetNode: true }
 }
 
 export function handleShapeDragEnd(shape: Shape, node: Konva.Node) {
     const { dx, dy, resetNode } = getDragDelta(shape, node)
     const changes = moveShape(shape, dx, dy)
-    console.log('DRAG END', {
-        type: shape.type,
-        shape: {
-            x: shape.x,
-            y: shape.y,
-        },
-        node: {
-            x: node.x(),
-            y: node.y(),
-        },
-        delta: {
-            dx,
-            dy,
-        },
-        changes,
-        resetNode,
-    })
+
     useCanvasStore.getState().updateShape(shape.id, changes)
 
     if (resetNode) {
@@ -52,6 +43,7 @@ export function handleShapeDragEnd(shape: Shape, node: Konva.Node) {
 export function handleTransformEnd(shape: Shape, node: Konva.Node) {
     const scaleX = node.scaleX()
     const scaleY = node.scaleY()
+
     node.scaleX(1)
     node.scaleY(1)
 
@@ -75,9 +67,24 @@ export function handleTransformEnd(shape: Shape, node: Konva.Node) {
                 y: Math.max(5, shape.radius.y * scaleY),
             },
         }
+    } else if (shape.type === 'pencil' || shape.type === 'eraser') {
+        changes = {
+            ...changes,
+            points: shape.points.map(point => ({
+                x: point.x * scaleX,
+                y: point.y * scaleY,
+            })),
+        }
     }
 
     useCanvasStore.getState().updateShape(shape.id, changes)
+
     const updated = useCanvasStore.getState().shapes[shape.id]
-    useClientStore.getState().ws?.send(JSON.stringify({ type: 'shape:update', shape: updated }))
+
+    useClientStore.getState().ws?.send(
+        JSON.stringify({
+            type: 'shape:update',
+            shape: updated,
+        })
+    )
 }
