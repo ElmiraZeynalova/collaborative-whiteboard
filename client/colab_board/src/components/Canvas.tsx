@@ -12,6 +12,7 @@ import { getShapeNodes } from '../canvas/shapeNodeRegistry'
 import { handleTransformEnd } from '../canvas/shapeInteractions'
 import { useClientStore } from '../store/clientStore'
 import type { ShapeChanges } from '../types/shapes'
+import Menu from './Menu'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
@@ -38,6 +39,10 @@ export default function Canvas() {
     const textAlign = useToolStore(state => state.textAlign)
     const ws = useClientStore(state => state.ws)
     const updateShape = useCanvasStore(state => state.updateShape)
+    const pushToUndo = useCanvasStore(state => state.pushToUndo)
+    const shapesOrder = useCanvasStore(state => state.shapesOrder)
+
+    const [contextMenu, setContextMenu] = useState<{x: number, y: number} | null>(null)
 
     useEffect(() => {
         if (!transformerRef.current) return
@@ -82,18 +87,35 @@ export default function Canvas() {
         if (!useToolStore.getState().toolSettingChangedByUser) return
         if(selectedShapesIds.length === 0) return
 
+        const changes = []
         for(const id of selectedShapesIds){
-            const changes = figureChanges(id)
-            if(!changes) return
-            updateShape(id, changes)
+            const shapeBeforeChanges = shapes[id]
+            const shapeChanges = figureChanges(id)
+
+            if (!shapeChanges) continue
+
+            updateShape(id, shapeChanges)
+
             const updatedShape = useCanvasStore.getState().shapes[id]
-            const message = {
+
+            ws?.send(JSON.stringify({
                 type: "shape:update",
                 shape: updatedShape
-            }
-            ws?.send(JSON.stringify(message))
+            }))
+
+            changes.push({
+                shapeId: id,
+                before: shapeBeforeChanges,
+                after: updatedShape,
+            })
         }
 
+        if (changes.length > 0) {
+            pushToUndo({
+                type: 'update',
+                changes,
+            })
+        }
     }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds])
 
     function figureChanges(id: string) {
@@ -167,6 +189,15 @@ export default function Canvas() {
         setScale(newScale)
     }
 
+    const handleContextMenu = (e: Konva.KonvaEventObject<PointerEvent>) => {
+        e.evt.preventDefault()
+
+        setContextMenu({
+            x: e.evt.clientX,
+            y: e.evt.clientY,
+        })
+    }
+
     function isTransformerEvent(target: Konva.Node) {
         let node: Konva.Node | null = target
 
@@ -198,6 +229,7 @@ export default function Canvas() {
     }
 
     function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
+        setContextMenu(null)
         if (isTransformerEvent(e.target)) {
             return
         }
@@ -257,11 +289,21 @@ export default function Canvas() {
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
+                onContextMenu={handleContextMenu}
             >
                 <Layer>
-                    {Object.values(shapes).map(shape => (
-                        <ShapeRenderer key={shape.id} shape={shape}/>
-                    ))}
+                    {shapesOrder.map(id => {
+                        const shape = shapes[id]
+
+                        if (!shape || shape.isDeleted) return null
+
+                        return (
+                            <ShapeRenderer
+                                key={id}
+                                shape={shape}
+                            />
+                        )
+                    })}
                     <Transformer
                         ref={transformerRef}
                         rotateEnabled={true}
@@ -295,6 +337,12 @@ export default function Canvas() {
                     )}
                 </Layer>
             </Stage>
+            {contextMenu && (<Menu
+                    className=""
+                    position={contextMenu}
+                    closeModal={() => setContextMenu(null)}
+                />
+            )}
             {stageReady && stageRef.current && <TextArea stage={stageRef.current} />}
         </div>
     )

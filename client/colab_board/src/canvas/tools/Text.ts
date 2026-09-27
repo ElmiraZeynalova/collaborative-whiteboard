@@ -38,6 +38,14 @@ export default class Text extends Tool{
 
         addShape(textShape)
         setEditingTextId(shapeId)
+        const message = {
+            type: "shape:add",
+            shape: textShape,
+            shapesOrder: useCanvasStore.getState().shapesOrder,
+        }
+
+        useClientStore.getState().ws?.send(JSON.stringify(message))
+
     }
 
 }

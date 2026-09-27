@@ -13,7 +13,7 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const ws = useClientStore((state) => state.ws)
     const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
-
+    const pushToUndo = useCanvasStore(state => state.pushToUndo)
     const shape = editingTextId ? shapes[editingTextId] : null
 
     useEffect(() => {
@@ -47,18 +47,28 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
                 ? { text: value }
                 : {
                     text: value,
-                    width: textAreaRef.current?.offsetWidth ?? 0,
+                    width: (textAreaRef.current?.offsetWidth ?? 0) / scale
                 }
             updateShape(shape.id, changes)
 
             const updatedShape = useCanvasStore.getState().shapes[shape.id]
 
             const message = {
-                type: 'shape:add',
+                type: 'shape:update',
                 shape: updatedShape,
             }
 
             ws?.send(JSON.stringify(message))
+            pushToUndo({
+                type: 'update',
+                changes: [
+                    {
+                        shapeId: shape.id,
+                        before: shape,
+                        after: updatedShape
+                    }
+                ]
+            })
         }
 
         setEditingTextId(null)
@@ -143,7 +153,8 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
                 zIndex: 20,
                 top: shape.y * scale + stagePos.y,
                 left: shape.x * scale + stagePos.x,
-                whiteSpace: 'pre',
+                whiteSpace: 'pre',  
+                width: `${shape.width * scale}px`,
                 ...commonTextAreaStyle,
             }}
         />

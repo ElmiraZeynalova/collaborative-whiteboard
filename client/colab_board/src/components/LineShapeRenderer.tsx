@@ -1,21 +1,30 @@
-import type { ArrowShape, LineShape } from "../types/shapes";
+import type { ArrowShape, LineShape, Shape } from "../types/shapes";
 import {Arrow, Line, Group, Circle} from 'react-konva'
 import { useCanvasStore } from "../store/canvasStore";
 import { useClientStore } from "../store/clientStore";
 import type { KonvaEventObject } from "konva/lib/Node"
+import {useRef} from 'react'
 
 export default function LineShapeRenderer({shape, isSelected, commonProps}: {shape: ArrowShape | LineShape, isSelected: boolean, commonProps: any}){
     const scale = useCanvasStore(state => state.scale)
+    const pushToUndo = useCanvasStore(state => state.pushToUndo)
+    const beforeRef = useRef<LineShape | ArrowShape | null>(null)
+
+    const handleDragStart = () => {
+        beforeRef.current = useCanvasStore.getState().shapes[shape.id] as LineShape | ArrowShape
+    }
     const shapeProps = {
         id: shape.id,
         ref: commonProps.ref,
     }
+
     return(
         <Group
             {...commonProps}
             x={0}
             y={0}
             draggable
+            onDragStart={handleDragStart}
             onDragEnd={(e) => {
                 const dx = e.target.x()
                 const dy = e.target.y()
@@ -32,10 +41,20 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
                     changes
                 )
 
-                const updated = {
-                    ...useCanvasStore.getState().shapes[shape.id],
-                    ...changes,
-                }
+
+                const before = beforeRef.current
+                const updated = useCanvasStore.getState().shapes[shape.id]
+
+                if (!before || !updated) return
+
+                pushToUndo({
+                    type: 'update',
+                    changes: [{
+                        shapeId: shape.id,
+                        before,
+                        after: updated,
+                    }]
+                })
 
                 useClientStore.getState().ws?.send(
                     JSON.stringify({
@@ -90,6 +109,13 @@ function LineShapeResizeHandles({
 }: {
     shape: ArrowShape | LineShape
 }) {
+    const beforeRef = useRef<Shape | null>(null)
+    const pushToUndo = useCanvasStore(state => state.pushToUndo)
+    
+    const handleStartDragStart = () => {
+        beforeRef.current = useCanvasStore.getState().shapes[shape.id]
+    }
+
     const handleStartDragMove = (
         e: KonvaEventObject<DragEvent>
     ) => {
@@ -118,6 +144,8 @@ function LineShapeResizeHandles({
         e.cancelBubble = true
 
         const updated = useCanvasStore.getState().shapes[shape.id]
+        const before = beforeRef.current
+        if (!before || !updated) return
 
         useClientStore.getState().ws?.send(
             JSON.stringify({
@@ -125,6 +153,13 @@ function LineShapeResizeHandles({
                 shape: updated,
             })
         )
+        pushToUndo({type: 'update', changes: [ 
+            {
+                shapeId: shape.id,
+                before,
+                after: updated
+            }
+        ]})
     }
     const scale = useCanvasStore(state => state.scale)
 
@@ -141,6 +176,7 @@ function LineShapeResizeHandles({
                 stroke='#3b82f6'
                 strokeWidth={strokeWidth}
                 draggable
+                onDragStart={handleStartDragStart}
                 onDragMove={handleStartDragMove}
                 onDragEnd={handleDragEnd}
             />
@@ -153,6 +189,7 @@ function LineShapeResizeHandles({
                 stroke="#3b82f6"
                 strokeWidth={strokeWidth}
                 draggable
+                onDragStart={handleStartDragStart}
                 onDragMove={handleEndDragMove}
                 onDragEnd={handleDragEnd}
             />

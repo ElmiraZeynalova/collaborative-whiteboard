@@ -10,16 +10,36 @@ export type Shape = {
     y: number
     width?: number
     height?: number
-    radius?: number
+    radius?: {x: number, y: number}
     startX?: number
     startY?: number
     points?: {x:number, y:number}[]
     fillStyle: string
     strokeStyle: string
-    lineWidth: number
+    strokeWidth: number
     isDeleted: boolean
 }
 
+type BoardState = {
+  shapes: Record<string, Shape>,
+  shapesOrder: string[]
+}
+
+type ShapeMessage =
+  | {
+      type: "shape:add"
+      shape: Shape
+      shapesOrder: string[]
+    }
+  | {
+      type: "shape:update"
+      shape: Shape
+    }
+  | {
+      type: "shape:order"
+      shapesOrder: string[]
+    }
+    
 const app = express();
 const server = createServer(app);
 const wss = new WebSocketServer({ server });
@@ -27,7 +47,7 @@ const wss = new WebSocketServer({ server });
 const ALLOWED_ORIGINS = ["http://localhost:5173"]
 
 const clients = new Map<WebSocket, {boardId: string}>()
-const boardsStates = new Map<string, Record<string, Shape>>()
+const boardsStates = new Map<string, BoardState>()
 
 wss.on("connection", (ws, req) => {
   const origin = req.headers.origin
@@ -45,10 +65,11 @@ wss.on("connection", (ws, req) => {
 
       if(message.type === "connection"){
         clients.set(ws, {boardId: message.boardId})
-        const shapes = boardsStates.get(message.boardId)
+        const boardState = boardsStates.get(message.boardId)
         ws.send(JSON.stringify({
             type: 'board:state',
-            shapes: shapes ?? {}
+            shapes: boardState?.shapes ?? {},
+            shapesOrder: boardState?.shapesOrder ?? [],
         }))
         const payload = {type: "connection", content: `${message.userName} entered the room.`}
         broadcast(wss, ws, payload)
@@ -77,25 +98,52 @@ function broadcast(server: Server, sender: WebSocket, message: any) {
   }
 }
 
-function handleShapeMessage(message: {type: string, shape: Shape}, ws: WebSocket){
-  broadcast(wss, ws, message)
+function handleShapeMessage(message: ShapeMessage, ws: WebSocket) {
+    const boardId = clients.get(ws)!.boardId
+    const boardState =
+        boardsStates.get(boardId) ?? {
+            shapes: {},
+            shapesOrder: [],
+        }
 
-  const boardId = clients.get(ws)!.boardId 
-  const boardState = boardsStates.get(boardId) ?? {}
-  const existingShape = boardState[message.shape.id]
+    switch (message.type) {
+        case "shape:add":
+            boardsStates.set(boardId, {
+                ...boardState,
+                shapes: {
+                    ...boardState.shapes,
+                    [message.shape.id]: message.shape,
+                },
+                shapesOrder: message.shapesOrder,
+            })
+            break
 
-  switch(message.type){
-    case "shape:add":
-      boardsStates.set(boardId, {...boardState, [message.shape.id]: message.shape})
-      break
-    case "shape:delete":
-      if(!existingShape) return
-      boardsStates.set(boardId, {...boardState, [existingShape.id]: {...existingShape, isDeleted: true}})
-      break
-    case "shape:update":
-      if(!existingShape) return
-      boardsStates.set(boardId, {...boardState, [existingShape.id]: {...existingShape, ...message.shape}})
-      break
-  }
+        case "shape:update": {
+            const existingShape = boardState.shapes[message.shape.id]
+
+            if (!existingShape) return
+
+            boardsStates.set(boardId, {
+                ...boardState,
+                shapes: {
+                    ...boardState.shapes,
+                    [message.shape.id]: {
+                        ...existingShape,
+                        ...message.shape,
+                    },
+                },
+            })
+            break
+        }
+
+        case "shape:order":
+            boardsStates.set(boardId, {
+                ...boardState,
+                shapesOrder: message.shapesOrder,
+            })
+            break
+    }
+
+    broadcast(wss, ws, message)
 }
 server.listen(3000, () => console.log("listening on :3000"));

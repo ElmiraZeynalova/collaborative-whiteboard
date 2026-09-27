@@ -27,6 +27,7 @@ function getDragDelta(shape: Shape, node: Konva.Node) {
 }
 
 export function handleShapeDragEnd(shape: Shape, node: Konva.Node) {
+    const shapeBeforeChange = useCanvasStore.getState().shapes[shape.id]
     const { dx, dy, resetNode } = getDragDelta(shape, node)
     const changes = moveShape(shape, dx, dy)
 
@@ -38,9 +39,17 @@ export function handleShapeDragEnd(shape: Shape, node: Konva.Node) {
 
     const updated = useCanvasStore.getState().shapes[shape.id]
     useClientStore.getState().ws?.send(JSON.stringify({ type: 'shape:update', shape: updated }))
+    useCanvasStore.getState().pushToUndo({type: 'update', changes: [ 
+        {
+            shapeId: shape.id,
+            before: shapeBeforeChange,
+            after: updated
+        }
+    ]})
 }
 
 export function handleTransformEnd(shape: Shape, node: Konva.Node) {
+    const shapeBeforeChange = useCanvasStore.getState().shapes[shape.id]
     const scaleX = node.scaleX()
     const scaleY = node.scaleY()
 
@@ -87,4 +96,11 @@ export function handleTransformEnd(shape: Shape, node: Konva.Node) {
             shape: updated,
         })
     )
+    useCanvasStore.getState().pushToUndo({type: 'update', changes: [ 
+        {
+            shapeId: shape.id,
+            before: shapeBeforeChange,
+            after: updated
+        }
+    ]})
 }

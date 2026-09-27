@@ -48,17 +48,27 @@ export default class Pencil extends Tool{
     }
 
     onPointerUp(shapeId: string): void {
-        const ws = useClientStore.getState().ws
-        const shape = useCanvasStore.getState().shapes[shapeId]
-        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+        const store = useCanvasStore.getState()
+        const shape = store.shapes[shapeId]
+
+        if (!shape || shape.type !== this.type) return
 
         const message = {
             type: "shape:add",
-            shape: shape
+            shape,
+            shapesOrder: store.shapesOrder,
         }
 
-        ws?.send(JSON.stringify(message))
-        setCurrentlyDrawingShapeId(null)
+        useClientStore.getState().ws?.send(
+            JSON.stringify(message)
+        )
+
+        store.setCurrentlyDrawingShapeId(null)
+
+        store.pushToUndo({
+            type: "add",
+            shapes: [shape],
+        })
     }
 }
 
