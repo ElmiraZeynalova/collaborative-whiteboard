@@ -192,6 +192,7 @@ export default function Canvas() {
     const handleContextMenu = (e: Konva.KonvaEventObject<PointerEvent>) => {
         e.evt.preventDefault()
 
+        if(selectedShapesIds.length === 0) return
         setContextMenu({
             x: e.evt.clientX,
             y: e.evt.clientY,

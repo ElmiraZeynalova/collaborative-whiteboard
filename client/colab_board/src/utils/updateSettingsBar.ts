@@ -1,5 +1,6 @@
 import { type Shape } from "../types/shapes"
 import { useToolStore } from "../store/toolStore"
+import type { ToolType } from "../canvas/tools/Tool"
 
 export function updateSettingsBar(shape: Shape) {
     const {
@@ -28,4 +29,17 @@ export function updateSettingsBar(shape: Shape) {
     if (shape.type === 'text') {
         setTextAlign(shape.textAlign)
     }
+}
+
+export function refreshSettingsBar(type: ToolType){
+    const {setFontSize, setTextAlign, setFillColor, setStrokeColor, setStrokeWidth} = useToolStore.getState()
+
+    const strokeTools: ToolType[] = ["pencil", "eraser", "line", "arrow"]
+    setStrokeWidth(strokeTools.includes(type) ? 1 : 0)
+
+    setFillColor("#000000")
+    setStrokeColor("#000000")
+    setFontSize("S")
+    setTextAlign("left")
+    return
 }

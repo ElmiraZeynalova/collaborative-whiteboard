@@ -1,7 +1,7 @@
 import Tool, { type PointerModifiers } from './Tool'
 import { useCanvasStore } from '../../store/canvasStore'
 import { updateSettingsBar } from '../../utils/updateSettingsBar';
-import {refreshSettingsBar} from '../../utils/refreshSettingsBar'
+import {refreshSettingsBar} from '../../utils/updateSettingsBar'
 import { useToolStore } from '../../store/toolStore';
 
 export default class Selection extends Tool {

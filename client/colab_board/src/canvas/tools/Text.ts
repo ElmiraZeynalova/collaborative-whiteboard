@@ -4,7 +4,6 @@ import { useToolStore } from '../../store/toolStore';
 import { useClientStore } from '../../store/clientStore';
 import { useCanvasStore } from '../../store/canvasStore';
 
-
 export default class Text extends Tool{
     readonly type = 'text'
 

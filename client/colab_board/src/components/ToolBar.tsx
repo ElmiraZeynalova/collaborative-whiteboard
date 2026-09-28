@@ -11,7 +11,7 @@ import Sticker from '../canvas/tools/Sticker'
 import Pencil from '../canvas/tools/Pencil'
 import { Icon } from '@iconify/react'
 import {useEffect} from 'react'
-import { refreshSettingsBar } from '../utils/refreshSettingsBar'
+import { refreshSettingsBar } from '../utils/updateSettingsBar'
 
 export default function ToolBar(){
     const setTool = useToolStore(state => state.setTool)
