@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import {type Shape, type ShapeChanges} from "../types/shapes"
+import {type Shape, type ShapeChanges, type YShape} from "../types/shapes"
 import { type SelectionRectangleState } from '../types/shapes'
 import { useClientStore } from './clientStore'
+import * as Y from 'yjs'
 
 type HistoryAction =
     | {
@@ -30,6 +31,8 @@ type HistoryAction =
 interface CanvasStore {
     canvas: HTMLCanvasElement | null
     scale: number
+    yShapes: Y.Map<YShape> | null
+    yShapesOrder: Y.Array<string> | null
     shapes: Record<string, Shape>
     shapesOrder: string[],
     currentlyDrawingShapeId: string | null
@@ -38,6 +41,8 @@ interface CanvasStore {
     selectionRectangle: SelectionRectangleState
     undoStack: HistoryAction[]
     redoStack: HistoryAction[]
+    setYShapes: (shapes: Y.Map<YShape>) => void
+    setYShapesOrder: (order: Y.Array<string>) => void
     setSelectedShapesIds: (ids: string[]) => void
     setSelectionRectangle: (rect: SelectionRectangleState) => void
     setCanvas: (newCanvas: HTMLCanvasElement) => void
@@ -56,6 +61,8 @@ interface CanvasStore {
 export const useCanvasStore = create<CanvasStore>()((set, get) => ({
     canvas: null,
     scale: 1,
+    yShapes: null,
+    yShapesOrder: null,
     shapes: {},
     shapesOrder: [],
     currentlyDrawingShapeId: null,
@@ -64,6 +71,8 @@ export const useCanvasStore = create<CanvasStore>()((set, get) => ({
     selectionRectangle: { visible: false, x1: 0, y1: 0, x2: 0, y2: 0 },
     undoStack: [],
     redoStack: [],
+    setYShapes: (shapes) => set({yShapes: shapes}),
+    setYShapesOrder: (order) => set({yShapesOrder: order}),
     setSelectedShapesIds: (ids) => set({ selectedShapesIds: ids }),
     setSelectionRectangle: (rect) => set({ selectionRectangle: rect }),
     setCanvas: (newCanvas) => set({canvas: newCanvas }),

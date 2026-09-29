@@ -1,4 +1,20 @@
 import { type TextAlign, type FontSize } from "../store/toolStore"
+import * as Y from 'yjs'
+
+
+export type Point = {
+    x: number
+    y: number
+}
+
+export type YShapeValue =
+    | string
+    | number
+    | boolean
+    | Point
+    | Point[]
+
+export type YShape = Y.Map<YShapeValue>
 
 export interface SelectionRectangleState {
     visible: boolean
@@ -26,6 +42,7 @@ export type ShapeChanges = {
     text?: string
     
 }
+
 
 export type Shape =
   | RectShape

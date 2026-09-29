@@ -1,20 +1,24 @@
-import type { ArrowShape, LineShape, Shape } from "../types/shapes";
+import type {YShape } from "../types/shapes";
 import {Arrow, Line, Group, Circle} from 'react-konva'
 import { useCanvasStore } from "../store/canvasStore";
-import { useClientStore } from "../store/clientStore";
 import type { KonvaEventObject } from "konva/lib/Node"
-import {useRef} from 'react'
+import { getShapeId, getShapeNumber, getShapeStringValue, getShapeType } from '../utils/yShapeGetters'
 
-export default function LineShapeRenderer({shape, isSelected, commonProps}: {shape: ArrowShape | LineShape, isSelected: boolean, commonProps: any}){
+export default function LineShapeRenderer({shape, isSelected, commonProps}: {shape: YShape, isSelected: boolean, commonProps: any}){
     const scale = useCanvasStore(state => state.scale)
-    const pushToUndo = useCanvasStore(state => state.pushToUndo)
-    const beforeRef = useRef<LineShape | ArrowShape | null>(null)
 
-    const handleDragStart = () => {
-        beforeRef.current = useCanvasStore.getState().shapes[shape.id] as LineShape | ArrowShape
-    }
+    const shapeType = getShapeType(shape)
+    const shapeId = getShapeId(shape)
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const startX = getShapeNumber(shape, 'startX')
+    const startY = getShapeNumber(shape, 'startY')
+    const fillStyle = getShapeStringValue(shape, 'fillStyle')
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const strokeWidth = getShapeNumber(shape, 'strokeWidth')
+
     const shapeProps = {
-        id: shape.id,
+        id: shapeId,
         ref: commonProps.ref,
     }
 
@@ -24,44 +28,20 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
             x={0}
             y={0}
             draggable
-            onDragStart={handleDragStart}
             onDragEnd={(e) => {
                 const dx = e.target.x()
                 const dy = e.target.y()
 
                 const changes = {
-                    startX: shape.startX + dx,
-                    startY: shape.startY + dy,
-                    x: shape.x + dx,
-                    y: shape.y + dy,
+                    startX: startX + dx,
+                    startY: startY + dy,
+                    x: x + dx,
+                    y: y + dy,
                 }
 
-                useCanvasStore.getState().updateShape(
-                    shape.id,
-                    changes
-                )
-
-
-                const before = beforeRef.current
-                const updated = useCanvasStore.getState().shapes[shape.id]
-
-                if (!before || !updated) return
-
-                pushToUndo({
-                    type: 'update',
-                    changes: [{
-                        shapeId: shape.id,
-                        before,
-                        after: updated,
-                    }]
-                })
-
-                useClientStore.getState().ws?.send(
-                    JSON.stringify({
-                        type: 'shape:update',
-                        shape: updated,
-                    })
-                )
+                for (const [key, value] of Object.entries(changes)) {
+                    shape.set(key, value)
+                }
 
                 e.target.position({
                     x: 0,
@@ -69,30 +49,30 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
                 })
             }}
         >
-            {shape.type === 'line' ? <Line
+            {shapeType === 'line' ? <Line
                 {...shapeProps}
-                points={[shape.startX, shape.startY, shape.x, shape.y]}
-                stroke={shape.strokeStyle}
-                strokeWidth={shape.strokeWidth}
+                points={[startX, startY, x, y]}
+                stroke={strokeStyle}
+                strokeWidth={strokeWidth}
                 lineCap="round"
                 lineJoin="round"
                 hitStrokeWidth={20 / scale}
             /> :
             <Arrow
                 {...shapeProps}
-                x={shape.startX}
-                y={shape.startY}
+                x={startX}
+                y={startY}
                 points={[
                     0,
                     0,
-                    shape.x - shape.startX,
-                    shape.y - shape.startY,
+                    x - startX,
+                    y - startY,
                 ]}
-                pointerLength={10 + shape.strokeWidth}
-                pointerWidth={10 + shape.strokeWidth}
-                fill={shape.fillStyle}
-                stroke={shape.strokeStyle}
-                strokeWidth={shape.strokeWidth}
+                pointerLength={10 + strokeWidth}
+                pointerWidth={10 + strokeWidth}
+                fill={fillStyle}
+                stroke={strokeStyle}
+                strokeWidth={strokeWidth}
                 hitStrokeWidth={20 / scale}
             />}
 
@@ -104,94 +84,53 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
 }
 
 
-function LineShapeResizeHandles({
-    shape,
-}: {
-    shape: ArrowShape | LineShape
-}) {
-    const beforeRef = useRef<Shape | null>(null)
-    const pushToUndo = useCanvasStore(state => state.pushToUndo)
-    
-    const handleStartDragStart = () => {
-        beforeRef.current = useCanvasStore.getState().shapes[shape.id]
-    }
+function LineShapeResizeHandles({shape}: {shape: YShape}) {
 
-    const handleStartDragMove = (
-        e: KonvaEventObject<DragEvent>
-    ) => {
+    const handleStartDragMove = (e: KonvaEventObject<DragEvent>) => {
         e.cancelBubble = true
 
-        useCanvasStore.getState().updateShape(shape.id, {
-            startX: e.target.x(),
-            startY: e.target.y(),
-        })
+        shape.set('startX', e.target.x())
+        shape.set('startY', e.target.y())
     }
 
-    const handleEndDragMove = (
-        e: KonvaEventObject<DragEvent>
-    ) => {
+    const handleEndDragMove = (e: KonvaEventObject<DragEvent>) => {
         e.cancelBubble = true
 
-        useCanvasStore.getState().updateShape(shape.id, {
-            x: e.target.x(),
-            y: e.target.y(),
-        })
+        shape.set('x', e.target.x())
+        shape.set('y', e.target.y())
     }
 
-    const handleDragEnd = (
-        e: KonvaEventObject<DragEvent>
-    ) => {
-        e.cancelBubble = true
-
-        const updated = useCanvasStore.getState().shapes[shape.id]
-        const before = beforeRef.current
-        if (!before || !updated) return
-
-        useClientStore.getState().ws?.send(
-            JSON.stringify({
-                type: "shape:update",
-                shape: updated,
-            })
-        )
-        pushToUndo({type: 'update', changes: [ 
-            {
-                shapeId: shape.id,
-                before,
-                after: updated
-            }
-        ]})
-    }
     const scale = useCanvasStore(state => state.scale)
 
     const radius = 6 / scale
     const strokeWidth = 1 / scale
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const startX = getShapeNumber(shape, 'startX')
+    const startY = getShapeNumber(shape, 'startY')
 
     return (
         <>
             <Circle
-                x={shape.startX}
-                y={shape.startY}
+                x={startX}
+                y={startY}
                 radius={radius}
                 fill="#ffffff"
                 stroke='#3b82f6'
                 strokeWidth={strokeWidth}
                 draggable
-                onDragStart={handleStartDragStart}
                 onDragMove={handleStartDragMove}
-                onDragEnd={handleDragEnd}
             />
 
             <Circle
-                x={shape.x}
-                y={shape.y}
+                x={x}
+                y={y}
                 radius={radius}
                 fill="#ffffff"
                 stroke="#3b82f6"
                 strokeWidth={strokeWidth}
                 draggable
-                onDragStart={handleStartDragStart}
                 onDragMove={handleEndDragMove}
-                onDragEnd={handleDragEnd}
             />
         </>
     )

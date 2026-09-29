@@ -11,14 +11,20 @@ import TextArea from './TextArea'
 import { getShapeNodes } from '../canvas/shapeNodeRegistry'
 import { handleTransformEnd } from '../canvas/shapeInteractions'
 import { useClientStore } from '../store/clientStore'
-import type { ShapeChanges } from '../types/shapes'
+import type { ShapeChanges, YShape } from '../types/shapes'
 import Menu from './Menu'
+import { useHocuspocusProvider } from '@hocuspocus/provider-react'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
 const MAX_SCALE = 10
 
 export default function Canvas() {
+
+    const provider = useHocuspocusProvider()
+    const ydoc = provider.document
+    const yShapes = ydoc.getMap<YShape>('shapes')
+    const yShapesOrder = ydoc.getArray<string>('shapesOrder')
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
     const shapes = useCanvasStore(state => state.shapes)
@@ -43,6 +49,11 @@ export default function Canvas() {
     const shapesOrder = useCanvasStore(state => state.shapesOrder)
 
     const [contextMenu, setContextMenu] = useState<{x: number, y: number} | null>(null)
+
+    useEffect(() => {
+        useCanvasStore.getState().setYShapes(yShapes)
+        useCanvasStore.getState().setYShapesOrder(yShapesOrder)
+    }, [yShapes, yShapesOrder])
 
     useEffect(() => {
         if (!transformerRef.current) return
@@ -294,9 +305,9 @@ export default function Canvas() {
             >
                 <Layer>
                     {shapesOrder.map(id => {
-                        const shape = shapes[id]
+                        const shape = yShapes.get(id)
 
-                        if (!shape || shape.isDeleted) return null
+                        if (!shape || shape.get('isDeleted')) return null
 
                         return (
                             <ShapeRenderer
@@ -313,10 +324,10 @@ export default function Canvas() {
                             if (!transformer) return
 
                             const nodes = transformer.nodes()
-                            const shapes = useCanvasStore.getState().shapes
+                            const shapes = useCanvasStore.getState().yShapes
 
                             nodes.forEach(node => {
-                                const shape = shapes[node.id()]
+                                const shape = shapes?.get(node.id())
 
                                 if (shape) {
                                     handleTransformEnd(shape, node)

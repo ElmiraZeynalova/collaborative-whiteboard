@@ -1,20 +1,27 @@
 import { useCanvasStore } from "../store/canvasStore"
-import { useClientStore } from "../store/clientStore"
 import {useEffect, useRef} from 'react'
 import type Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
 import { getFontSizeNumber } from "./ShapeRenderer"
+import { getShapeStringValue, getShapeType, getShapeNumber } from "../utils/yShapeGetters"
 
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)
+    if(!editingTextId) return
     const setEditingTextId = useCanvasStore((state) => state.setEditingTextId)
-    const shapes = useCanvasStore((state) => state.shapes)
-    const updateShape = useCanvasStore((state) => state.updateShape)
-    const ws = useClientStore((state) => state.ws)
+    const shapes = useCanvasStore((state) => state.yShapes)
     const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
-    const pushToUndo = useCanvasStore(state => state.pushToUndo)
-    const shape = editingTextId ? shapes[editingTextId] : null
+    const shape = shapes?.get(editingTextId)
+    if(!shape) return 
+    const shapeType = getShapeType(shape) 
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const width = getShapeNumber(shape, 'width')
+    const height = getShapeNumber(shape, 'height')
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const text = getShapeStringValue(shape, 'text')
+    const fontSize = getShapeStringValue(shape, 'fontSize')
 
     useEffect(() => {
         if (!editingTextId) return
@@ -26,17 +33,17 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
         return () => cancelAnimationFrame(frame)
     }, [editingTextId])
 
-    if (!shape || (shape.type !== 'sticker' && shape.type !== 'text')) {
+    if (!shape || (shapeType !== 'sticker' && shapeType !== 'text')) {
         return null
     }
 
     const stagePos = stage.position()
-    const isSticker = shape.type === 'sticker'
+    const isSticker = shapeType === 'sticker'
 
-    const textAreaWidth = shape.width - STICKER_PADDING_X * 2
+    const textAreaWidth = width - STICKER_PADDING_X * 2
 
     const textAreaHeight = isSticker
-        ? shape.height - STICKER_PADDING_TOP - STICKER_PADDING_BOTTOM
+        ? height - STICKER_PADDING_TOP - STICKER_PADDING_BOTTOM
         : 0
 
     const finishEditing = () => {
@@ -49,26 +56,10 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
                     text: value,
                     width: (textAreaRef.current?.offsetWidth ?? 0) / scale
                 }
-            updateShape(shape.id, changes)
 
-            const updatedShape = useCanvasStore.getState().shapes[shape.id]
-
-            const message = {
-                type: 'shape:update',
-                shape: updatedShape,
+            for (const [key, value] of Object.entries(changes)) {
+                shape.set(key, value)
             }
-
-            ws?.send(JSON.stringify(message))
-            pushToUndo({
-                type: 'update',
-                changes: [
-                    {
-                        shapeId: shape.id,
-                        before: shape,
-                        after: updatedShape
-                    }
-                ]
-            })
         }
 
         setEditingTextId(null)
@@ -94,8 +85,8 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     }
 
     const commonTextAreaStyle: React.CSSProperties = {
-        fontSize: getFontSizeNumber(shape.fontSize) ?? 14 * scale,
-        color: shape.strokeStyle,
+        fontSize: getFontSizeNumber(fontSize) ?? 14 * scale,
+        color: strokeStyle,
         background: 'transparent',
         fontFamily: 'Calibri, sans-serif',
         outline: 'none',
@@ -114,8 +105,8 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
                 style={{
                     position: 'absolute',
                     zIndex: 20,
-                    top: (shape.y + shape.height / 2) * scale + stagePos.y,
-                    left: (shape.x + shape.width / 2) * scale + stagePos.x,
+                    top: (y + height / 2) * scale + stagePos.y,
+                    left: (x + width / 2) * scale + stagePos.x,
                     width: textAreaWidth * scale,
                     height: textAreaHeight * scale,
                     transform: 'translate(-50%, -50%)',
@@ -126,7 +117,7 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
             >
                 <textarea
                     ref={textAreaRef}
-                    defaultValue={shape.text}
+                    defaultValue={text}
                     onBlur={finishEditing}
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
@@ -144,17 +135,17 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     return (
         <textarea
             ref={textAreaRef}
-            defaultValue={shape.text}
+            defaultValue={text}
             onBlur={finishEditing}
             onInput={handleInput}
             onKeyDown={handleKeyDown}
             className="absolute"
             style={{
                 zIndex: 20,
-                top: shape.y * scale + stagePos.y,
-                left: shape.x * scale + stagePos.x,
+                top: y * scale + stagePos.y,
+                left: x * scale + stagePos.x,
                 whiteSpace: 'pre',  
-                width: `${shape.width * scale}px`,
+                width: `${width * scale}px`,
                 ...commonTextAreaStyle,
             }}
         />

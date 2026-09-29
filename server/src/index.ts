@@ -1,149 +1,212 @@
 import express from "express";
 import { createServer } from "http";
-import { WebSocketServer, type Server, type WebSocket } from "ws";
 
-export type Shape = {
-    id: string
-    userId: string
-    type: string
-    x: number
-    y: number
-    width?: number
-    height?: number
-    radius?: {x: number, y: number}
-    startX?: number
-    startY?: number
-    points?: {x:number, y:number}[]
-    fillStyle: string
-    strokeStyle: string
-    strokeWidth: number
-    isDeleted: boolean
-}
+//import { Logger } from '@hocuspocus/extension-logger'
+import { Hocuspocus, type WebSocketLike } from '@hocuspocus/server'
+//import { createServer } from 'node:http'
+import crossws from 'crossws/adapters/node'
+//import express from 'express'
 
-type BoardState = {
-  shapes: Record<string, Shape>,
-  shapesOrder: string[]
-}
+const hocuspocus = new Hocuspocus({
+  //extensions: [new Logger()],
+    async onStateless({ payload, document, connection }) {
+        for (const client of document.getConnections()) {
+            if (client !== connection) {
+                client.sendStateless(payload)
+            }
+        }
+    },
+})
 
-type ShapeMessage =
-  | {
-      type: "shape:add"
-      shape: Shape
-      shapesOrder: string[]
-    }
-  | {
-      type: "shape:update"
-      shape: Shape
-    }
-  | {
-      type: "shape:order"
-      shapesOrder: string[]
-    }
+const app = express()
+
+app.get('/', (request, response) => {
+  response.send('Hello World!')
+})
+
+const server = createServer(app)
+
+const ws = crossws({
+  hooks: {
+    open(peer) {
+      const clientConnection = hocuspocus.handleConnection(
+        peer.websocket as unknown as WebSocketLike,
+        peer.request as Request,
+        { user_id: 1234 },
+      )
+      ;(peer as any)._hocuspocus = clientConnection
+    },
+    message(peer, message) {
+      ;(peer as any)._hocuspocus?.handleMessage(message.uint8Array())
+    },
     
-const app = express();
-const server = createServer(app);
-const wss = new WebSocketServer({ server });
+    close(peer, event) {
+      ;(peer as any)._hocuspocus?.handleClose({
+        code: event.code,
+        reason: event.reason,
+      })
+    },
+    error(peer, error) {
+      console.error('WebSocket error for peer:', peer.id)
+      console.error(error)
+    },
+  },
+})
 
-const ALLOWED_ORIGINS = ["http://localhost:5173"]
+server.on('upgrade', (request, socket, head) => {
+  ws.handleUpgrade(request, socket, head)
+})
 
-const clients = new Map<WebSocket, {boardId: string}>()
-const boardsStates = new Map<string, BoardState>()
-
-wss.on("connection", (ws, req) => {
-  const origin = req.headers.origin
-
-  if(!ALLOWED_ORIGINS.includes(origin!)){
-    ws.close(1008, "Origin not allowed")
-    return
-  }
-
-  ws.on("message", (data) => {
-    let message
-
-    try{
-      message = JSON.parse(data.toString())
-
-      if(message.type === "connection"){
-        clients.set(ws, {boardId: message.boardId})
-        const boardState = boardsStates.get(message.boardId)
-        ws.send(JSON.stringify({
-            type: 'board:state',
-            shapes: boardState?.shapes ?? {},
-            shapesOrder: boardState?.shapesOrder ?? [],
-        }))
-        const payload = {type: "connection", content: `${message.userName} entered the room.`}
-        broadcast(wss, ws, payload)
-      }else if(message.type.startsWith("shape:")){
-        handleShapeMessage(message, ws)
-      }
-
-    }catch{
-      ws.send(JSON.stringify({error: 'Invalid JSON'}))
-    }
-  })
-
-  ws.on("error", (err) => console.error("Client error:", err.message));
-  ws.on("close", () => console.log("client disconnected"));
-});
+server.listen(1234, () => console.log('Listening on http://127.0.0.1:1234'))
 
 
-function broadcast(server: Server, sender: WebSocket, message: any) {
-  const payload = JSON.stringify(message);
-  const senderData = clients.get(sender)
-  for (const client of server.clients) {
-    const clientData = clients.get(client)
-    if (client !== sender && client.readyState === 1 && senderData?.boardId === clientData?.boardId) {
-      client.send(payload);
-    }
-  }
-}
 
-function handleShapeMessage(message: ShapeMessage, ws: WebSocket) {
-    const boardId = clients.get(ws)!.boardId
-    const boardState =
-        boardsStates.get(boardId) ?? {
-            shapes: {},
-            shapesOrder: [],
-        }
+// import { WebSocketServer, type Server, type WebSocket } from "ws";
 
-    switch (message.type) {
-        case "shape:add":
-            boardsStates.set(boardId, {
-                ...boardState,
-                shapes: {
-                    ...boardState.shapes,
-                    [message.shape.id]: message.shape,
-                },
-                shapesOrder: message.shapesOrder,
-            })
-            break
+// export type Shape = {
+//     id: string
+//     userId: string
+//     type: string
+//     x: number
+//     y: number
+//     width?: number
+//     height?: number
+//     radius?: {x: number, y: number}
+//     startX?: number
+//     startY?: number
+//     points?: {x:number, y:number}[]
+//     fillStyle: string
+//     strokeStyle: string
+//     strokeWidth: number
+//     isDeleted: boolean
+// }
 
-        case "shape:update": {
-            const existingShape = boardState.shapes[message.shape.id]
+// type BoardState = {
+//   shapes: Record<string, Shape>,
+//   shapesOrder: string[]
+// }
 
-            if (!existingShape) return
+// type ShapeMessage =
+//   | {
+//       type: "shape:add"
+//       shape: Shape
+//       shapesOrder: string[]
+//     }
+//   | {
+//       type: "shape:update"
+//       shape: Shape
+//     }
+//   | {
+//       type: "shape:order"
+//       shapesOrder: string[]
+//     }
+    
+// const app = express();
+// const server = createServer(app);
+// const wss = new WebSocketServer({ server });
 
-            boardsStates.set(boardId, {
-                ...boardState,
-                shapes: {
-                    ...boardState.shapes,
-                    [message.shape.id]: {
-                        ...existingShape,
-                        ...message.shape,
-                    },
-                },
-            })
-            break
-        }
+// const ALLOWED_ORIGINS = ["http://localhost:5173"]
 
-        case "shape:order":
-            boardsStates.set(boardId, {
-                ...boardState,
-                shapesOrder: message.shapesOrder,
-            })
-            break
-    }
+// const clients = new Map<WebSocket, {boardId: string}>()
+// const boardsStates = new Map<string, BoardState>()
 
-    broadcast(wss, ws, message)
-}
-server.listen(3000, () => console.log("listening on :3000"));
+// wss.on("connection", (ws, req) => {
+//   const origin = req.headers.origin
+
+//   if(!ALLOWED_ORIGINS.includes(origin!)){
+//     ws.close(1008, "Origin not allowed")
+//     return
+//   }
+
+//   ws.on("message", (data) => {
+//     let message
+
+//     try{
+//       message = JSON.parse(data.toString())
+
+//       if(message.type === "connection"){
+//         clients.set(ws, {boardId: message.boardId})
+//         const boardState = boardsStates.get(message.boardId)
+//         ws.send(JSON.stringify({
+//             type: 'board:state',
+//             shapes: boardState?.shapes ?? {},
+//             shapesOrder: boardState?.shapesOrder ?? [],
+//         }))
+//         const payload = {type: "connection", content: `${message.userName} entered the room.`}
+//         broadcast(wss, ws, payload)
+//       }else if(message.type.startsWith("shape:")){
+//         handleShapeMessage(message, ws)
+//       }
+
+//     }catch{
+//       ws.send(JSON.stringify({error: 'Invalid JSON'}))
+//     }
+//   })
+
+//   ws.on("error", (err) => console.error("Client error:", err.message));
+//   ws.on("close", () => console.log("client disconnected"));
+// });
+
+
+// function broadcast(server: Server, sender: WebSocket, message: any) {
+//   const payload = JSON.stringify(message);
+//   const senderData = clients.get(sender)
+//   for (const client of server.clients) {
+//     const clientData = clients.get(client)
+//     if (client !== sender && client.readyState === 1 && senderData?.boardId === clientData?.boardId) {
+//       client.send(payload);
+//     }
+//   }
+// }
+
+// function handleShapeMessage(message: ShapeMessage, ws: WebSocket) {
+//     const boardId = clients.get(ws)!.boardId
+//     const boardState =
+//         boardsStates.get(boardId) ?? {
+//             shapes: {},
+//             shapesOrder: [],
+//         }
+
+//     switch (message.type) {
+//         case "shape:add":
+//             boardsStates.set(boardId, {
+//                 ...boardState,
+//                 shapes: {
+//                     ...boardState.shapes,
+//                     [message.shape.id]: message.shape,
+//                 },
+//                 shapesOrder: message.shapesOrder,
+//             })
+//             break
+
+//         case "shape:update": {
+//             const existingShape = boardState.shapes[message.shape.id]
+
+//             if (!existingShape) return
+
+//             boardsStates.set(boardId, {
+//                 ...boardState,
+//                 shapes: {
+//                     ...boardState.shapes,
+//                     [message.shape.id]: {
+//                         ...existingShape,
+//                         ...message.shape,
+//                     },
+//                 },
+//             })
+//             break
+//         }
+
+//         case "shape:order":
+//             boardsStates.set(boardId, {
+//                 ...boardState,
+//                 shapesOrder: message.shapesOrder,
+//             })
+//             break
+//     }
+
+//     broadcast(wss, ws, message)
+// }
+// server.listen(3000, () => console.log("listening on :3000"));
+
+

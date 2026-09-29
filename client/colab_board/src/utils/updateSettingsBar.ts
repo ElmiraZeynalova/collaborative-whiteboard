@@ -1,8 +1,9 @@
-import { type Shape } from "../types/shapes"
+import { type YShape } from "../types/shapes"
 import { useToolStore } from "../store/toolStore"
 import type { ToolType } from "../canvas/tools/Tool"
+import {getShapeType, getShapeStringValue, getShapeNumber} from '../utils/yShapeGetters'
 
-export function updateSettingsBar(shape: Shape) {
+export function updateSettingsBar(shape: YShape) {
     const {
         setFontSize,
         setTextAlign,
@@ -11,23 +12,29 @@ export function updateSettingsBar(shape: Shape) {
         setStrokeWidth
     } = useToolStore.getState()
 
-    setStrokeColor(shape.strokeStyle)
-    setStrokeWidth(shape.strokeWidth)
+    const shapeType = getShapeType(shape)
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const strokeWidth = getShapeNumber(shape, 'strokeWidth')
+    const fillStyle = getShapeStringValue(shape, 'fillStyle')
+    const fontSize = getShapeStringValue(shape, 'fontSize')
+    const textAlign = getShapeStringValue(shape, 'textAlign')
 
-    if (shape.type === 'rect' ||
-        shape.type === 'ellipse' ||
-        shape.type === 'romb' ||
-        shape.type === 'sticker') {
-        setFillColor(shape.fillStyle)
+    setStrokeColor(strokeStyle)
+    setStrokeWidth(strokeWidth)
+
+    if (shapeType === 'rect' ||
+        shapeType === 'ellipse' ||
+        shapeType === 'romb' ||
+        shapeType === 'sticker') {
+        setFillColor(fillStyle)
     }
 
-    if (shape.type === 'text' || shape.type === 'sticker') {
-        console.log(shape.fontSize)
-        setFontSize(shape.fontSize)
+    if (shapeType === 'text' || shapeType === 'sticker') {
+        setFontSize(fontSize)
     }
 
-    if (shape.type === 'text') {
-        setTextAlign(shape.textAlign)
+    if (shapeType === 'text') {
+        setTextAlign(textAlign)
     }
 }
 

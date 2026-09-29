@@ -1,22 +1,26 @@
 import type Konva from 'konva'
-import type { Shape } from '../types/shapes'
+import type { ShapeChanges, YShape, YShapeValue } from '../types/shapes'
 import { moveShape } from '../utils/moveShape'
-import { useCanvasStore } from '../store/canvasStore'
-import { useClientStore } from '../store/clientStore'
+import {getShapeNumber, getShapePoints, getShapeRadius, getShapeType } from '../utils/yShapeGetters'
+const ABSOLUTE_POSITION_TYPES = ['rect', 'ellipse', 'romb', 'sticker', 'text', 'arrow']
 
-const ABSOLUTE_POSITION_TYPES: Shape['type'][] = ['rect', 'ellipse', 'romb', 'sticker', 'text', 'arrow']
+function getDragDelta(shape: YShape, node: Konva.Node) {
+    const shapeType = getShapeType(shape)
 
-function getDragDelta(shape: Shape, node: Konva.Node) {
-    if (shape.type === 'line') {
+    if (shapeType === 'line') {
         return { dx: node.x(), dy: node.y(), resetNode: true }
     }
-    if (shape.type === 'arrow') {
-        return { dx: node.x() - shape.startX, dy: node.y() - shape.startY, resetNode: false }
+    if (shapeType === 'arrow') {
+        const startX = getShapeNumber(shape, 'startX')
+        const startY = getShapeNumber(shape, 'startY')
+        return { dx: node.x() - startX, dy: node.y() - startY, resetNode: false }
     }
-    if (ABSOLUTE_POSITION_TYPES.includes(shape.type)) {
-        return { dx: node.x() - shape.x, dy: node.y() - shape.y, resetNode: false }
+    if (ABSOLUTE_POSITION_TYPES.includes(shapeType)) {
+        const x = getShapeNumber(shape, 'x')
+        const y = getShapeNumber(shape, 'y')
+        return { dx: node.x() - x, dy: node.y() - y, resetNode: false }
     }
-    if (shape.type === 'pencil' || shape.type === 'eraser') {
+    if (shapeType === 'pencil' || shapeType === 'eraser') {
         return {
             dx: node.x(),
             dy: node.y(),
@@ -26,81 +30,65 @@ function getDragDelta(shape: Shape, node: Konva.Node) {
     return { dx: node.x(), dy: node.y(), resetNode: true }
 }
 
-export function handleShapeDragEnd(shape: Shape, node: Konva.Node) {
-    const shapeBeforeChange = useCanvasStore.getState().shapes[shape.id]
+export function handleShapeDragEnd(shape: YShape, node: Konva.Node) {
     const { dx, dy, resetNode } = getDragDelta(shape, node)
-    const changes = moveShape(shape, dx, dy)
+    const changes: ShapeChanges = moveShape(shape, dx, dy)
 
-    useCanvasStore.getState().updateShape(shape.id, changes)
+
+    for (const [key, value] of Object.entries(changes)) {
+        shape.set(key, value)
+    }
 
     if (resetNode) {
         node.position({ x: 0, y: 0 })   
     }
-
-    const updated = useCanvasStore.getState().shapes[shape.id]
-    useClientStore.getState().ws?.send(JSON.stringify({ type: 'shape:update', shape: updated }))
-    useCanvasStore.getState().pushToUndo({type: 'update', changes: [ 
-        {
-            shapeId: shape.id,
-            before: shapeBeforeChange,
-            after: updated
-        }
-    ]})
 }
 
-export function handleTransformEnd(shape: Shape, node: Konva.Node) {
-    const shapeBeforeChange = useCanvasStore.getState().shapes[shape.id]
+export function handleTransformEnd(shape: YShape, node: Konva.Node) {
+    const shapeType = getShapeType(shape)
+
     const scaleX = node.scaleX()
     const scaleY = node.scaleY()
 
     node.scaleX(1)
     node.scaleY(1)
 
-    let changes: Record<string, unknown> = {
+    let changes: Record<string, YShapeValue> = {
         x: node.x(),
         y: node.y(),
         rotation: node.rotation(),
     }
 
-    if (shape.type === 'rect' || shape.type === 'romb' || shape.type === 'sticker') {
+    if (shapeType === 'rect' || shapeType === 'romb' || shapeType === 'sticker') {
+        const width = getShapeNumber(shape, 'width')
+        const height = getShapeNumber(shape, 'height')
         changes = {
             ...changes,
-            width: Math.max(5, shape.width * scaleX),
-            height: Math.max(5, shape.height * scaleY),
+            width: Math.max(5, width * scaleX),
+            height: Math.max(5, height * scaleY),
         }
-    } else if (shape.type === 'ellipse') {
+    } else if (shapeType === 'ellipse') {
+        const radius = getShapeRadius(shape) 
         changes = {
             ...changes,
             radius: {
-                x: Math.max(5, shape.radius.x * scaleX),
-                y: Math.max(5, shape.radius.y * scaleY),
+                x: Math.max(5, radius.x * scaleX),
+                y: Math.max(5, radius.y * scaleY),
             },
         }
-    } else if (shape.type === 'pencil' || shape.type === 'eraser') {
+    } else if (shapeType === 'pencil' || shapeType === 'eraser') {
+        const points = getShapePoints(shape) 
         changes = {
             ...changes,
-            points: shape.points.map(point => ({
+            points: points.map(point => ({
                 x: point.x * scaleX,
                 y: point.y * scaleY,
             })),
         }
     }
 
-    useCanvasStore.getState().updateShape(shape.id, changes)
+    for (const [key, value] of Object.entries(changes)) {
+        shape.set(key, value)
+    }
 
-    const updated = useCanvasStore.getState().shapes[shape.id]
-
-    useClientStore.getState().ws?.send(
-        JSON.stringify({
-            type: 'shape:update',
-            shape: updated,
-        })
-    )
-    useCanvasStore.getState().pushToUndo({type: 'update', changes: [ 
-        {
-            shapeId: shape.id,
-            before: shapeBeforeChange,
-            after: updated
-        }
-    ]})
 }
