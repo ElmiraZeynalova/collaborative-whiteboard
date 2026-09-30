@@ -4,8 +4,8 @@ import RombShapeRenderer from './RombShapeRenderer'
 import {Rect, Text, Ellipse, Group} from 'react-konva'
 import type { KonvaEventObject, Node } from 'konva/lib/Node'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
-import { registerShapeNode } from '../canvas/shapeNodeRegistry'
-import { handleShapeDragEnd } from '../canvas/shapeInteractions'
+import { registerShapeNode } from '../utils/shapeNodeRegistry'
+import { handleShapeDragEnd } from '../utils/shapeInteractions'
 import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from "../store/canvasStore"
 import LineShapeRenderer from "./LineShapeRenderer"

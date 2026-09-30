@@ -7,6 +7,7 @@ import LineSettings from './settings/LineSettings'
 import StickerSettings from './settings/StickerSettings'
 import AllSettings from './settings/AllSettings'
 import { Icon } from '@iconify/react'
+import { getShapeType } from '../../utils/yShapeGetters'
 
 const bars: Record<string, React.ComponentType> = {
     rect: ShapeSettings,
@@ -24,14 +25,16 @@ export default function SettingsBar(){
     const tool = useToolStore(state => state.tool)
     if(!tool) return
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
-    const shapes = useCanvasStore(state => state.shapes)
+    const yShapes = useCanvasStore(state => state.yShapes)
 
     let Settings
 
     if (tool.type !== 'selection') {
         Settings = bars[tool.type]
     } else if (selectedShapesIds.length === 1) {
-        const type = shapes[selectedShapesIds[0]].type
+        const shape = yShapes?.get(selectedShapesIds[0])
+        if(!shape) return
+        const type = getShapeType(shape)
         Settings = bars[type]
     } else if (selectedShapesIds.length > 1) {
         Settings = bars.all

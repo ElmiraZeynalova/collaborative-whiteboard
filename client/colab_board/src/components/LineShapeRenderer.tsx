@@ -29,6 +29,7 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
             y={0}
             draggable
             onDragEnd={(e) => {
+
                 const dx = e.target.x()
                 const dy = e.target.y()
 
@@ -87,6 +88,7 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
 function LineShapeResizeHandles({shape}: {shape: YShape}) {
 
     const handleStartDragMove = (e: KonvaEventObject<DragEvent>) => {
+
         e.cancelBubble = true
 
         shape.set('startX', e.target.x())
@@ -95,11 +97,33 @@ function LineShapeResizeHandles({shape}: {shape: YShape}) {
 
     const handleEndDragMove = (e: KonvaEventObject<DragEvent>) => {
         e.cancelBubble = true
-
         shape.set('x', e.target.x())
         shape.set('y', e.target.y())
     }
 
+    const handleStartDragEnd = (e: KonvaEventObject<DragEvent>) => {
+        e.cancelBubble = true
+
+        const x = e.target.x()
+        const y = e.target.y()
+
+        shape.set('startX', x)
+        shape.set('startY', y)
+
+        e.target.position({ x, y })
+    }
+
+    const handleEndDragEnd = (e: KonvaEventObject<DragEvent>) => {
+        e.cancelBubble = true
+
+        const x = e.target.x()
+        const y = e.target.y()
+
+        shape.set('x', x)
+        shape.set('y', y)
+
+        e.target.position({ x, y })
+    }
     const scale = useCanvasStore(state => state.scale)
 
     const radius = 6 / scale
@@ -120,6 +144,7 @@ function LineShapeResizeHandles({shape}: {shape: YShape}) {
                 strokeWidth={strokeWidth}
                 draggable
                 onDragMove={handleStartDragMove}
+                onDragEnd={handleStartDragEnd}
             />
 
             <Circle
@@ -131,6 +156,7 @@ function LineShapeResizeHandles({shape}: {shape: YShape}) {
                 strokeWidth={strokeWidth}
                 draggable
                 onDragMove={handleEndDragMove}
+                onDragEnd={handleEndDragEnd}
             />
         </>
     )

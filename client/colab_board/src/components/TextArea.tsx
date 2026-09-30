@@ -7,21 +7,13 @@ import { getShapeStringValue, getShapeType, getShapeNumber } from "../utils/ySha
 
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)
-    if(!editingTextId) return
     const setEditingTextId = useCanvasStore((state) => state.setEditingTextId)
     const shapes = useCanvasStore((state) => state.yShapes)
     const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
-    const shape = shapes?.get(editingTextId)
-    if(!shape) return 
-    const shapeType = getShapeType(shape) 
-    const x = getShapeNumber(shape, 'x')
-    const y = getShapeNumber(shape, 'y')
-    const width = getShapeNumber(shape, 'width')
-    const height = getShapeNumber(shape, 'height')
-    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
-    const text = getShapeStringValue(shape, 'text')
-    const fontSize = getShapeStringValue(shape, 'fontSize')
+
+    const shape = editingTextId ? shapes?.get(editingTextId) : undefined
+
 
     useEffect(() => {
         if (!editingTextId) return
@@ -33,9 +25,23 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
         return () => cancelAnimationFrame(frame)
     }, [editingTextId])
 
+
+    if (!editingTextId || !shape) return null
+
+    const shapeType = getShapeType(shape)
+
+
     if (!shape || (shapeType !== 'sticker' && shapeType !== 'text')) {
         return null
     }
+
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const width = getShapeNumber(shape, 'width')
+    const height = getShapeNumber(shape, 'height')
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const text = getShapeStringValue(shape, 'text')
+    const fontSize = getShapeStringValue(shape, 'fontSize')
 
     const stagePos = stage.position()
     const isSticker = shapeType === 'sticker'

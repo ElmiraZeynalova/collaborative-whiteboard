@@ -2,71 +2,54 @@ import Tool from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
-import type {LineShape, ShapeChanges } from "../../types/shapes"
+import * as Y from 'yjs'
+import type { YShape } from '../../types/shapes'
 
 export default class Line extends Tool{
     readonly type = 'line'
 
     onPointerDown(pos: { x: number; y: number }): void {
-        const addShape = useCanvasStore.getState().addShape
-        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+        const canvasStore = useCanvasStore.getState()
+        const toolStore = useToolStore.getState()
+        const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
         const userId = useClientStore.getState().userId
         if(!userId) return
 
-        const strokeColor = useToolStore.getState().strokeColor
-        const strokeWidth = useToolStore.getState().strokeWidth
+        const strokeColor = toolStore.strokeColor
+        const strokeWidth = toolStore.strokeWidth
 
         const shapeId =  crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
-        const lineShape: LineShape = {
-            id: shapeId,
-            userId: userId,
-            type: this.type,
-            isDeleted: false,
-            startX: pos.x,
-            startY: pos.y,
-            x: pos.x,
-            y: pos.y,
-            strokeStyle: strokeColor,
-            strokeWidth: strokeWidth,
-        }
+        const yLineShape = new Y.Map() as YShape
+        yLineShape.set("id", shapeId)
+        yLineShape.set("userId", userId)
+        yLineShape.set("type", this.type)
+        yLineShape.set("isDeleted", false)
+        yLineShape.set("x", pos.x)
+        yLineShape.set("y", pos.y)
+        yLineShape.set("startX", pos.x)
+        yLineShape.set("startY", pos.y)
+        yLineShape.set("strokeStyle", strokeColor)
+        yLineShape.set("strokeWidth", strokeWidth)
 
-        addShape(lineShape)
+        canvasStore.yShapes?.set(shapeId, yLineShape)
+        canvasStore.yShapesOrder?.push([shapeId])
     }
+
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const updateShape = useCanvasStore.getState().updateShape
+        const canvasStore = useCanvasStore.getState()
+        const yLineShape = canvasStore.yShapes?.get(shapeId)
 
-        const changes: ShapeChanges = {
-            x: pos.x,
-            y: pos.y,
-        }
-        updateShape(shapeId, changes)
+        if (!yLineShape) return
+
+        yLineShape.set('x', pos.x)
+        yLineShape.set('y', pos.y)
     }
-
-    onPointerUp(shapeId: string): void {
-        const store = useCanvasStore.getState()
-        const shape = store.shapes[shapeId]
-
-        if (!shape || shape.type !== this.type) return
-
-        const message = {
-            type: "shape:add",
-            shape,
-            shapesOrder: store.shapesOrder,
-        }
-
-        useClientStore.getState().ws?.send(
-            JSON.stringify(message)
-        )
-
-        store.setCurrentlyDrawingShapeId(null)
-
-        store.pushToUndo({
-            type: "add",
-            shapes: [shape],
-        })
+    
+    onPointerUp(): void {
+        useCanvasStore.getState().setCurrentlyDrawingShapeId(null)
     }
 }
    

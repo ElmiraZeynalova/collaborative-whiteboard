@@ -2,70 +2,49 @@ import Tool from './Tool'
 import { useToolStore } from '../../store/toolStore';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useClientStore } from '../../store/clientStore';
-import { type StickerShape } from '../../types/shapes';
-
+import * as Y from 'yjs'
+import type { YShape } from '../../types/shapes'
 
 export default class Sticker extends Tool{
     readonly type = 'sticker'
     
     onPointerDown(pos: { x: number; y: number }): void {
-        const addShape = useCanvasStore.getState().addShape
-        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
-        const setEditingTextId = useCanvasStore.getState().setEditingTextId
+        const canvasStore = useCanvasStore.getState()
+        const toolStore = useToolStore.getState()
+        const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
         const userId = useClientStore.getState().userId
         if(!userId) return
 
-
-        const fillColor = useToolStore.getState().fillColor
-        const strokeColor = useToolStore.getState().strokeColor
-        const strokeWidth = useToolStore.getState().strokeWidth
-        const fontSize = useToolStore.getState().fontSize
+        const strokeColor = toolStore.strokeColor
+        const strokeWidth = toolStore.strokeWidth
+        const fillColor = toolStore.fillColor
+        const fontSize = toolStore.fontSize
 
         const shapeId =  crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
-        const stickerShape: StickerShape = {
-            id: shapeId,
-            userId: userId,
-            type: this.type,
-            isDeleted: false,
-            x: pos.x,
-            y: pos.y,
-            fillStyle: fillColor,
-            strokeStyle: strokeColor,
-            strokeWidth: strokeWidth,
-            fontSize: fontSize,
-            text: "",
-            width: 200, 
-            height: 200,
-        }
+        const yStickerShape = new Y.Map() as YShape
+        yStickerShape.set("id", shapeId)
+        yStickerShape.set("userId", userId)
+        yStickerShape.set("type", this.type)
+        yStickerShape.set("isDeleted", false)
+        yStickerShape.set("x", pos.x)
+        yStickerShape.set("y", pos.y)
+        yStickerShape.set("width", 200)
+        yStickerShape.set("height", 200)
+        yStickerShape.set("fillStyle", fillColor)
+        yStickerShape.set("strokeStyle", strokeColor)
+        yStickerShape.set("strokeWidth", strokeWidth)
+        yStickerShape.set("fontSize", fontSize)
+        yStickerShape.set("text", "")
 
-        addShape(stickerShape)
-        setEditingTextId(shapeId)
+        canvasStore.yShapes?.set(shapeId, yStickerShape)
+        canvasStore.yShapesOrder?.push([shapeId])
 
+        canvasStore.setEditingTextId(shapeId)
     }
 
-    onPointerUp(shapeId: string): void {
-        const store = useCanvasStore.getState()
-        const shape = store.shapes[shapeId]
-
-        if (!shape || shape.type !== this.type) return
-
-        const message = {
-            type: "shape:add",
-            shape,
-            shapesOrder: store.shapesOrder,
-        }
-
-        useClientStore.getState().ws?.send(
-            JSON.stringify(message)
-        )
-
-        store.setCurrentlyDrawingShapeId(null)
-
-        store.pushToUndo({
-            type: "add",
-            shapes: [shape],
-        })
+    onPointerUp(): void {
+        useCanvasStore.getState().setCurrentlyDrawingShapeId(null)
     }
 }

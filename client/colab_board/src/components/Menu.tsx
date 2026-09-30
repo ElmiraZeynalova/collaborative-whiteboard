@@ -1,81 +1,40 @@
 import { useCanvasStore } from "../store/canvasStore"
-import { useClientStore } from "../store/clientStore"
-import type { Shape } from "../types/shapes"
 import { moveBackward, moveForward, moveToFront, moveToBack } from "../utils/shapeLayering"
 
 const menuOptions = ["Duplicate",  "Bring forward", "Send backward", "Bring to front", "Send to back", "Delete"]
 
 export default function Menu({className, closeModal, position}: {className: string, closeModal: () => void, position: { x: number; y: number }}){
-    const shapes = useCanvasStore(state => state.shapes)
+    const yShapes = useCanvasStore(state => state.yShapes)
+    const yShapesOrder = useCanvasStore(state => state.yShapesOrder)
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
-    const pushToUndo = useCanvasStore(state => state.pushToUndo)
-    const ws = useClientStore(state => state.ws)
-    const updateShape = useCanvasStore(state => state.updateShape)
-    const addShape = useCanvasStore(state => state.addShape)
-    const shapesOrder = useCanvasStore(state => state.shapesOrder)
 
     function handleClick(menuOption: string){
         if (menuOption === "Delete") {
-            const deletedShapes: Shape[] = []
-
             for (const id of selectedShapesIds) {
-                const shape = shapes[id]
-
-                updateShape(id, {
-                    isDeleted: true,
-                })
-
-                const updatedShape = useCanvasStore.getState().shapes[id]
-
-                ws?.send(JSON.stringify({
-                    type: 'shape:update',
-                    shape: updatedShape,
-                }))
-
-                deletedShapes.push(shape)
+                const shape = yShapes?.get(id)
+                shape?.set("isDeleted", true)
             }
-
-            pushToUndo({
-                type: 'delete',
-                shapes: deletedShapes,
-            })
         }else if (menuOption === 'Duplicate') {
-            const duplicatedShapes: Shape[] = []
-
             for (const id of selectedShapesIds) {
-                const shape = shapes[id]
-                if (!shape) continue
-
-                const duplicatedShape = {
-                    ...shape,
-                    id: crypto.randomUUID(),
-                }
-
-                addShape(duplicatedShape)
-
-                ws?.send(JSON.stringify({
-                    type: 'shape:add',
-                    shape: duplicatedShape,
-                    shapesOrder: useCanvasStore.getState().shapesOrder
-                }))
-
-                duplicatedShapes.push(duplicatedShape)
-            }
-
-            if (duplicatedShapes.length > 0) {
-                pushToUndo({
-                    type: 'add',
-                    shapes: duplicatedShapes,
-                })
+                const shape = yShapes?.get(id)
+                if(!shape) return
+                const newId = crypto.randomUUID()
+                shape?.set("id", newId)
+                yShapes?.set(newId, shape)
+                yShapesOrder?.push([newId])
             }
         }else if(menuOption === "Bring forward"){
-            moveForward(shapesOrder, selectedShapesIds)
+            if(!yShapesOrder) return
+            moveForward(yShapesOrder, selectedShapesIds)
         }else if(menuOption === "Send backward"){
-            moveBackward(shapesOrder, selectedShapesIds)
+            if(!yShapesOrder) return
+            moveBackward(yShapesOrder, selectedShapesIds)
         }else if(menuOption === "Bring to front"){
-            moveToFront(shapesOrder, selectedShapesIds)
+            if(!yShapesOrder) return
+            moveToFront(yShapesOrder, selectedShapesIds)
         }else if(menuOption === "Send to back"){
-            moveToBack(shapesOrder, selectedShapesIds)
+            if(!yShapesOrder) return
+            moveToBack(yShapesOrder, selectedShapesIds)
 
         }
 

@@ -1,4 +1,4 @@
-import { useToolStore, type FontSize } from "../../../store/toolStore";
+import { useToolStore} from "../../../store/toolStore";
 
 export default function FontSize(){
     const setFontSize = useToolStore(state => state.setFontSize)
@@ -8,7 +8,7 @@ export default function FontSize(){
     return(
         <div className="flex gap-2 items-center">
             <p className="text-[#686868] whitespace-nowrap">Font size</p>
-            <div className="flex gap-2 items-center">{(["S", "M", "L", "XL"] as FontSize[]).map((item) => (
+            <div className="flex gap-2 items-center">{(["S", "M", "L", "XL"] as const).map((item) => (
                 <button 
                     key={item}
                     onClick={() => {

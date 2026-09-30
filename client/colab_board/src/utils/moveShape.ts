@@ -1,5 +1,6 @@
 import type {ShapeChanges, YShape} from '../types/shapes'
 import { getShapeNumber, getShapePoints, getShapeType } from './yShapeGetters'
+
 export function moveShape(shape: YShape, dx: number, dy: number): ShapeChanges{
     const x = getShapeNumber(shape, 'x')
     const y = getShapeNumber(shape, 'y')

@@ -1,89 +1,64 @@
-import { useCanvasStore } from "../store/canvasStore";
-import { useClientStore } from "../store/clientStore";
+import * as Y from 'yjs'
 
-export function moveForward(
-    shapesOrder: string[],
-    selectedShapesIds: string[]
-) {
-    const store = useCanvasStore.getState()
-    const selected = new Set(selectedShapesIds)
-    const newOrder = [...shapesOrder]
-
-    for (let i = newOrder.length - 2; i >= 0; i--) {
-        if (
-            selected.has(newOrder[i]) &&
-            !selected.has(newOrder[i + 1])
-        ) {
-            [newOrder[i], newOrder[i + 1]] = [
-                newOrder[i + 1],
-                newOrder[i],
-            ]
-        }
+function getIdIndex(id: string, order: Y.Array<string>) {
+    for (let i = 0; i < order.length; i++) {
+        if (order.get(i) === id) return i
     }
 
-    store.setShapesOrder(newOrder)
-    store.pushToUndo({
-        type: "reorder",
-        before: shapesOrder,
-        after: newOrder,
-    })
-    const ws = useClientStore.getState().ws
-    ws?.send(JSON.stringify({type: "shape:order", shapesOrder: useCanvasStore.getState().shapesOrder}))
+    return -1
+}
+
+export function moveForward(
+    order: Y.Array<string>,
+    selectedIds: string[]
+) {
+    for (const id of selectedIds) {
+        const index = getIdIndex(id, order)
+
+        if (index === -1 || index === order.length - 1) {
+            continue
+        }
+
+        const nextId = order.get(index + 1)
+
+        order.delete(index, 2)
+        order.insert(index, [nextId, id])
+    }
 }
 
 export function moveBackward(
-    shapesOrder: string[],
-    selectedShapesIds: string[]
+    order: Y.Array<string>,
+    selectedIds: string[]
 ) {
-    const store = useCanvasStore.getState()
-    const selected = new Set(selectedShapesIds)
-    const newOrder = [...shapesOrder]
+    for (const id of selectedIds) {
+        const index = getIdIndex(id, order)
 
-    for (let i = 1; i < newOrder.length; i++) {
-        if (
-            selected.has(newOrder[i]) &&
-            !selected.has(newOrder[i - 1])
-        ) {
-            [newOrder[i], newOrder[i - 1]] = [
-                newOrder[i - 1],
-                newOrder[i],
-            ]
+        if (index <= 0) {
+            continue
         }
+
+        const prevId = order.get(index - 1)
+
+        order.delete(index - 1, 2)
+        order.insert(index - 1, [id, prevId])
     }
-
-    store.setShapesOrder(newOrder)
-    store.pushToUndo({
-        type: "reorder",
-        before: shapesOrder,
-        after: newOrder,
-    })
-    const ws = useClientStore.getState().ws
-    ws?.send(JSON.stringify({type: "shape:order", shapesOrder: useCanvasStore.getState().shapesOrder}))
 }
 
-export function moveToFront(shapesOrder: string[], selectedShapesIds: string[]){
-    const store = useCanvasStore.getState()
-    const newOrder = [...shapesOrder.filter(id => !selectedShapesIds.includes(id)), ...selectedShapesIds]
-    store.setShapesOrder(newOrder)
-    store.pushToUndo({
-        type: "reorder",
-        before: shapesOrder,
-        after: newOrder,
-    })
-    const ws = useClientStore.getState().ws
-    ws?.send(JSON.stringify({type: "shape:order", shapesOrder: useCanvasStore.getState().shapesOrder}))
+export function moveToFront(yShapesOrder: Y.Array<string>, selectedShapesIds: string[]){
+    for(const id of selectedShapesIds){
+        const thisIdIndex = getIdIndex(id, yShapesOrder)
+    
+        yShapesOrder.delete(thisIdIndex, 1)
+        yShapesOrder.push([id])
+    }
 }
 
-export function moveToBack(shapesOrder: string[], selectedShapesIds: string[]){
-    const store = useCanvasStore.getState()
-    const newOrder = [...selectedShapesIds, ...shapesOrder.filter(id => !selectedShapesIds.includes(id))]
-    store.setShapesOrder(newOrder)
-    store.pushToUndo({
-        type: "reorder",
-        before: shapesOrder,
-        after: newOrder,
-    })
-    const ws = useClientStore.getState().ws
-    ws?.send(JSON.stringify({type: "shape:order", shapesOrder: useCanvasStore.getState().shapesOrder}))
 
+export function moveToBack(yShapesOrder: Y.Array<string>, selectedShapesIds: string[]){
+    for(const id of selectedShapesIds){
+        const thisIdIndex = getIdIndex(id, yShapesOrder)
+    
+        yShapesOrder.delete(thisIdIndex, 1)
+        yShapesOrder.insert(0, [id])
+    }
 }

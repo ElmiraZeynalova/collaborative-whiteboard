@@ -2,77 +2,60 @@ import Tool from './Tool'
 import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
-import type { RombShape, ShapeChanges } from "../../types/shapes"
+import * as Y from 'yjs'
+import type { YShape } from '../../types/shapes'
 
 export default class Romb extends Tool{
     readonly type = 'romb'
 
     onPointerDown(pos: { x: number; y: number }): void {
-        const addShape = useCanvasStore.getState().addShape
-        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
+        const canvasStore = useCanvasStore.getState()
+        const toolStore = useToolStore.getState()
+        const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
         const userId = useClientStore.getState().userId
         if(!userId) return
 
-        const strokeColor = useToolStore.getState().strokeColor
-        const strokeWidth = useToolStore.getState().strokeWidth
-        const fillColor = useToolStore.getState().fillColor
+        const strokeColor = toolStore.strokeColor
+        const strokeWidth = toolStore.strokeWidth
+        const fillColor = toolStore.fillColor
 
         const shapeId =  crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
-        const rombShape: RombShape = {
-            id: shapeId,
-            userId: userId,
-            type: this.type,
-            isDeleted: false,
-            x: pos.x,
-            y: pos.y,
-            fillStyle: fillColor,
-            strokeStyle: strokeColor,
-            strokeWidth: strokeWidth,
-            width: 0,
-            height: 0
-        }
+        const yRombShape = new Y.Map() as YShape
+        yRombShape.set("id", shapeId)
+        yRombShape.set("userId", userId)
+        yRombShape.set("type", this.type)
+        yRombShape.set("isDeleted", false)
+        yRombShape.set("x", pos.x)
+        yRombShape.set("y", pos.y)
+        yRombShape.set("width", 0)
+        yRombShape.set("height", 0)
+        yRombShape.set("fillStyle", fillColor)
+        yRombShape.set("strokeStyle", strokeColor)
+        yRombShape.set("strokeWidth", strokeWidth)
 
-        addShape(rombShape)
+        canvasStore.yShapes?.set(shapeId, yRombShape)
+        canvasStore.yShapesOrder?.push([shapeId])
     }
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const updateShape = useCanvasStore.getState().updateShape
-        const shape = useCanvasStore.getState().shapes[shapeId]
+        const canvasStore = useCanvasStore.getState()
+        const yRombShape = canvasStore.yShapes?.get(shapeId)
 
-        if (!shape || shape.type !== this.type) return
-        const thisShape: RombShape = shape
+        if (!yRombShape) return
 
-        const changes: ShapeChanges = {
-            width: pos.x - thisShape.x,
-            height: pos.y - thisShape.y
-        }
-        updateShape(shapeId, changes)
+        const x = yRombShape.get('x')
+        const y = yRombShape.get('y')
+
+        if (typeof x !== 'number' || typeof y !== 'number') return
+
+        yRombShape.set('width', pos.x - x)
+        yRombShape.set('height', pos.y - y)
     }
 
-    onPointerUp(shapeId: string): void {
-        const store = useCanvasStore.getState()
-        const shape = store.shapes[shapeId]
-
-        if (!shape || shape.type !== this.type) return
-
-        const message = {
-            type: "shape:add",
-            shape,
-            shapesOrder: store.shapesOrder,
-        }
-
-        useClientStore.getState().ws?.send(
-            JSON.stringify(message)
-        )
-
-        store.setCurrentlyDrawingShapeId(null)
-
-        store.pushToUndo({
-            type: "add",
-            shapes: [shape],
-        })
+    onPointerUp(): void {
+        useCanvasStore.getState().setCurrentlyDrawingShapeId(null)
     }
 }
     

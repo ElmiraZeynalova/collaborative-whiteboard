@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { Stage, Layer, Rect, Transformer } from 'react-konva'
 import Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
@@ -8,26 +8,25 @@ import { useToolStore } from '../store/toolStore'
 import { getToolInstance } from '../canvas/tools/ToolManager'
 import Tool from '../canvas/tools/Tool'
 import TextArea from './TextArea'
-import { getShapeNodes } from '../canvas/shapeNodeRegistry'
-import { handleTransformEnd } from '../canvas/shapeInteractions'
-import { useClientStore } from '../store/clientStore'
+import { getShapeNodes } from '../utils/shapeNodeRegistry'
+import { handleTransformEnd } from '../utils/shapeInteractions'
 import type { ShapeChanges, YShape } from '../types/shapes'
 import Menu from './Menu'
 import { useHocuspocusProvider } from '@hocuspocus/provider-react'
+import { getShapeType } from '../utils/yShapeGetters'
+import * as Y from 'yjs'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
 const MAX_SCALE = 10
 
 export default function Canvas() {
-
     const provider = useHocuspocusProvider()
     const ydoc = provider.document
     const yShapes = ydoc.getMap<YShape>('shapes')
     const yShapesOrder = ydoc.getArray<string>('shapesOrder')
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
-    const shapes = useCanvasStore(state => state.shapes)
     const toolInstanceRef = useRef<Tool | null>(null)
     const currentlyDrawingShapeId = useCanvasStore(state => state.currentlyDrawingShapeId)
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
@@ -43,30 +42,48 @@ export default function Canvas() {
     const strokeWidth = useToolStore(state => state.strokeWidth)
     const fontSize = useToolStore(state => state.fontSize)
     const textAlign = useToolStore(state => state.textAlign)
-    const ws = useClientStore(state => state.ws)
-    const updateShape = useCanvasStore(state => state.updateShape)
-    const pushToUndo = useCanvasStore(state => state.pushToUndo)
-    const shapesOrder = useCanvasStore(state => state.shapesOrder)
-
     const [contextMenu, setContextMenu] = useState<{x: number, y: number} | null>(null)
+    const [, forceRender] = useState(0)
+    const setYShapes = useCanvasStore(state => state.setYShapes)
+    const setYShapesOrder = useCanvasStore(state => state.setYShapesOrder)
+    const setYUndoManager = useCanvasStore(state => state.setYUndoManager)
+
+    const yUndoManager = useMemo(
+            () => new Y.UndoManager([yShapes, yShapesOrder]),
+            [ydoc]
+    )
+    useEffect(() => {
+        setYShapes(yShapes)
+        setYShapesOrder(yShapesOrder)
+        setYUndoManager(yUndoManager)
+    }, [yShapes, yShapesOrder, yUndoManager])
+
 
     useEffect(() => {
-        useCanvasStore.getState().setYShapes(yShapes)
-        useCanvasStore.getState().setYShapesOrder(yShapesOrder)
+        const handleYjsChange = () => {
+            forceRender(value => value + 1)
+        }
+
+        yShapes.observeDeep(handleYjsChange)
+        yShapesOrder.observe(handleYjsChange)
+
+        return () => {
+            yShapes.unobserveDeep(handleYjsChange)
+            yShapesOrder.unobserve(handleYjsChange)
+        }
     }, [yShapes, yShapesOrder])
 
     useEffect(() => {
         if (!transformerRef.current) return
 
-        const shapes = useCanvasStore.getState().shapes
-
         const resizableIds = selectedShapesIds.filter(id => {
-            const shape = shapes[id]
-
+            const shape = yShapes.get(id)
+            if(!shape) return
+            const shapeType = getShapeType(shape)
             return (
                 shape &&
-                shape.type !== 'line' &&
-                shape.type !== 'arrow'
+                shapeType !== 'line' &&
+                shapeType !== 'arrow'
             )
         })
 
@@ -98,49 +115,34 @@ export default function Canvas() {
         if (!useToolStore.getState().toolSettingChangedByUser) return
         if(selectedShapesIds.length === 0) return
 
-        const changes = []
         for(const id of selectedShapesIds){
-            const shapeBeforeChanges = shapes[id]
+            const shape = yShapes.get(id)
+            if(!shape) return
             const shapeChanges = figureChanges(id)
 
             if (!shapeChanges) continue
 
-            updateShape(id, shapeChanges)
-
-            const updatedShape = useCanvasStore.getState().shapes[id]
-
-            ws?.send(JSON.stringify({
-                type: "shape:update",
-                shape: updatedShape
-            }))
-
-            changes.push({
-                shapeId: id,
-                before: shapeBeforeChanges,
-                after: updatedShape,
-            })
+            for (const [key, value] of Object.entries(shapeChanges)) {
+                shape.set(key, value)
+            }
         }
 
-        if (changes.length > 0) {
-            pushToUndo({
-                type: 'update',
-                changes,
-            })
-        }
     }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds])
 
     function figureChanges(id: string) {
         const changedSetting = useToolStore.getState().toolSettingChanged
-        const shape = shapes[id]
+        const shape = yShapes.get(id)
+        if(!shape) return
+        const shapeType = getShapeType(shape)
         let changes: ShapeChanges = {}
 
         switch (changedSetting) {
             case 'fillColor':
                 if (
-                    shape.type === 'rect' ||
-                    shape.type === 'ellipse' ||
-                    shape.type === 'romb' ||
-                    shape.type === 'sticker'
+                    shapeType === 'rect' ||
+                    shapeType === 'ellipse' ||
+                    shapeType === 'romb' ||
+                    shapeType === 'sticker'
                 ) {
                     changes = { fillStyle: fillColor }
                 }
@@ -155,13 +157,13 @@ export default function Canvas() {
                 break
 
             case 'fontSize':
-                if (shape.type === 'text' || shape.type === 'sticker') {
+                if (shapeType === 'text' || shapeType === 'sticker') {
                     changes = { fontSize }
                 }
                 break
 
             case 'textAlign':
-                if (shape.type === 'text') {
+                if (shapeType === 'text') {
                     changes = { textAlign }
                 }
                 break
@@ -304,7 +306,7 @@ export default function Canvas() {
                 onContextMenu={handleContextMenu}
             >
                 <Layer>
-                    {shapesOrder.map(id => {
+                    {yShapesOrder.map(id => {
                         const shape = yShapes.get(id)
 
                         if (!shape || shape.get('isDeleted')) return null
