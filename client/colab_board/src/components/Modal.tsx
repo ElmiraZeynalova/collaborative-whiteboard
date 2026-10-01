@@ -1,4 +1,4 @@
-import { createContext } from 'react'
+import { createContext, useContext } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from "react-dom"
 
@@ -33,8 +33,9 @@ Modal.Container = function Container({ children, className }: { children: ReactN
 }
 
 Modal.Overlay = function Overlay() {
+    const closeModal = useContext(ModalContext)
     return (
-        <div className="fixed inset-0 bg-black/55"></div>
+        <div className="fixed inset-0 bg-black/55" onClick={closeModal}></div>
     )
 }
 

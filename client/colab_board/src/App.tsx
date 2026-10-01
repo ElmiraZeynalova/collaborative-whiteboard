@@ -1,15 +1,17 @@
 import { BrowserRouter, Route, Routes, Navigate, useParams } from 'react-router-dom'
 import Board from './components/Board'
+import Dashboard from './components/Dashboard'
 import {
     HocuspocusProviderWebsocketComponent,
     HocuspocusRoom,
 } from '@hocuspocus/provider-react'
 
+
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<NewBoard />} />
+                <Route path="/" element={<Dashboard/>}/>
                 <Route path="/board/:id" element={<BoardPage />} />
             </Routes>
         </BrowserRouter>
@@ -32,10 +34,3 @@ function BoardPage() {
     )
 }
 
-function NewBoard() {
-    const id = crypto.randomUUID()
-
-    return (
-        <Navigate to={`/board/${id}`} replace />
-    )
-}

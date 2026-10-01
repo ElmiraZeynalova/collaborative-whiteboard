@@ -8,6 +8,7 @@ interface CanvasStore {
     scale: number
     yShapes: Y.Map<YShape> | null
     yShapesOrder: Y.Array<string> | null
+    yBoard: Y.Map<string> | null
     yUndoManager: Y.UndoManager | null
     currentlyDrawingShapeId: string | null
     editingTextId: string | null
@@ -15,6 +16,7 @@ interface CanvasStore {
     selectionRectangle: SelectionRectangleState
     setYShapes: (shapes: Y.Map<YShape>) => void
     setYShapesOrder: (order: Y.Array<string>) => void
+    setYBoard: (board: Y.Map<string>) => void
     setYUndoManager: (manger: Y.UndoManager) => void
     setSelectedShapesIds: (ids: string[]) => void
     setSelectionRectangle: (rect: SelectionRectangleState) => void
@@ -29,6 +31,7 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     scale: 1,
     yShapes: null,
     yShapesOrder: null,
+    yBoard: null,
     yUndoManager: null,
     currentlyDrawingShapeId: null,
     editingTextId: null,
@@ -36,6 +39,7 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     selectionRectangle: { visible: false, x1: 0, y1: 0, x2: 0, y2: 0 },
     setYShapes: (shapes) => set({yShapes: shapes}),
     setYShapesOrder: (order) => set({yShapesOrder: order}),
+    setYBoard: (board) => set({yBoard: board}),
     setYUndoManager: (manager) => set({yUndoManager: manager}),
     setSelectedShapesIds: (ids) => set({ selectedShapesIds: ids }),
     setSelectionRectangle: (rect) => set({ selectionRectangle: rect }),

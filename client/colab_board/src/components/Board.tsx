@@ -1,13 +1,10 @@
-import ToolBar from "./ToolBar"
-import SettingsBar from "./SettingsBar/SettingsBar"
 import Canvas from "./Canvas"
+import BoardBottomSection from './BoardBottomSection'
 import {useEffect, useState, useRef} from 'react'
 import Modal from "./Modal"
 import { useClientStore } from "../store/clientStore"
-import { useToolStore } from "../store/toolStore"
-import UndoRedoBar from "./UndoRedoBar"
-import { useCanvasStore } from "../store/canvasStore"
 import {useHocuspocusProvider } from '@hocuspocus/provider-react'
+import BoardTopSection from "./BoardTopSection"
 
 export default function Board(){
     const userNameRef = useRef<HTMLInputElement | null>(null)
@@ -15,8 +12,6 @@ export default function Board(){
     const setUserName = useClientStore(state => state.setUserName)
     const setUserId = useClientStore(state => state.setUserId)
     const userName = useClientStore(state => state.userName)
-    const tool = useToolStore(state => state.tool)
-    const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
     const provider = useHocuspocusProvider()
 
     useEffect(() => {
@@ -55,17 +50,11 @@ export default function Board(){
                     </Modal.Content>
                 </Modal.Container>
             </Modal>
-                <div>
-                    <Canvas/>
-                    <div className="absolute bottom-2 left-3 right-3 z-10 flex items-center justify-between gap-2">
-                        <div className="flex-1" />
-                        <ToolBar/>
-                        <div className="flex-1 flex justify-end">
-                            <UndoRedoBar/>
-                        </div>
-                    </div>
-                    {tool && (tool.type !== 'selection' || selectedShapesIds.length > 0) && <SettingsBar/>}
-                </div>
+            <div>
+                <BoardTopSection/>
+                <Canvas/>
+                <BoardBottomSection/>
+            </div>
         </>
     )
 }

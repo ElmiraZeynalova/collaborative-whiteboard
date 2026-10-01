@@ -16,7 +16,7 @@ export default function FontSize(){
                         setToolSettingChanged('fontSize')
                         setFontSize(item)
                     }}
-                    className={`cursor-pointer p-2 min-w-8 min-h-7 rounded-lg grid place-content-center ${fontSize === item ? 'bg-[#D0ECDF]' : 'bg-[#F0F0F0]'}`}>
+                    className={`cursor-pointer p-2 min-w-8 max-w-8 min-h-8 max-h-8 rounded-lg grid place-content-center ${fontSize === item ? 'bg-[#D0ECDF]' : 'bg-[#F0F0F0]'}`}>
                         <p className="text-[#5F5F5F] m-0 text-sm">{item}</p>
                 </button>
             ))}</div>

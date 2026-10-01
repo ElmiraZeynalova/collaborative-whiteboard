@@ -15,6 +15,7 @@ import Menu from './Menu'
 import { useHocuspocusProvider } from '@hocuspocus/provider-react'
 import { getShapeType } from '../utils/yShapeGetters'
 import * as Y from 'yjs'
+import { useClientStore } from '../store/clientStore'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
@@ -25,6 +26,7 @@ export default function Canvas() {
     const ydoc = provider.document
     const yShapes = ydoc.getMap<YShape>('shapes')
     const yShapesOrder = ydoc.getArray<string>('shapesOrder')
+    const yBoard = ydoc.getMap<string>('board')
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
     const toolInstanceRef = useRef<Tool | null>(null)
@@ -47,15 +49,29 @@ export default function Canvas() {
     const setYShapes = useCanvasStore(state => state.setYShapes)
     const setYShapesOrder = useCanvasStore(state => state.setYShapesOrder)
     const setYUndoManager = useCanvasStore(state => state.setYUndoManager)
+    const setYBoard = useCanvasStore(state => state.setYBoard)
 
     const yUndoManager = useMemo(
             () => new Y.UndoManager([yShapes, yShapesOrder]),
             [ydoc]
     )
+
+
+    useEffect(() => {
+        const boardName = useClientStore.getState().boardName
+        console.log(boardName)
+        if (!yBoard.has('name')) {
+            if (boardName) {
+                yBoard.set('name', boardName)
+            }
+        }
+    }, [yBoard])
+
     useEffect(() => {
         setYShapes(yShapes)
         setYShapesOrder(yShapesOrder)
         setYUndoManager(yUndoManager)
+        setYBoard(yBoard)
     }, [yShapes, yShapesOrder, yUndoManager])
 
 
@@ -66,10 +82,12 @@ export default function Canvas() {
 
         yShapes.observeDeep(handleYjsChange)
         yShapesOrder.observe(handleYjsChange)
+        yBoard.observe(handleYjsChange)
 
         return () => {
             yShapes.unobserveDeep(handleYjsChange)
             yShapesOrder.unobserve(handleYjsChange)
+            yBoard.unobserve(handleYjsChange)
         }
     }, [yShapes, yShapesOrder])
 
