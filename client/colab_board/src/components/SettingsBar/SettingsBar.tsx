@@ -1,11 +1,6 @@
 import { useToolStore } from '../../store/toolStore'
 import { useCanvasStore } from '../../store/canvasStore'
-import EraserSettings from './settings/EraserSettings'
-import ShapeSettings from './settings/ShapeSettings'
-import TextSettings from './settings/TextSettings'
-import LineSettings from './settings/LineSettings'
-import StickerSettings from './settings/StickerSettings'
-import AllSettings from './settings/AllSettings'
+import {EraserSettings, ShapeSettings, TextSettings, LineSettings, StickerSettings, AllSettings} from './settings'
 import { Icon } from '@iconify/react'
 import { getShapeType } from '../../utils/yShapeGetters'
 

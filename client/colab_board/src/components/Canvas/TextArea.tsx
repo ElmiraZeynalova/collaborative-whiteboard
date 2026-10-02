@@ -1,9 +1,9 @@
-import { useCanvasStore } from "../store/canvasStore"
+import { useCanvasStore } from "../../store/canvasStore"
 import {useEffect, useRef} from 'react'
 import type Konva from 'konva'
-import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
+import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from "../../utils/constants"
 import { getFontSizeNumber } from "./ShapeRenderer"
-import { getShapeStringValue, getShapeType, getShapeNumber } from "../utils/yShapeGetters"
+import { getShapeStringValue, getShapeType, getShapeNumber } from "../../utils/yShapeGetters"
 
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)

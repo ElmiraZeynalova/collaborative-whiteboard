@@ -1,10 +1,16 @@
-import Canvas from "./Canvas"
+import Canvas from "./Canvas/Canvas"
 import BoardBottomSection from './BoardBottomSection'
 import {useEffect, useState, useRef} from 'react'
 import Modal from "./Modal"
 import { useClientStore } from "../store/clientStore"
 import {useHocuspocusProvider } from '@hocuspocus/provider-react'
 import BoardTopSection from "./BoardTopSection"
+
+function generateColor() {
+    return `#${Math.floor(Math.random() * 0xffffff)
+        .toString(16)
+        .padStart(6, '0')}`
+}
 
 export default function Board(){
     const userNameRef = useRef<HTMLInputElement | null>(null)
@@ -17,6 +23,10 @@ export default function Board(){
     useEffect(() => {
         if (!userName) return
         provider.sendStateless(`${userName} entered the room`)
+        provider.setAwarenessField("user", {
+            name: userName,
+            color: generateColor()
+        });
     }, [provider, userName])
 
     function handleSubmit(e: React.FormEvent){

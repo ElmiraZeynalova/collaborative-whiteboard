@@ -27,7 +27,7 @@ function BoardPage() {
 
     return (
         <HocuspocusProviderWebsocketComponent url="ws://127.0.0.1:1234">
-            <HocuspocusRoom name={`board-${id}`} onStateless={({payload}) => console.log(payload)}>
+            <HocuspocusRoom name={`board-${id}`} onAwarenessUpdate={({states}) => console.log(states)} onStateless={({payload}) => console.log(payload)}>
                 <Board />
             </HocuspocusRoom>
         </HocuspocusProviderWebsocketComponent>

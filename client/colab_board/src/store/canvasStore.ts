@@ -6,6 +6,7 @@ import * as Y from 'yjs'
 interface CanvasStore {
     canvas: HTMLCanvasElement | null
     scale: number
+    yDoc: Y.Doc | null
     yShapes: Y.Map<YShape> | null
     yShapesOrder: Y.Array<string> | null
     yBoard: Y.Map<string> | null
@@ -14,6 +15,7 @@ interface CanvasStore {
     editingTextId: string | null
     selectedShapesIds: string[]
     selectionRectangle: SelectionRectangleState
+    setYDoc: (doc: Y.Doc) => void
     setYShapes: (shapes: Y.Map<YShape>) => void
     setYShapesOrder: (order: Y.Array<string>) => void
     setYBoard: (board: Y.Map<string>) => void
@@ -29,6 +31,7 @@ interface CanvasStore {
 export const useCanvasStore = create<CanvasStore>()((set) => ({
     canvas: null,
     scale: 1,
+    yDoc: null,
     yShapes: null,
     yShapesOrder: null,
     yBoard: null,
@@ -37,6 +40,7 @@ export const useCanvasStore = create<CanvasStore>()((set) => ({
     editingTextId: null,
     selectedShapesIds: [],
     selectionRectangle: { visible: false, x1: 0, y1: 0, x2: 0, y2: 0 },
+    setYDoc: (doc) => set({yDoc: doc}),
     setYShapes: (shapes) => set({yShapes: shapes}),
     setYShapesOrder: (order) => set({yShapesOrder: order}),
     setYBoard: (board) => set({yBoard: board}),

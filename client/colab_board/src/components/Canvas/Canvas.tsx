@@ -1,32 +1,27 @@
-import { useRef, useEffect, useState, useMemo } from 'react'
-import { Stage, Layer, Rect, Transformer } from 'react-konva'
+import { useRef, useEffect, useState } from 'react'
 import Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { useCanvasStore } from '../store/canvasStore'
-import ShapeRenderer from './ShapeRenderer'
-import { useToolStore } from '../store/toolStore'
-import { getToolInstance } from '../canvas/tools/ToolManager'
-import Tool from '../canvas/tools/Tool'
+import { useCanvasStore } from '../../store/canvasStore'
+import { useToolStore } from '../../store/toolStore'
+import { getToolInstance } from '../../canvas/tools/ToolManager'
+import Tool from '../../canvas/tools/Tool'
 import TextArea from './TextArea'
-import { getShapeNodes } from '../utils/shapeNodeRegistry'
-import { handleTransformEnd } from '../utils/shapeInteractions'
-import type { ShapeChanges, YShape } from '../types/shapes'
+import { getShapeNodes } from '../../utils/shapeNodeRegistry'
+import { handleTransformEnd } from '../../utils/shapeInteractions'
+import type { ShapeChanges } from '../../types/shapes'
 import Menu from './Menu'
-import { useHocuspocusProvider } from '@hocuspocus/provider-react'
-import { getShapeType } from '../utils/yShapeGetters'
-import * as Y from 'yjs'
-import { useClientStore } from '../store/clientStore'
+import { getShapeType } from '../../utils/yShapeGetters'
+import { useClientStore } from '../../store/clientStore'
+import RemoteCursors from './RemoteCursors'
+import CanvasStage from './CanvasStage'
+import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
 const MAX_SCALE = 10
 
 export default function Canvas() {
-    const provider = useHocuspocusProvider()
-    const ydoc = provider.document
-    const yShapes = ydoc.getMap<YShape>('shapes')
-    const yShapesOrder = ydoc.getArray<string>('shapesOrder')
-    const yBoard = ydoc.getMap<string>('board')
+    const {provider, yShapes, yShapesOrder, yBoard, yUndoManager} = useCanvasYjs()
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
     const toolInstanceRef = useRef<Tool | null>(null)
@@ -51,15 +46,8 @@ export default function Canvas() {
     const setYUndoManager = useCanvasStore(state => state.setYUndoManager)
     const setYBoard = useCanvasStore(state => state.setYBoard)
 
-    const yUndoManager = useMemo(
-            () => new Y.UndoManager([yShapes, yShapesOrder]),
-            [ydoc]
-    )
-
-
     useEffect(() => {
         const boardName = useClientStore.getState().boardName
-        console.log(boardName)
         if (!yBoard.has('name')) {
             if (boardName) {
                 yBoard.set('name', boardName)
@@ -72,8 +60,7 @@ export default function Canvas() {
         setYShapesOrder(yShapesOrder)
         setYUndoManager(yUndoManager)
         setYBoard(yBoard)
-    }, [yShapes, yShapesOrder, yUndoManager])
-
+    }, [yShapes, yShapesOrder, yBoard, yUndoManager])
 
     useEffect(() => {
         const handleYjsChange = () => {
@@ -244,6 +231,21 @@ export default function Canvas() {
         return false
     }
 
+    function handleTransformerEnd() {
+        const transformer = transformerRef.current
+        if (!transformer) return
+
+        const shapes = useCanvasStore.getState().yShapes
+
+        transformer.nodes().forEach(node => {
+            const shape = shapes?.get(node.id())
+
+            if (shape) {
+                handleTransformEnd(shape, node)
+            }
+        })
+    }
+
     function getShapeId(target: Konva.Node): string | undefined {
         let node: Konva.Node | null = target
 
@@ -260,6 +262,9 @@ export default function Canvas() {
         return undefined
     }
 
+    function updateMyPointer(x: number, y: number) {
+        provider.setAwarenessField('cursor', { x, y })
+    }
     function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
         setContextMenu(null)
         if (isTransformerEvent(e.target)) {
@@ -294,6 +299,9 @@ export default function Canvas() {
 
         if (!pointerPosition) return
 
+      
+        updateMyPointer(pointerPosition.x, pointerPosition.y)
+        
         toolInstanceRef.current?.onPointerMove(
             currentlyDrawingShapeId ?? '',
             pointerPosition
@@ -310,71 +318,25 @@ export default function Canvas() {
         )
     }
 
+
     return (
         <div className="relative">
-            <Stage
-                ref={stageRef}
-                width={window.innerWidth}
-                height={window.innerHeight}
-                draggable={isDraggableStage}
+           <CanvasStage
+                stageRef={stageRef}
+                transformerRef={transformerRef}
+                yShapes={yShapes}
+                yShapesOrder={yShapesOrder}
+                selectionRectangle={selectionRectangle}
+                isDraggableStage={isDraggableStage}
                 onWheel={handleWheel}
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onContextMenu={handleContextMenu}
-            >
-                <Layer>
-                    {yShapesOrder.map(id => {
-                        const shape = yShapes.get(id)
-
-                        if (!shape || shape.get('isDeleted')) return null
-
-                        return (
-                            <ShapeRenderer
-                                key={id}
-                                shape={shape}
-                            />
-                        )
-                    })}
-                    <Transformer
-                        ref={transformerRef}
-                        rotateEnabled={true}
-                        onTransformEnd={() => {
-                            const transformer = transformerRef.current
-                            if (!transformer) return
-
-                            const nodes = transformer.nodes()
-                            const shapes = useCanvasStore.getState().yShapes
-
-                            nodes.forEach(node => {
-                                const shape = shapes?.get(node.id())
-
-                                if (shape) {
-                                    handleTransformEnd(shape, node)
-                                }
-                            })
-                        }}
-                    />
-                    
-                    {selectionRectangle.visible && (
-                        <Rect
-                            x={Math.min(selectionRectangle.x1, selectionRectangle.x2)}
-                            y={Math.min(selectionRectangle.y1, selectionRectangle.y2)}
-                            width={Math.abs(selectionRectangle.x2 - selectionRectangle.x1)}
-                            height={Math.abs(selectionRectangle.y2 - selectionRectangle.y1)}
-                            fill="rgba(59,130,246,0.15)"
-                            stroke="#3b82f6"
-                            strokeWidth={1}
-                        />
-                    )}
-                </Layer>
-            </Stage>
-            {contextMenu && (<Menu
-                    className=""
-                    position={contextMenu}
-                    closeModal={() => setContextMenu(null)}
-                />
-            )}
+                onTransformerEnd= {handleTransformerEnd}
+            />
+            <RemoteCursors stageRef={stageRef}/>
+            {contextMenu && (<Menu position={contextMenu} closeModal={() => setContextMenu(null)} />)}
             {stageReady && stageRef.current && <TextArea stage={stageRef.current} />}
         </div>
     )
