@@ -13,7 +13,7 @@ export default class Selection extends Tool {
         const selectedShapesIds = canvasStore.selectedShapesIds
         const setSelectedShapesIds = canvasStore.setSelectedShapesIds
 
-        const shape = targetId ? canvasStore.yShapes?.get(targetId) : null
+        const shape = targetId ? this.ctx.yShapes.get(targetId) : null
 
         const metaPressed = !!(modifiers?.shiftKey || modifiers?.ctrlKey || modifiers?.metaKey)
 

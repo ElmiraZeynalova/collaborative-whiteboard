@@ -1,7 +1,6 @@
 import Tool from './Tool'
 import { useToolStore } from '../../store/toolStore';
 import { useCanvasStore } from '../../store/canvasStore';
-import { useClientStore } from '../../store/clientStore';
 import * as Y from 'yjs'
 import type { YShape } from '../../types/shapes'
 
@@ -12,9 +11,6 @@ export default class Sticker extends Tool{
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
-
         const strokeColor = toolStore.strokeColor
         const strokeWidth = toolStore.strokeWidth
         const fillColor = toolStore.fillColor
@@ -25,7 +21,6 @@ export default class Sticker extends Tool{
 
         const yStickerShape = new Y.Map() as YShape
         yStickerShape.set("id", shapeId)
-        yStickerShape.set("userId", userId)
         yStickerShape.set("type", this.type)
         yStickerShape.set("isDeleted", false)
         yStickerShape.set("x", pos.x)
@@ -38,8 +33,8 @@ export default class Sticker extends Tool{
         yStickerShape.set("fontSize", fontSize)
         yStickerShape.set("text", "")
 
-        canvasStore.yShapes?.set(shapeId, yStickerShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yStickerShape)
+        this.ctx.yShapesOrder.push([shapeId])
 
         canvasStore.setEditingTextId(shapeId)
     }

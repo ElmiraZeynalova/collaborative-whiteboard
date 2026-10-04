@@ -1,6 +1,5 @@
 import Tool from './Tool'
 import { useToolStore } from '../../store/toolStore';
-import { useClientStore } from '../../store/clientStore';
 import { useCanvasStore } from '../../store/canvasStore';
 import * as Y from 'yjs'
 import type { YShape } from '../../types/shapes'
@@ -11,8 +10,6 @@ export default class Text extends Tool{
     onPointerDown(pos: { x: number; y: number }): void {
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
-        const userId = useClientStore.getState().userId
-        if(!userId) return
 
         const strokeColor = toolStore.strokeColor
         const strokeWidth = toolStore.strokeWidth
@@ -23,7 +20,6 @@ export default class Text extends Tool{
 
         const yStickerShape = new Y.Map() as YShape
         yStickerShape.set("id", shapeId)
-        yStickerShape.set("userId", userId)
         yStickerShape.set("type", this.type)
         yStickerShape.set("isDeleted", false)
         yStickerShape.set("x", pos.x)
@@ -35,8 +31,8 @@ export default class Text extends Tool{
         yStickerShape.set("textAlign", textAlign)
         yStickerShape.set("text", "")
 
-        canvasStore.yShapes?.set(shapeId, yStickerShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yStickerShape)
+        this.ctx.yShapesOrder.push([shapeId])
 
         canvasStore.setEditingTextId(shapeId)
     }

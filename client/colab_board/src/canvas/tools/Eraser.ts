@@ -1,5 +1,4 @@
 import Tool from './Tool'
-import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
 import * as Y from 'yjs'
@@ -11,9 +10,6 @@ export default class Eraser extends Tool{
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
-
         const strokeWidth = toolStore.strokeWidth
 
         const shapeId =  crypto.randomUUID()
@@ -21,7 +17,6 @@ export default class Eraser extends Tool{
 
         const yEraserShape = new Y.Map() as YShape
         yEraserShape.set("id", shapeId)
-        yEraserShape.set("userId", userId)
         yEraserShape.set("type", this.type)
         yEraserShape.set("isDeleted", false)
         yEraserShape.set("x", pos.x)
@@ -30,13 +25,12 @@ export default class Eraser extends Tool{
         yEraserShape.set("strokeStyle", "#ffffff")
         yEraserShape.set("strokeWidth", strokeWidth)
 
-        canvasStore.yShapes?.set(shapeId, yEraserShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yEraserShape)
+        this.ctx.yShapesOrder.push([shapeId])
     }
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const canvasStore = useCanvasStore.getState()
-        const yEraserShape = canvasStore.yShapes?.get(shapeId)
+        const yEraserShape = this.ctx.yShapes.get(shapeId)
 
         if (!yEraserShape) return
         const existingPoints = yEraserShape.get("points") as Point[]

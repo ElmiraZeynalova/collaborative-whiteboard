@@ -1,7 +1,6 @@
 import Tool from './Tool'
 import { useCanvasStore } from '../../store/canvasStore';
 import { useToolStore } from '../../store/toolStore';
-import { useClientStore } from '../../store/clientStore';
 import * as Y from 'yjs'
 import type { YShape } from '../../types/shapes'
 
@@ -12,8 +11,6 @@ export default class Arrow extends Tool{
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
 
         const strokeColor = toolStore.strokeColor
         const strokeWidth = toolStore.strokeWidth
@@ -24,7 +21,6 @@ export default class Arrow extends Tool{
 
         const yArrowShape = new Y.Map() as YShape
         yArrowShape.set("id", shapeId)
-        yArrowShape.set("userId", userId)
         yArrowShape.set("type", this.type)
         yArrowShape.set("isDeleted", false)
         yArrowShape.set("x", pos.x)
@@ -35,14 +31,13 @@ export default class Arrow extends Tool{
         yArrowShape.set("strokeWidth", strokeWidth)
         yArrowShape.set('fillStyle', fillColor)
 
-        canvasStore.yShapes?.set(shapeId, yArrowShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yArrowShape)
+        this.ctx.yShapesOrder.push([shapeId])
     }
 
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const canvasStore = useCanvasStore.getState()
-        const yArrowShape = canvasStore.yShapes?.get(shapeId)
+        const yArrowShape = this.ctx.yShapes.get(shapeId)
 
         if (!yArrowShape) return
 

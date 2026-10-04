@@ -1,5 +1,4 @@
 import Tool from './Tool'
-import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
 import * as Y from 'yjs'
@@ -8,12 +7,10 @@ import type { YShape } from '../../types/shapes'
 export default class Rect extends Tool{
     readonly type = 'rect'
 
-    onPointerDown(pos: { x: number; y: number }): void {
+    onPointerDown(pos: { x: number; y: number}): void {
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
 
         const strokeColor = toolStore.strokeColor
         const strokeWidth = toolStore.strokeWidth
@@ -24,7 +21,6 @@ export default class Rect extends Tool{
 
         const yRectShape = new Y.Map() as YShape
         yRectShape.set("id", shapeId)
-        yRectShape.set("userId", userId)
         yRectShape.set("type", this.type)
         yRectShape.set("isDeleted", false)
         yRectShape.set("x", pos.x)
@@ -35,13 +31,13 @@ export default class Rect extends Tool{
         yRectShape.set("strokeStyle", strokeColor)
         yRectShape.set("strokeWidth", strokeWidth)
 
-        canvasStore.yShapes?.set(shapeId, yRectShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yRectShape)
+        this.ctx.yShapesOrder.push([shapeId])
+
     }
 
-    onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const canvasStore = useCanvasStore.getState()
-        const yRectShape = canvasStore.yShapes?.get(shapeId)
+    onPointerMove(shapeId: string, pos: { x: number; y: number}): void {
+        const yRectShape =  this.ctx.yShapes.get(shapeId)
 
         if (!yRectShape) return
 

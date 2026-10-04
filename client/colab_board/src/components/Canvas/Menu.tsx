@@ -1,11 +1,11 @@
+import { useCanvasYjs } from "../../hooks/useCanvasYjs";
 import { useCanvasStore } from "../../store/canvasStore"
 import { moveBackward, moveForward, moveToFront, moveToBack } from "../../utils/shapeLayering"
 
 const menuOptions = ["Duplicate",  "Bring forward", "Send backward", "Bring to front", "Send to back", "Delete"]
 
 export default function Menu({className, closeModal, position}: {className?: string, closeModal: () => void, position: { x: number; y: number }}){
-    const yShapes = useCanvasStore(state => state.yShapes)
-    const yShapesOrder = useCanvasStore(state => state.yShapesOrder)
+    const { yShapes, yShapesOrder } = useCanvasYjs()
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
 
     function handleClick(menuOption: string){

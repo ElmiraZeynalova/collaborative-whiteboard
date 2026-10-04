@@ -1,8 +1,8 @@
 import ToolBar from "./ToolBar"
 import SettingsBar from "./SettingsBar/SettingsBar"
 import UndoRedoBar from "./UndoRedoBar"
-import { useToolStore } from "../store/toolStore"
-import { useCanvasStore } from "../store/canvasStore"
+import { useToolStore } from "../../store/toolStore"
+import { useCanvasStore } from "../../store/canvasStore"
 
 export default function BoardBottomSection(){
     const tool = useToolStore(state => state.tool)
@@ -17,7 +17,7 @@ export default function BoardBottomSection(){
                     <UndoRedoBar/>
                 </div>
             </div>
-            {tool && (tool.type !== 'selection' || selectedShapesIds.length > 0) && <SettingsBar/>}
+            {tool && (tool !== 'selection' || selectedShapesIds.length > 0) && <SettingsBar/>}
         </>
     )
 }

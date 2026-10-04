@@ -1,4 +1,4 @@
-import { useToolStore } from "../../store/toolStore";
+import { useToolStore } from "../../../store/toolStore";
 import { Icon } from '@iconify/react'
 
 export const FillColor = () => {

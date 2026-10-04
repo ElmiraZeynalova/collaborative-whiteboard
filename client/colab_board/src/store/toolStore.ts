@@ -1,8 +1,6 @@
 import { create } from 'zustand'
-import Selection from '../canvas/tools/Selection'
+import type { ToolType } from '../canvas/tools/Tool'
 
-export type FontSize = "S" | "M" | "L" | "XL"
-export type TextAlign = "left" | "center" | "right"
 type ChangedSetting =
     | 'fillColor'
     | 'strokeColor'
@@ -14,7 +12,7 @@ type ChangedSetting =
 interface ToolsStore {
     toolSettingChangedByUser: boolean
     toolSettingChanged: ChangedSetting
-    tool: any,
+    tool: ToolType,
     fillColor: string,
     strokeColor: string,
     strokeWidth: number,
@@ -22,7 +20,7 @@ interface ToolsStore {
     textAlign: string,
     setToolSettingChangedByUser:(value: boolean) => void,
     setToolSettingChanged: (setting: ChangedSetting) => void,
-    setTool: (tool: any) => void,
+    setTool: (tool: ToolType) => void,
     setFillColor: (color: string) => void,
     setStrokeColor: (color: string) => void,
     setStrokeWidth: (width: number) => void,
@@ -33,7 +31,7 @@ interface ToolsStore {
 export const useToolStore = create<ToolsStore>()((set) => ({
     toolSettingChangedByUser: false,
     toolSettingChanged: null,
-    tool: new Selection(),
+    tool: "selection",
     fillColor: "#000000",
     strokeColor: "#000000",
     strokeWidth: 0,

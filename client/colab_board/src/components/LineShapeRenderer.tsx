@@ -6,7 +6,6 @@ import { getShapeId, getShapeNumber, getShapeStringValue, getShapeType } from '.
 
 export default function LineShapeRenderer({shape, isSelected, commonProps}: {shape: YShape, isSelected: boolean, commonProps: any}){
     const scale = useCanvasStore(state => state.scale)
-
     const shapeType = getShapeType(shape)
     const shapeId = getShapeId(shape)
     const x = getShapeNumber(shape, 'x')

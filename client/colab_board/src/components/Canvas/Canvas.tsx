@@ -11,7 +11,6 @@ import { handleTransformEnd } from '../../utils/shapeInteractions'
 import type { ShapeChanges } from '../../types/shapes'
 import Menu from './Menu'
 import { getShapeType } from '../../utils/yShapeGetters'
-import { useClientStore } from '../../store/clientStore'
 import RemoteCursors from './RemoteCursors'
 import CanvasStage from './CanvasStage'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
@@ -21,7 +20,7 @@ const MIN_SCALE = 0.1
 const MAX_SCALE = 10
 
 export default function Canvas() {
-    const {provider, yShapes, yShapesOrder, yBoard, yUndoManager} = useCanvasYjs()
+    const {provider, yShapes, yShapesOrder} = useCanvasYjs()
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
     const toolInstanceRef = useRef<Tool | null>(null)
@@ -29,7 +28,7 @@ export default function Canvas() {
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
     const setSelectedShapesIds = useCanvasStore(state => state.setSelectedShapesIds)
     const selectionRectangle = useCanvasStore(state => state.selectionRectangle)
-    const isDraggableStage = tool?.type === 'selection' && selectedShapesIds.length === 0
+    const isDraggableStage = tool === 'selection' && selectedShapesIds.length === 0
     const editingTextId = useCanvasStore(state => state.editingTextId)
     const [stageReady, setStageReady] = useState(false)
     const setScale = useCanvasStore(state => state.setScale)
@@ -41,26 +40,6 @@ export default function Canvas() {
     const textAlign = useToolStore(state => state.textAlign)
     const [contextMenu, setContextMenu] = useState<{x: number, y: number} | null>(null)
     const [, forceRender] = useState(0)
-    const setYShapes = useCanvasStore(state => state.setYShapes)
-    const setYShapesOrder = useCanvasStore(state => state.setYShapesOrder)
-    const setYUndoManager = useCanvasStore(state => state.setYUndoManager)
-    const setYBoard = useCanvasStore(state => state.setYBoard)
-
-    useEffect(() => {
-        const boardName = useClientStore.getState().boardName
-        if (!yBoard.has('name')) {
-            if (boardName) {
-                yBoard.set('name', boardName)
-            }
-        }
-    }, [yBoard])
-
-    useEffect(() => {
-        setYShapes(yShapes)
-        setYShapesOrder(yShapesOrder)
-        setYUndoManager(yUndoManager)
-        setYBoard(yBoard)
-    }, [yShapes, yShapesOrder, yBoard, yUndoManager])
 
     useEffect(() => {
         const handleYjsChange = () => {
@@ -69,12 +48,10 @@ export default function Canvas() {
 
         yShapes.observeDeep(handleYjsChange)
         yShapesOrder.observe(handleYjsChange)
-        yBoard.observe(handleYjsChange)
 
         return () => {
             yShapes.unobserveDeep(handleYjsChange)
             yShapesOrder.unobserve(handleYjsChange)
-            yBoard.unobserve(handleYjsChange)
         }
     }, [yShapes, yShapesOrder])
 
@@ -112,9 +89,9 @@ export default function Canvas() {
     }, [])
 
     useEffect(() => {
-        toolInstanceRef.current = getToolInstance(tool?.type)
+        toolInstanceRef.current = getToolInstance(tool, {yShapes, yShapesOrder})
         setSelectedShapesIds([])
-    }, [tool?.type])
+    }, [tool])
 
     useEffect(() => {
         if (!useToolStore.getState().toolSettingChangedByUser) return
@@ -235,10 +212,8 @@ export default function Canvas() {
         const transformer = transformerRef.current
         if (!transformer) return
 
-        const shapes = useCanvasStore.getState().yShapes
-
         transformer.nodes().forEach(node => {
-            const shape = shapes?.get(node.id())
+            const shape = yShapes?.get(node.id())
 
             if (shape) {
                 handleTransformEnd(shape, node)
@@ -266,6 +241,7 @@ export default function Canvas() {
         provider.setAwarenessField('cursor', { x, y })
     }
     function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
+
         setContextMenu(null)
         if (isTransformerEvent(e.target)) {
             return
@@ -286,7 +262,7 @@ export default function Canvas() {
         toolInstanceRef.current?.onPointerDown(
             pointerPosition,
             modifiers,
-            targetId
+            targetId,
         )
     }
 
@@ -298,14 +274,14 @@ export default function Canvas() {
         const pointerPosition = stageRef.current?.getRelativePointerPosition()
 
         if (!pointerPosition) return
-
-      
-        updateMyPointer(pointerPosition.x, pointerPosition.y)
         
+        updateMyPointer(pointerPosition.x, pointerPosition.y)
+
         toolInstanceRef.current?.onPointerMove(
             currentlyDrawingShapeId ?? '',
             pointerPosition
         )
+
     }
 
     function handlePointerUp(e: KonvaEventObject<PointerEvent>) {

@@ -1,21 +1,20 @@
 import { Icon } from '@iconify/react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import Modal from './Modal'
-import { useCanvasStore } from '../store/canvasStore'
+import Modal from '../Modal'
 import SideBar from './SideBar'
+import { useClientStore } from '../../store/clientStore'
 
 export default function BoardTopSection(){
-    const yBoard = useCanvasStore(state => state.yBoard)
-    const boardName = yBoard?.get('name') ?? 'Untitled board'
-    const {id} = useParams()
+    const boardName = useClientStore(state => state.boardName)
+    const boardId = useClientStore(state => state.boardId)
     const navigate = useNavigate()
     const [showModal, setShowModal] = useState(false)
     const [showMessage, setShowMessage] = useState(false)
     const [showUsersSideBar, setShowUsersSideBar] = useState(false)
-    
+
     async function handleClick(){
-        await navigator.clipboard.writeText(`${window.location.origin}/board/${id}`)
+        await navigator.clipboard.writeText(`${window.location.origin}/board/${boardId}`)
         setShowMessage(true)
     }
 
@@ -72,7 +71,12 @@ export default function BoardTopSection(){
                 </button>
             </div>
             
-            {showUsersSideBar &&   <div className="fixed z-11 inset-0 bg-black/55" onClick={() => setShowUsersSideBar(false)}><SideBar closeBar={() => setShowUsersSideBar(false)}/></div>}
+            {showUsersSideBar && 
+                <>
+                    <div className="fixed z-11 inset-0 bg-black/55" onClick={() => setShowUsersSideBar(false)}/>
+                    <SideBar closeBar={() => setShowUsersSideBar(false)}/>
+                </>
+            }
         </>
     )
 }

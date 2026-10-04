@@ -1,25 +1,13 @@
 import { create } from 'zustand'
-import {type YShape} from "../types/shapes"
 import { type SelectionRectangleState } from '../types/shapes'
-import * as Y from 'yjs'
 
 interface CanvasStore {
     canvas: HTMLCanvasElement | null
     scale: number
-    yDoc: Y.Doc | null
-    yShapes: Y.Map<YShape> | null
-    yShapesOrder: Y.Array<string> | null
-    yBoard: Y.Map<string> | null
-    yUndoManager: Y.UndoManager | null
     currentlyDrawingShapeId: string | null
     editingTextId: string | null
     selectedShapesIds: string[]
     selectionRectangle: SelectionRectangleState
-    setYDoc: (doc: Y.Doc) => void
-    setYShapes: (shapes: Y.Map<YShape>) => void
-    setYShapesOrder: (order: Y.Array<string>) => void
-    setYBoard: (board: Y.Map<string>) => void
-    setYUndoManager: (manger: Y.UndoManager) => void
     setSelectedShapesIds: (ids: string[]) => void
     setSelectionRectangle: (rect: SelectionRectangleState) => void
     setCanvas: (newCanvas: HTMLCanvasElement) => void
@@ -31,20 +19,10 @@ interface CanvasStore {
 export const useCanvasStore = create<CanvasStore>()((set) => ({
     canvas: null,
     scale: 1,
-    yDoc: null,
-    yShapes: null,
-    yShapesOrder: null,
-    yBoard: null,
-    yUndoManager: null,
     currentlyDrawingShapeId: null,
     editingTextId: null,
     selectedShapesIds: [],
     selectionRectangle: { visible: false, x1: 0, y1: 0, x2: 0, y2: 0 },
-    setYDoc: (doc) => set({yDoc: doc}),
-    setYShapes: (shapes) => set({yShapes: shapes}),
-    setYShapesOrder: (order) => set({yShapesOrder: order}),
-    setYBoard: (board) => set({yBoard: board}),
-    setYUndoManager: (manager) => set({yUndoManager: manager}),
     setSelectedShapesIds: (ids) => set({ selectedShapesIds: ids }),
     setSelectionRectangle: (rect) => set({ selectionRectangle: rect }),
     setCanvas: (newCanvas) => set({canvas: newCanvas }),

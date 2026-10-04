@@ -3,7 +3,7 @@ import Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { YShape, SelectionRectangleState } from '../../types/shapes'
 import * as Y from 'yjs'
-import ShapeRenderer from './ShapeRenderer'
+import ShapeRenderer from '../ShapeRenderer'
 
 type Props = {
     stageRef: React.RefObject<Konva.Stage | null>

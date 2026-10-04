@@ -1,5 +1,4 @@
 import Tool from './Tool'
-import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
 import * as Y from 'yjs'
@@ -12,8 +11,6 @@ export default class Ellipse extends Tool{
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
 
         const strokeColor = toolStore.strokeColor
         const strokeWidth = toolStore.strokeWidth
@@ -24,7 +21,6 @@ export default class Ellipse extends Tool{
 
         const yEllipseShape = new Y.Map() as YShape
         yEllipseShape.set("id", shapeId)
-        yEllipseShape.set("userId", userId)
         yEllipseShape.set("type", this.type)
         yEllipseShape.set("isDeleted", false)
         yEllipseShape.set("x", pos.x)
@@ -34,13 +30,12 @@ export default class Ellipse extends Tool{
         yEllipseShape.set("strokeWidth", strokeWidth)
         yEllipseShape.set("radius", {x: 0, y: 0})
 
-        canvasStore.yShapes?.set(shapeId, yEllipseShape)
-        canvasStore.yShapesOrder?.push([shapeId])
+        this.ctx.yShapes.set(shapeId, yEllipseShape)
+        this.ctx.yShapesOrder.push([shapeId])
     }
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const canvasStore = useCanvasStore.getState()
-        const yEllipseShape = canvasStore.yShapes?.get(shapeId)
+        const yEllipseShape = this.ctx.yShapes.get(shapeId)
 
         if (!yEllipseShape) return
 

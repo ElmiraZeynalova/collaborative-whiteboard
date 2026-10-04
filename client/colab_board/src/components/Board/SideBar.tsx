@@ -1,12 +1,12 @@
 import {useHocuspocusAwareness, useHocuspocusProvider } from '@hocuspocus/provider-react'
 import { Icon } from '@iconify/react'
-import type {AwarenessUser} from '../types/awareness'
+import type {AwarenessUser} from '../../types/awareness'
 
 export default function SideBar({closeBar}: {closeBar: () => void}) {
     const users = useHocuspocusAwareness()
     const provider = useHocuspocusProvider()
     const clientId = provider.awareness?.clientID
-    
+
     return (
         
         <div className="absolute top-0 right-0 z-12 h-dvh w-[85vw] sm:w-[50vw] md:w-[35vw] lg:w-70 flex flex-col gap-2 bg-white">

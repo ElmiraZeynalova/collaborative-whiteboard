@@ -2,17 +2,18 @@ import { useCanvasStore } from "../../store/canvasStore"
 import {useEffect, useRef} from 'react'
 import type Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from "../../utils/constants"
-import { getFontSizeNumber } from "./ShapeRenderer"
+import { getFontSizeNumber } from "../ShapeRenderer"
 import { getShapeStringValue, getShapeType, getShapeNumber } from "../../utils/yShapeGetters"
+import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)
     const setEditingTextId = useCanvasStore((state) => state.setEditingTextId)
-    const shapes = useCanvasStore((state) => state.yShapes)
+    const {yShapes} = useCanvasYjs()
     const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
 
-    const shape = editingTextId ? shapes?.get(editingTextId) : undefined
+    const shape = editingTextId ? yShapes?.get(editingTextId) : undefined
 
 
     useEffect(() => {

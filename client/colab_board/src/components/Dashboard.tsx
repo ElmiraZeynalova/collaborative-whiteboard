@@ -1,19 +1,30 @@
 import { useClientStore } from "../store/clientStore"
 import { useNavigate } from "react-router-dom"
+import {useState} from 'react'
+import {saveBoardToLocalStorage} from '../utils/localStorageOperations'
 
 export default function Dashboard(){
     const boardName = useClientStore(state => state.boardName)
     const setBoardName = useClientStore(state => state.setBoardName)
     const setBoardId = useClientStore(state => state.setBoardId)
-    const userName = useClientStore(state => state.userName)
-    const loggedIn = true
     const navigate = useNavigate()
+    const [loggedIn, setLoggedIn] = useState<boolean>(false)
+
+    function handleLogOut(){
+        localStorage.removeItem("user")
+        setLoggedIn(false)
+    }
 
     function handleSubmit(e: React.FormEvent){
         e.preventDefault()
         if(boardName === null || boardName === "") return 
+
         const id = crypto.randomUUID()
         setBoardId(id)
+
+        const newBoard = {id, name: boardName}
+        saveBoardToLocalStorage(newBoard)
+
         navigate(`/board/${id}`)
     }
 
@@ -25,20 +36,19 @@ export default function Dashboard(){
                 </h1>
                 {loggedIn ? (
                     <div className="text-end">
-                        {userName}{" "}
-                        <button className="cursor-pointer text-[#919191] hover:text-black font-medium">
+                        {/* {userName}{" "} */}
+                        <button onClick={handleLogOut} className="cursor-pointer text-[#919191] hover:text-black font-medium">
                             Log out
                         </button>
                     </div>
                 ) : (
-                    <button className="cursor-pointer text-end text-[#D0ECDF]">Log in</button>
+                    <button className="cursor-pointer text-end text-[#919191]">Log in</button>
                 )}
                 <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
                     <h3 className="text-center text-xl font-medium">Find or create board</h3>
                     <form
                         className="flex items-center gap-2 mx-4 sm:mx-6"
-                        onSubmit={handleSubmit}
-                    >
+                        onSubmit={handleSubmit}>
                         <input
                             type="text"
                             placeholder="Board name..."

@@ -1,10 +1,11 @@
 import { Icon } from '@iconify/react'
-import { useCanvasStore } from '../store/canvasStore'
 import { useEffect, useState } from 'react'
+import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 
 export default function UndoRedoBar(){
-    const yUndoManager = useCanvasStore(state => state.yUndoManager)
+    const {yUndoManager} = useCanvasYjs()
     const [, forceRender] = useState(0)
+
     useEffect(() => {
         if (!yUndoManager) return
 
@@ -22,6 +23,7 @@ export default function UndoRedoBar(){
             yUndoManager.off('stack-cleared', update)
         }
     }, [yUndoManager])
+    
     return(
         <div className="px-4 py-2 flex items-center gap-4 rounded-xl drop-shadow-md bg-white border border-black/15">
             <button

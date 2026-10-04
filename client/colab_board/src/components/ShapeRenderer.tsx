@@ -1,15 +1,15 @@
-import { type YShape } from "../../types/shapes"
-import PencilShapeRenderer from "../PencilShapeRenderer"
-import RombShapeRenderer from '../RombShapeRenderer'
+import { type YShape } from "../types/shapes"
+import PencilShapeRenderer from "./PencilShapeRenderer"
+import RombShapeRenderer from './RombShapeRenderer'
 import {Rect, Text, Ellipse, Group} from 'react-konva'
 import type { KonvaEventObject, Node } from 'konva/lib/Node'
-import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../../utils/constants'
-import { registerShapeNode } from '../../utils/shapeNodeRegistry'
-import { handleShapeDragEnd } from '../../utils/shapeInteractions'
-import { useToolStore } from '../../store/toolStore'
-import { useCanvasStore } from "../../store/canvasStore"
-import LineShapeRenderer from "../LineShapeRenderer"
-import { getShapeId, getShapeNumber, getShapeRadius, getShapeStringValue, getShapeType } from "../../utils/yShapeGetters"
+import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
+import { registerShapeNode } from '../utils/shapeNodeRegistry'
+import { handleShapeDragEnd } from '../utils/shapeInteractions'
+import { useToolStore } from '../store/toolStore'
+import { useCanvasStore } from "../store/canvasStore"
+import LineShapeRenderer from "./LineShapeRenderer"
+import { getShapeId, getShapeNumber, getShapeRadius, getShapeStringValue, getShapeType } from "../utils/yShapeGetters"
 
 export function getFontSizeNumber(fontSize: string){
     let fontSizeNumber 
@@ -28,7 +28,7 @@ export default function ShapeRenderer({shape}: {shape: YShape}){
     const shapeId = getShapeId(shape)
     const shapeType = getShapeType(shape)
     const tool = useToolStore(state => state.tool)
-    const isSelectable = tool?.type === 'selection'
+    const isSelectable = tool === 'selection'
     const editingTextId = useCanvasStore(state => state.editingTextId)
     const setEditingTextId = useCanvasStore(state => state.setEditingTextId)
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)

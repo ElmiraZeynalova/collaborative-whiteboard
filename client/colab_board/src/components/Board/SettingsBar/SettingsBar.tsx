@@ -1,8 +1,9 @@
-import { useToolStore } from '../../store/toolStore'
-import { useCanvasStore } from '../../store/canvasStore'
+import { useToolStore } from '../../../store/toolStore'
+import { useCanvasStore } from '../../../store/canvasStore'
 import {EraserSettings, ShapeSettings, TextSettings, LineSettings, StickerSettings, AllSettings} from './settings'
 import { Icon } from '@iconify/react'
-import { getShapeType } from '../../utils/yShapeGetters'
+import { getShapeType } from '../../../utils/yShapeGetters'
+import { useCanvasYjs } from '../../../hooks/useCanvasYjs'
 
 const bars: Record<string, React.ComponentType> = {
     rect: ShapeSettings,
@@ -18,16 +19,15 @@ const bars: Record<string, React.ComponentType> = {
 }
 export default function SettingsBar(){
     const tool = useToolStore(state => state.tool)
-    if(!tool) return
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
-    const yShapes = useCanvasStore(state => state.yShapes)
+    const {yShapes} = useCanvasYjs()
 
     let Settings
 
-    if (tool.type !== 'selection') {
-        Settings = bars[tool.type]
+    if (tool !== 'selection') {
+        Settings = bars[tool]
     } else if (selectedShapesIds.length === 1) {
-        const shape = yShapes?.get(selectedShapesIds[0])
+        const shape = yShapes.get(selectedShapesIds[0])
         if(!shape) return
         const type = getShapeType(shape)
         Settings = bars[type]
