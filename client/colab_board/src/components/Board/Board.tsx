@@ -6,9 +6,8 @@ import { useClientStore } from "../../store/clientStore"
 import {useHocuspocusProvider } from '@hocuspocus/provider-react'
 import BoardTopSection from "./BoardTopSection"
 import { useCanvasYjs } from "../../hooks/useCanvasYjs"
-import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
 import { useParams } from "react-router-dom"
-import type { StoredBoard } from "../../utils/localStorageOperations"
+import {IndexeddbPersistence} from 'y-indexeddb'
 
 function generateColor() {
     return `#${Math.floor(Math.random() * 0xffffff)
@@ -26,7 +25,27 @@ export default function Board(){
     const setBoardName = useClientStore(state => state.setBoardName)
     const setBoardId = useClientStore(state => state.setBoardId)
     const { id } = useParams()
-    const { yBoard } = useCanvasYjs()
+    const { yBoard, ydoc } = useCanvasYjs()
+
+    useEffect(() => {
+        if (!id) return
+
+        const indexeddbProvider = new IndexeddbPersistence(id, ydoc)
+
+        indexeddbProvider.whenSynced.then(() => {
+            console.log('IndexedDB synced')
+        })
+
+        return () => {
+            indexeddbProvider.destroy()
+        }
+    }, [id, ydoc])
+
+    useEffect(() => {
+        if (!yBoard.has('name') && boardName) {
+            yBoard.set('name', boardName)
+        }
+    }, [yBoard])
 
     useEffect(() => {
         const handleYjsChange = () => {
@@ -46,24 +65,6 @@ export default function Board(){
             yBoard.unobserve(handleYjsChange)
         }
     }, [yBoard, id, setBoardName, setBoardId])
-
-    useEffect(() => {
-        const storedBoards = JSON.parse(localStorage.getItem('boards') ?? '[]')
-        if(storedBoards.length === 0) return 
-        const storedBoard: StoredBoard= storedBoards.find((b: StoredBoard) => b.id === id)
-        if(!storedBoard) return 
-        const storedBoardName = storedBoard.name
-        if (!yBoard.has('name') && storedBoardName) {
-            yBoard.set('name', storedBoardName)
-            
-        }
-    }, [yBoard])
-    
-    useEffect(() => {
-        if (!boardName || !id) return
-
-        saveBoardToLocalStorage({id, name: boardName})
-    }, [id, boardName])
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user')

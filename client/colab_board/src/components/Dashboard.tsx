@@ -1,7 +1,6 @@
 import { useClientStore } from "../store/clientStore"
 import { useNavigate } from "react-router-dom"
 import {useState} from 'react'
-import {saveBoardToLocalStorage} from '../utils/localStorageOperations'
 
 export default function Dashboard(){
     const boardName = useClientStore(state => state.boardName)
@@ -21,10 +20,6 @@ export default function Dashboard(){
 
         const id = crypto.randomUUID()
         setBoardId(id)
-
-        const newBoard = {id, name: boardName}
-        saveBoardToLocalStorage(newBoard)
-
         navigate(`/board/${id}`)
     }
 
