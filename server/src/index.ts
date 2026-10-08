@@ -1,7 +1,7 @@
-import express from "express";
 import { createServer } from "http";
 import { Hocuspocus, type WebSocketLike } from '@hocuspocus/server'
 import crossws from 'crossws/adapters/node'
+import app from "./app.js";
 
 const hocuspocus = new Hocuspocus({
     async onStateless({ payload, document, connection }) {
@@ -11,12 +11,6 @@ const hocuspocus = new Hocuspocus({
             }
         }
     },
-})
-
-const app = express()
-
-app.get('/', (request, response) => {
-  response.send('Hello World!')
 })
 
 const server = createServer(app)

@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes, Navigate, useParams } from 'react-router-dom'
 import Board from './components/Board/Board'
 import Dashboard from './components/Dashboard'
+import Login from './components/Login'
 import {
     HocuspocusProviderWebsocketComponent,
     HocuspocusRoom,
@@ -12,6 +13,7 @@ export default function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Dashboard/>}/>
+                <Route path="/login" element={<Login/>}/>
                 <Route path="/board/:id" element={<BoardPage />} />
             </Routes>
         </BrowserRouter>
@@ -27,7 +29,7 @@ function BoardPage() {
 
     return (
         <HocuspocusProviderWebsocketComponent url="ws://127.0.0.1:1234">
-            <HocuspocusRoom name={`board-${id}`} onAwarenessUpdate={({states}) => console.log()} onStateless={({payload}) => console.log(payload)}>
+            <HocuspocusRoom name={`board-${id}`} onStateless={({payload}) => console.log(payload)}>
                 <Board />
             </HocuspocusRoom>
         </HocuspocusProviderWebsocketComponent>

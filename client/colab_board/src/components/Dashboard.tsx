@@ -1,16 +1,19 @@
 import { useClientStore } from "../store/clientStore"
 import { useNavigate } from "react-router-dom"
 import {useState} from 'react'
+import { logout } from "../api/auth"
 
 export default function Dashboard(){
     const boardName = useClientStore(state => state.boardName)
     const setBoardName = useClientStore(state => state.setBoardName)
     const setBoardId = useClientStore(state => state.setBoardId)
     const navigate = useNavigate()
-    const [loggedIn, setLoggedIn] = useState<boolean>(false)
-
-    function handleLogOut(){
+    const [loggedIn, setLoggedIn] = useState<boolean>(localStorage.getItem('user') ? true : false)
+    
+    async function handleLogOut(){
+        await logout()
         localStorage.removeItem("user")
+        localStorage.removeItem("accessToken")
         setLoggedIn(false)
     }
 
@@ -30,14 +33,14 @@ export default function Dashboard(){
                     Collaborative Whiteboard
                 </h1>
                 {loggedIn ? (
-                    <div className="text-end">
-                        {/* {userName}{" "} */}
+                    <div className="flex justify-end gap-2">
+                        <p>{JSON.parse(localStorage.getItem("user") ?? "").name ?? "Uknown username"}</p>
                         <button onClick={handleLogOut} className="cursor-pointer text-[#919191] hover:text-black font-medium">
                             Log out
                         </button>
                     </div>
                 ) : (
-                    <button className="cursor-pointer text-end text-[#919191]">Log in</button>
+                    <button onClick={() => navigate('/login')} className="cursor-pointer text-end text-[#919191]">Log in</button>
                 )}
                 <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
                     <h3 className="text-center text-xl font-medium">Find or create board</h3>

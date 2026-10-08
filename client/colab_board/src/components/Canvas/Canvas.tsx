@@ -15,7 +15,6 @@ import RemoteCursors from './RemoteCursors'
 import CanvasStage from './CanvasStage'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 
-
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
 const MAX_SCALE = 10

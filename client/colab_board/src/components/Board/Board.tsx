@@ -9,7 +9,7 @@ import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 import { useParams } from "react-router-dom"
 import {IndexeddbPersistence} from 'y-indexeddb'
 
-function generateColor() {
+export function generateColor() {
     return `#${Math.floor(Math.random() * 0xffffff)
         .toString(16)
         .padStart(6, '0')}`
