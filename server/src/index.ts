@@ -2,15 +2,34 @@ import { createServer } from "http";
 import { Hocuspocus, type WebSocketLike } from '@hocuspocus/server'
 import crossws from 'crossws/adapters/node'
 import app from "./app.js";
+import { saveBoardState, getBoardState } from "./utils/serverActionsWithBoard.js";
+import * as Y from 'yjs'
 
 const hocuspocus = new Hocuspocus({
-    async onStateless({ payload, document, connection }) {
-        for (const client of document.getConnections()) {
-            if (client !== connection) {
-                client.sendStateless(payload)
-            }
-        }
-    },
+  async onLoadDocument({ document, documentName }) {
+    const boardId = documentName.replace(/^board-/, '')
+    const board = await getBoardState(boardId)
+    if (board?.state) {
+        Y.applyUpdate(document, new Uint8Array(board.state))
+    }
+
+
+    return document
+  },
+
+  async onStoreDocument({ document, documentName }) {
+    const boardId = documentName.replace(/^board-/, '')
+    const state = Y.encodeStateAsUpdate(document)
+    await saveBoardState(state, boardId)
+  },
+
+  async onStateless({ payload, document, connection }) {
+      for (const client of document.getConnections()) {
+          if (client !== connection) {
+              client.sendStateless(payload)
+          }
+      }
+  },
 })
 
 const server = createServer(app)

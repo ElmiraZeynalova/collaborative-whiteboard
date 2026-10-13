@@ -1,22 +1,62 @@
 import { Icon } from '@iconify/react'
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Modal from '../Modal'
 import SideBar from './SideBar'
 import { useClientStore } from '../../store/clientStore'
+import { useMutation } from '@tanstack/react-query'
+import {changeBoardName} from '../../api/boards'
+import { useCanvasYjs } from '../../hooks/useCanvasYjs'
+import type { Board } from '../../types/board'
+import { useAuthState } from '../../context/AuthContext'
 
 export default function BoardTopSection(){
     const boardName = useClientStore(state => state.boardName)
+    const setBoardName = useClientStore(state => state.setBoardName)
     const boardId = useClientStore(state => state.boardId)
     const navigate = useNavigate()
     const [showModal, setShowModal] = useState(false)
     const [showMessage, setShowMessage] = useState(false)
     const [showUsersSideBar, setShowUsersSideBar] = useState(false)
+    const timerRef = useRef<number | undefined>(undefined)
+    const {yBoard} = useCanvasYjs()
+    const {loggedIn} = useAuthState()
 
+    function updateBoardNameLocaly(boardName: string){
+        yBoard.set("name", boardName)
+        const localBoards = JSON.parse(localStorage.getItem("boards") ?? "[]") ?? []
+        if(localBoards.length === 0) return
+        const updatedBoards = localBoards.map((board: Board) => {
+            return board.id === boardId ? {id: board.id, name: boardName} : board
+        })
+        localStorage.setItem("boards", JSON.stringify(updatedBoards))
+    }
+
+    const changeBoardNameMutation = useMutation({
+        mutationFn: async(boardName: string) => {
+            if(boardName === null || boardName.trim().length === 0) return
+            const board = await changeBoardName(boardId!, boardName)
+            return board
+        },
+        onSuccess: (board) => {
+            yBoard.set("name", board.name)
+        },
+        onError: (err) => console.log(err)
+    })
+    
     async function handleClick(){
-        await navigator.clipboard.writeText(`${window.location.origin}/board/${boardId}`)
+        await navigator.clipboard.writeText(`${window.location.origin}/boards/${boardId}`)
         setShowMessage(true)
     }
+
+    useEffect(() => {
+        timerRef.current = setTimeout(() => {
+            loggedIn ? changeBoardNameMutation.mutateAsync(boardName ?? "") : updateBoardNameLocaly(boardName!)
+        }, 5000)
+        return () => {
+            clearTimeout(timerRef.current)
+        }
+    }, [boardName])
 
     return(
         <>
@@ -52,14 +92,23 @@ export default function BoardTopSection(){
 
             <div className="absolute top-2 left-3 right-3 z-10 flex items-center justify-between gap-2">
                 <button 
-                    onClick={() => navigate('/')}
+                    onClick={() => {
+                        setBoardName(null)
+                        navigate('/')
+                    }}
                     className="cursor-pointer px-3 py-2 flex items-center justify-center gap-1 rounded-lg drop-shadow-md bg-white border border-black/15">
                     <Icon icon="gg:arrow-left" width={20} height={20} />
                     Dashboard
                 </button>
             
                 <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
-                    {boardName}
+                    <input
+                        value={boardName ?? ""}
+                        onChange={(e) => setBoardName(e.currentTarget.value)}
+                        className="outline-none p-0 m-0 text-center"
+                        size={Math.max(boardName?.length ?? 0, 1)}
+
+                    />
                     <button 
                         onClick={() => setShowModal(true)}
                         className="cursor-pointer border-l border-black/15 pl-3">Share link</button>

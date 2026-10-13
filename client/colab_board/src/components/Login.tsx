@@ -1,38 +1,33 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { login } from "../api/auth"
 import { useMutation } from '@tanstack/react-query'
-import { useClientStore } from "../store/clientStore"
-import { generateColor } from "./Board/Board"
+import { useAuthState } from "../context/AuthContext"
 
 export default function Login(){
-    const userName = useClientStore(state => state.userName)
-    const setUserName = useClientStore(state => state.setUserName)
-    const setUserId = useClientStore(state => state.setUserId)
+    const {setLoggedIn} = useAuthState()
     const [email, setEmail] = useState<string | null>(null)
     const [password, setPassword] = useState<string | null>(null)
     const navigate = useNavigate()
+    const location = useLocation()
+
+    const from = location.state?.from ? `${location.state.from.pathname}${location.state.from.search}${location.state.from.hash}` : '/'
+
     const [error, setError] = useState('')
     
     const loginMutation = useMutation({
         mutationFn: async() => {
-            if (email === null || password === null || userName === null) {
-                setError('Email, username and password are required')
+            if (email === null || password === null) {
+                setError('Email and password are required')
                 return
             }
-            const id = crypto.randomUUID()
-            setUserId(id)
-            const accessToken = await login(id, userName, email, password)
+            const {accessToken} = await login(email, password)
             return accessToken
         },
         onSuccess: (accessToken) => {
+            setLoggedIn(true)
             localStorage.setItem("accessToken", accessToken)
-            const user = {
-                name: userName,
-                color: generateColor()
-            }
-            localStorage.setItem('user', JSON.stringify(user))
-            navigate("/")
+            navigate(from, { replace: true })
         },
         onError: (err) => setError(err.message)
     })
@@ -60,19 +55,10 @@ export default function Login(){
                     Collaborative Whiteboard
                 </h1>
                 <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
+                    <h1 className="text-2xl font-bolder ml-6">Log in</h1>
                     <form
                         className="flex flex-col mx-4 sm:mx-6"
                         onSubmit={handleSubmit}>
-                        <input
-                            type="text"
-                            placeholder="username"
-                            className="bg-[#f3f3f3] grow min-w-0 mt-4 px-2 py-2 rounded-lg border border-[#aaa]"
-                            value={userName ?? ""}
-                            onChange={(e) => {
-                                setUserName(e.target.value)
-                                setError('')
-                            }}
-                        />
                         <input
                             type="email"
                             placeholder="example@gmail.com"
@@ -93,7 +79,7 @@ export default function Login(){
                                 setError('')
                             }}
                         />
-                        {error && <p className="error">{error}</p>}
+                        {error && <p className="text-red">{error}</p>}
                         <button
                             type="submit"
                             className="shrink-0 cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-black border-2 border-transparent font-medium rounded-lg px-4 py-2"

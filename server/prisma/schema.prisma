@@ -10,9 +10,10 @@ datasource db {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model app_users {
   id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username      String
   email         String          @unique
   password      String
+  name          String?
+  app_sessions  app_sessions[]
   board_members board_members[]
 }
 
@@ -30,8 +31,19 @@ model boards {
 model board_members {
   board_id  String    @db.Uuid
   user_id   String    @db.Uuid
+  role      String
   boards    boards    @relation(fields: [board_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   app_users app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([board_id, user_id])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model app_sessions {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String    @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  refresh_token_hash String    @unique
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at         DateTime  @db.Timestamptz(6)
+  app_users          app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }

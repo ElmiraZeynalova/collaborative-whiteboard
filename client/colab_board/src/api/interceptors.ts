@@ -15,20 +15,33 @@ apiClient.interceptors.response.use(
     (response) => {
         return response
     },
-    
     async (error) => {
         const originalRequest = error.config
-        if(error.response.status == 401 && error.config && !error.config._isRetry){
+
+        if (
+            error.response?.status === 401 &&
+            originalRequest &&
+            !originalRequest._isRetry &&
+            !originalRequest.url?.includes('/api/auth/refresh')
+        ) {
             originalRequest._isRetry = true
-            try{
-                const {data} = await apiClient.get("/api/auth/refresh")
-                localStorage.setItem("accessToken", data.accessToken)
-                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+
+            try {
+                const { data } = await apiClient.get('/api/auth/refresh')
+
+                localStorage.setItem('accessToken', data.accessToken)
+
+                originalRequest.headers.Authorization =
+                    `Bearer ${data.accessToken}`
+
                 return apiClient.request(originalRequest)
-            }catch(e){
-                localStorage.removeItem("accessToken")
+            } catch (refreshError) {
+                localStorage.removeItem('accessToken')
+                window.dispatchEvent(new Event('auth:logout'))
+                throw refreshError
             }
         }
+
         throw error
     }
 )

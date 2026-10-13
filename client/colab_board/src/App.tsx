@@ -14,7 +14,7 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<Dashboard/>}/>
                 <Route path="/login" element={<Login/>}/>
-                <Route path="/board/:id" element={<BoardPage />} />
+                <Route path="/boards/:id" element={<BoardPage />} />
             </Routes>
         </BrowserRouter>
     )
