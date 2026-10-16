@@ -6,6 +6,7 @@ import {
     HocuspocusProviderWebsocketComponent,
     HocuspocusRoom,
 } from '@hocuspocus/provider-react'
+import { useClientStore } from './store/clientStore'
 
 
 export default function App() {
@@ -22,14 +23,38 @@ export default function App() {
 
 function BoardPage() {
     const { id } = useParams()
+    const setIsBanned = useClientStore(state => state.setIsBanned)
 
     if (!id) {
         return <Navigate to="/" replace />
     }
 
+    const accessToken = localStorage.getItem("accessToken") ?? ""
+
+    function handleStateless({ payload }: { payload: string }) {
+        try {
+            const message = JSON.parse(payload)
+            if (message.type === 'access') {
+                if(message.content === "access prohibited"){
+                    setIsBanned(true)
+                }else if(message.content === "access allowed"){
+                    setIsBanned(false)
+                }
+            }else if(message.type === "connection"){
+                console.log(message.content)
+            }
+        } catch (error) {
+            console.error('Invalid stateless message:', error)
+        }
+    }
+
     return (
         <HocuspocusProviderWebsocketComponent url="ws://127.0.0.1:1234">
-            <HocuspocusRoom name={`board-${id}`} onStateless={({payload}) => console.log(payload)}>
+            <HocuspocusRoom 
+                name={`board-${id}`} 
+                token={accessToken} 
+                onStateless={handleStateless} 
+                onAuthenticationFailed={({ reason }) => {console.error('Authentication failed:', reason)}}>
                 <Board />
             </HocuspocusRoom>
         </HocuspocusProviderWebsocketComponent>

@@ -20,8 +20,8 @@ export async function createBoard(board: Board){
     return data 
 }
 
-export async function joinBoard(boardId: string){
-    const {data} = await apiClient.post(`/api/boards/${boardId}/join`)
+export async function joinBoard(boardId: string, userName: string, userColor: string){
+    const {data} = await apiClient.post(`/api/boards/${boardId}/join`, {userName, userColor})
     return data 
 }
 
@@ -44,3 +44,14 @@ export async function getAllBoardMembers(boardId: string){
     const {data} = await apiClient.get(`/api/boards/${boardId}/members`)
     return data
 }
+
+export async function changeUserAccessToBoard(boardId: string, userId: string, access: boolean){
+    const {data} = await apiClient.patch(`/api/boards/${boardId}/members/${userId}/access`, {isAllowed: access})
+    return data
+}
+
+export async function getBoardMember(boardId: string, userId: string){
+    const {data} = await apiClient.get(`/api/boards/${boardId}/members/${userId}`)
+    return data
+}
+

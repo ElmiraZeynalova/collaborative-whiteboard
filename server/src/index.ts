@@ -4,8 +4,34 @@ import crossws from 'crossws/adapters/node'
 import app from "./app.js";
 import { saveBoardState, getBoardState } from "./utils/serverActionsWithBoard.js";
 import * as Y from 'yjs'
+import {checkBoardAccess} from './utils/checkBoardAccess.js'
+import jwt from 'jsonwebtoken'
 
-const hocuspocus = new Hocuspocus({
+export const hocuspocus = new Hocuspocus({
+
+  async onAuthenticate({ token, documentName }) {
+    const secret = process.env.JWT_ACCESS_SECRET
+    if (!token) {
+      throw new Error("Token wasn't provided")
+    }
+    if (!secret) {
+      throw new Error('JWT_ACCESS_SECRET is not configured')
+    }
+    const user = jwt.verify(token, secret)
+
+    if (!user || typeof user === 'string' || !user.id) {
+      throw new Error('Unauthorized')
+    }
+
+    const boardId = documentName.replace(/^board-/, '') 
+
+    await checkBoardAccess(boardId, user.id)
+
+    return {
+      userId: user.id,
+    }
+  },
+
   async onLoadDocument({ document, documentName }) {
     const boardId = documentName.replace(/^board-/, '')
     const board = await getBoardState(boardId)
@@ -24,11 +50,35 @@ const hocuspocus = new Hocuspocus({
   },
 
   async onStateless({ payload, document, connection }) {
-      for (const client of document.getConnections()) {
+      const payloadObj = JSON.parse(payload)
+
+      if(payloadObj.type === "access"){
+        const targetUserId = payloadObj.content.userId
+
+        for (const client of document.getConnections()) {
+            if (client.context.userId === targetUserId) {
+                client.sendStateless(
+                    JSON.stringify({
+                        type: 'access',
+                        content: payloadObj.content.message,
+                    })
+                )
+                client.close()
+
+            }
+        }
+      }else if(payloadObj.type === "connection"){
+        for (const client of document.getConnections()) {
           if (client !== connection) {
-              client.sendStateless(payload)
+              client.sendStateless(
+                       JSON.stringify({
+                        type: 'connection',
+                        content: payloadObj.content,
+                    }))
           }
+        }
       }
+
   },
 })
 
@@ -40,7 +90,6 @@ const ws = crossws({
       const clientConnection = hocuspocus.handleConnection(
         peer.websocket as unknown as WebSocketLike,
         peer.request as Request,
-        { user_id: 1234 },
       )
       ;(peer as any)._hocuspocus = clientConnection
     },

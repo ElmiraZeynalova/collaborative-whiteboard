@@ -1,11 +1,9 @@
 import { useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { login } from "../api/auth"
-import { useMutation } from '@tanstack/react-query'
-import { useAuthState } from "../context/AuthContext"
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 export default function Login(){
-    const {setLoggedIn} = useAuthState()
     const [email, setEmail] = useState<string | null>(null)
     const [password, setPassword] = useState<string | null>(null)
     const navigate = useNavigate()
@@ -14,19 +12,20 @@ export default function Login(){
     const from = location.state?.from ? `${location.state.from.pathname}${location.state.from.search}${location.state.from.hash}` : '/'
 
     const [error, setError] = useState('')
-    
+    const queryClient = useQueryClient();
+
     const loginMutation = useMutation({
         mutationFn: async() => {
             if (email === null || password === null) {
                 setError('Email and password are required')
                 return
             }
-            const {accessToken} = await login(email, password)
-            return accessToken
+            const data = await login(email, password)
+            return data
         },
-        onSuccess: (accessToken) => {
-            setLoggedIn(true)
-            localStorage.setItem("accessToken", accessToken)
+        onSuccess: (data) => {
+            queryClient.setQueryData(['session'], {userId: data.userId});
+            localStorage.setItem("accessToken", data.accessToken)
             navigate(from, { replace: true })
         },
         onError: (err) => setError(err.message)

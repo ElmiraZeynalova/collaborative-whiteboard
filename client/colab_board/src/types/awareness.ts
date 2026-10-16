@@ -11,6 +11,10 @@ export type AwarenessCursor = {
 }
 
 export type Member = {
-    id: string
+    board_id: string
     name: string
+    user_id: string
+    color: string
+    role: string
+    access: boolean
 }

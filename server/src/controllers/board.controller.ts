@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
-import {getAllUserBoards, getUserBoard, createUserBoard, deleteUserBoard, addUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers} from '../services/board.service.js'
+import {getAllUserBoards, getUserBoard, createUserBoard, deleteUserBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId} from '../services/board.service.js'
+import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
+import { hocuspocus } from "../index.js";
 
 export async function getAllBoards(req: Request, res: Response){
     try{
@@ -41,8 +43,11 @@ export async function deleteBoard(req: Request, res: Response){
 
 export async function joinBoard(req: Request, res: Response){
     try{
-        const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-        const member = await addUserToBoard(req.user.id, id)
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const {userName, userColor} = req.body
+
+        const member = await joinUserToBoard(req.user.id, boardId, userName, userColor)
+
         res.status(200).json(member)
     }catch(error){
         res.status(400).json({error: (error as Error).message})
@@ -74,6 +79,26 @@ export async function changeBoardName(req: Request, res: Response){
     }
 }
 
+export async function changeUserAccessToBoard(req: Request, res: Response){
+    try{
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId
+        const {isAllowed} = req.body
+        const member = await changeAccessToBoardByUserId(boardId, userId, isAllowed)
+
+        const documentName = `board-${boardId}`;
+        const document = hocuspocus.documents.get(documentName);
+
+        if (document) {
+            removeUserFromAwareness(document.awareness, userId);
+        }
+
+        res.status(200).json(member)
+    }catch(error){
+        res.status(400).json({error: (error as Error).message})
+    }
+}
+
 export async function getAllBoardMembers(req: Request, res: Response){
     try{
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
@@ -84,3 +109,15 @@ export async function getAllBoardMembers(req: Request, res: Response){
     }
 
 }
+
+export async function getBoardMember(req: Request, res: Response){
+    try{
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId
+        const member = await getBoardMemberByUserId(boardId, userId)
+        res.status(200).json(member)
+    }catch(error){
+        res.status(400).json({error: (error as Error).message})
+    }
+}
+

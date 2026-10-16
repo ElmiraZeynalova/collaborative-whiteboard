@@ -1,20 +1,52 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, type ReactNode } from 'react'
 import {userIsValid} from "../api/auth"
 import axios from 'axios'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useClientStore } from '../store/clientStore'
 
-interface AuthContextValue {
+type AuthContextValue = {
   loggedIn: boolean
-  setLoggedIn: (state: boolean) => void
-
 }
+
+type Session = {
+  userId: string;
+} | null;
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [loggedIn, setLoggedIn] = useState<boolean>(false)
+  const queryClient = useQueryClient()
+  const setUserId = useClientStore(state => state.setUserId)
+
+  const query = useQuery<Session>({
+    queryKey: ['session'],
+    queryFn: async () => {
+      try {
+        const session = await userIsValid();
+        setUserId(session.userId)
+        return session
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          setUserId(null);
+          return null;
+        }
+        throw error;
+      }
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const loggedIn = query.data !== null && query.data !== undefined;
 
   useEffect(() => {
-    const handleLogout = () => setLoggedIn(false)
+    const handleLogout = () => {
+      setUserId(null)
+      queryClient.setQueryData(['session'], null)
+      queryClient.removeQueries({
+          predicate: query => query.queryKey[0] !== 'session',
+      })
+     }
 
     window.addEventListener('auth:logout', handleLogout)
 
@@ -23,28 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  useEffect(() => {
-    async function verifySession() {
-        try {
-            await userIsValid()
-            setLoggedIn(true)
-        } catch (error) {
-            setLoggedIn(false)
-
-            if (axios.isAxiosError(error)) {
-                console.error(
-                    'Session verification failed:',
-                    error.response?.status ?? error.message
-                )
-            }
-        } 
-    }
-
-    verifySession()
-}, [])
-
   return (
-    <AuthContext.Provider value={{ loggedIn, setLoggedIn }}>
+    <AuthContext.Provider value={{ loggedIn }}>
       {children}
     </AuthContext.Provider>
   )

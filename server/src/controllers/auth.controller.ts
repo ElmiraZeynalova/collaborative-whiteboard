@@ -12,9 +12,9 @@ const refreshCookieOptions = {
 
 export async function logIn(req: Request, res: Response){
     try{
-        const {refreshToken, accessToken} = await logInUser(req.body)
+        const {refreshToken, accessToken, userId} = await logInUser(req.body)
         res.cookie('jwt', refreshToken, refreshCookieOptions)
-        res.status(200).json({ accessToken })
+        res.status(200).json({ accessToken, userId })
     }catch(error){
         res.status(401).json({error: (error as Error).message})
     }
@@ -75,9 +75,8 @@ export async function getMe(req: Request, res: Response) {
             })
         }
 
-        return res.status(200).json({ user })
+        return res.status(200).json({userId: user.id})
     } catch (error) {
-        console.error(error)
 
         return res.status(500).json({
             error: 'Internal server error',

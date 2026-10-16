@@ -12,13 +12,25 @@ import { deleteLocalBoardDB } from "../utils/deleteLocalBoardDB"
 export default function Dashboard(){
     const navigate = useNavigate()
     const location = useLocation()
-    const {loggedIn, setLoggedIn} = useAuthState()
+    const {loggedIn} = useAuthState()
     const [rerender, forceRerender] = useState<number>(0)
+    const queryClient = useQueryClient()
 
     const { data: serverBoards = [] } = useQuery({
         queryKey: ['getUserBoards'],
         queryFn: getAllUsersBoards,
         enabled: loggedIn,
+    })
+
+    const logoutMutation = useMutation({
+        mutationFn: async() => {
+            await logout()
+        },
+        onSuccess: () => {
+            localStorage.removeItem("accessToken")
+            queryClient.setQueryData(['session'], null);
+        },
+        onError: (err) => console.log(err)
     })
 
     const localBoards = useMemo(() => {
@@ -32,27 +44,6 @@ export default function Dashboard(){
 
     const boards: Board[] = loggedIn ? [...serverBoards, ...localBoards] : localBoards
 
-    function getStoredUserName(): string | null {
-        const storedUser = localStorage.getItem("user")
-
-        if (!storedUser) return null
-
-        try {
-            const user = JSON.parse(storedUser)
-            return typeof user.name === "string" && user.name.trim()
-                ? user.name
-                : null
-        } catch {
-            return null
-        }
-    }
-
-    async function handleLogOut(){
-        await logout()
-        localStorage.removeItem("accessToken")
-        setLoggedIn(false)
-    }
-
     return (
         <div className="flex justify-center min-h-dvh bg-[#f3f3f3] w-full px-4">
             <div className="flex flex-col gap-2 w-full max-w-md">
@@ -61,8 +52,8 @@ export default function Dashboard(){
                 </h1>
                 {loggedIn ? (
                     <div className="flex justify-end gap-2">
-                        <p>{getStoredUserName()}</p>
-                        <button onClick={handleLogOut} className="cursor-pointer text-[#919191] hover:text-black font-medium">
+                        <p>You're logged in.</p>
+                        <button onClick={() => logoutMutation.mutateAsync()} className="cursor-pointer text-[#919191] hover:text-black font-medium">
                             Log out
                         </button>
                     </div>

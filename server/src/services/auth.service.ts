@@ -34,7 +34,7 @@ export async function logInUser(credentials: Credentials){
                 }
             })
 
-            return {accessToken, refreshToken}
+            return {accessToken, refreshToken, userId: existingUser.id}
         }else{
             throw new Error("Invalid password")
         }
@@ -65,7 +65,7 @@ export async function logInUser(credentials: Credentials){
             }
         })
         
-        return {accessToken, refreshToken}
+        return {accessToken, refreshToken, userId: userId}
     }
 }
 
@@ -135,7 +135,6 @@ export async function getUser(userId: string){
         where: { id: userId },
         select: {
             id: true,
-            email: true,
         },
     })
 }

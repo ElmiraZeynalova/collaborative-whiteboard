@@ -9,9 +9,9 @@ import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 import { useParams, useNavigate } from "react-router-dom"
 import {IndexeddbPersistence} from 'y-indexeddb'
 import { useAuthState } from "../../context/AuthContext"
-import { useMutation } from '@tanstack/react-query'
-import { joinBoard } from "../../api/boards"
-import { changeUsername } from "../../api/members"
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { joinBoard, getBoardMember } from "../../api/boards"
+import axios from 'axios'
 
 export function generateColor() {
     return `#${Math.floor(Math.random() * 0xffffff)
@@ -20,7 +20,9 @@ export function generateColor() {
 }
 
 export default function Board(){
-    const [showModal, setShowModal] = useState(() => !localStorage.getItem('user'))
+    const [showNameModal, setShowNameModal] = useState<boolean>(false)
+    const isBanned = useClientStore(state => state.isBanned)
+    const setIsBanned = useClientStore(state => state.setIsBanned)
     const userName = useClientStore(state => state.userName)
     const setUserName = useClientStore(state => state.setUserName)
     const provider = useHocuspocusProvider()
@@ -31,22 +33,55 @@ export default function Board(){
     const { yBoard, ydoc } = useCanvasYjs()
     const {loggedIn} = useAuthState()
     const userRole = useClientStore(state => state.userRole)
-    const setUserRole = useClientStore(state => state.setUserRole)
     const userId = useClientStore(state => state.userId)
-    const setUserId = useClientStore(state => state.setUserId)
+    const setUserRole = useClientStore(state => state.setUserRole)
+    const setUserColor = useClientStore(state => state.setUserColor)
+    const userColor = useClientStore(state => state.userColor)
 
-    const addUserToBoardMutation = useMutation({
-        mutationFn: async() => {
-            if(!id) return
-            const entry = await joinBoard(id)
-            return entry
+    const query = useQuery({
+        queryKey: ['getBoardMember', id, userId],
+        queryFn: async() => {
+            if (!id || !userId) return undefined;
+            try {
+                return await getBoardMember(id, userId)
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response?.status === 400) {
+                    return null;
+                }
+                throw error;
+            }
         },
-        onSuccess: (entry) => {
-            setUserId(entry.user_id)
-            setUserRole(entry.role)
-        },
-        onError: (err) => console.log(err)
+        enabled: loggedIn && userId !== null && !!id,
     })
+
+    useEffect(() => {
+        if(!loggedIn || userId === null || !id || query.isPending || query.isError) return
+
+        const member = query.data
+
+        if(member === undefined) return
+
+        if(member === null){
+            setShowNameModal(true)
+            return
+        }
+
+        if(!member.access){
+            setIsBanned(true)
+            return
+        }
+        
+        if(member.name === null){
+            setShowNameModal(true)
+            return
+        }
+
+        setUserName(member.name)
+        setUserRole(member.role)
+        setUserColor(member.color)
+     
+    }, [query.data, userId, loggedIn, id, query.isPending, query.isError])
+
 
     useEffect(() => {
         if (!id) return
@@ -62,11 +97,13 @@ export default function Board(){
         }
     }, [id, ydoc])
 
+
     useEffect(() => {
         if (!yBoard.has('name') && boardName) {
             yBoard.set('name', boardName)
         }
     }, [yBoard])
+
 
     useEffect(() => {
         const handleYjsChange = () => {
@@ -87,45 +124,27 @@ export default function Board(){
         }
     }, [yBoard, id, setBoardName, setBoardId])
 
+
     useEffect(() => {
-        if (!userName || !userRole || !userId) return
-
-        const storedUser = localStorage.getItem('user')
-        if (!storedUser) return
-
-        const user = JSON.parse(storedUser)
+        if (!userName || !userRole || !userId || !userColor) return
 
         provider.setAwarenessField('user', {
             role: userRole,
-            name: user.name,
-            color: user.color,
+            name: userName,
+            color: userColor,
             userId
          
         })
-
-        provider.sendStateless(`${userName} entered the room`)
         
-    }, [provider, userName, userRole, userId])
 
-    useEffect(() => {
-        const storedUser = localStorage.getItem('user')
-
-        if (!storedUser) return
-
-        const user = JSON.parse(storedUser)
-
-        setUserName(user.name)
-        setShowModal(false)
-    }, [setUserName])
-
-    useEffect(() => {
-        if(!loggedIn) return
-        addUserToBoardMutation.mutate()
-    }, [id, loggedIn])
+        provider.sendStateless(JSON.stringify({type: 'connection', content: `${userName} entered the room`}))
+        
+    }, [provider, userName, userRole, userId, userColor])
 
     return(
         <>
-            {showModal && <UserNameModal showModal={showModal} setShowModal={setShowModal} />}
+            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} />}
+            {isBanned && <BanModal showModal={isBanned} />}
             <div>
                 <BoardTopSection/>
                 <Canvas/>
@@ -141,38 +160,42 @@ function UserNameModal({showModal, setShowModal}: {showModal: boolean, setShowMo
     const navigate = useNavigate()
     const userNameRef = useRef<HTMLInputElement | null>(null)
     const setUserName = useClientStore(state => state.setUserName)
+    const setUserRole = useClientStore(state => state.setUserRole)
+    const queryClient = useQueryClient()
+    const boardId = useClientStore(state => state.boardId)
+    const setUserColor = useClientStore(state => state.setUserColor)
 
-    const changeUsernameMutation = useMutation({
-        mutationFn: async(userName: string) => {
-            const entry = await changeUsername(userName)
-            return entry
+    const joinBoardMutation = useMutation({
+        mutationFn: async ({ boardId, userName, color }: { boardId: string, userName: string, color: string }) => {
+            return joinBoard(boardId, userName, color)
         },
         onSuccess: (entry) => {
-            console.log(entry)
+            setShowModal(false)
+            setUserName(entry.name)
+            setUserRole(entry.role)
+            setUserColor(entry.color)
+            queryClient.setQueryData(['getBoardMember'], entry)
+            
         },
-        onError: (err) => console.log(err)
+        onError: (err) => console.error(err),
     })
 
-    function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
 
-        const userName = userNameRef.current?.value.trim()
+        const name = userNameRef.current?.value.trim()
 
-        if (!userName) return
+        if (!name || !boardId) return
 
-        if(loggedIn) changeUsernameMutation.mutateAsync(userName)
-            
-        const user = {
-            name: userName,
-            color: generateColor(),
-        }
+        const color =  generateColor()
 
-        localStorage.setItem('user', JSON.stringify(user))
-
-        setUserName(userName)
-        setShowModal(false)
+        joinBoardMutation.mutateAsync({
+            boardId,
+            userName: name,
+            color: color
+        })
     }
-
+    
     return(
         <Modal open={showModal} closeModal={() => setShowModal(false)}>
             <Modal.Overlay />
@@ -206,6 +229,30 @@ function UserNameModal({showModal, setShowModal}: {showModal: boolean, setShowMo
                             className="cursor-pointer text-[#6e6e6e] hover:text-black font-medium mt-2"
                         >Login</button></>}
                     </form>
+                </Modal.Content>
+            </Modal.Container>
+        </Modal>
+    )
+}
+
+
+function BanModal({showModal}: {showModal: boolean}){
+    const navigate = useNavigate()
+    const setBoardName = useClientStore(state => state.setBoardName)
+    return(
+        <Modal open={showModal} closeModal={() => {}}>
+            <Modal.Overlay />
+            <Modal.Container>
+                <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
+                <Modal.Content>
+                    <div className="flex flex-col gap-4">
+                        <p>You don't have permission to access this board</p>
+                        <button
+                            className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                            onClick={() => {
+                                setBoardName(null)
+                                navigate("/")}}>Back to dashboard</button>
+                    </div>
                 </Modal.Content>
             </Modal.Container>
         </Modal>

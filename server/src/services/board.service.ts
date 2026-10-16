@@ -42,7 +42,7 @@ export async function deleteUserBoard(boardId: string){
     return prisma.boards.delete({where: {id: boardId}})
 }
 
-export async function addUserToBoard(userId: string, boardId: string) {
+export async function joinUserToBoard(userId: string, boardId: string, userName: string, userColor: string) {
     const existingBoard = await prisma.boards.findUnique({
         where: { id: boardId },
         select: { id: true },
@@ -63,8 +63,10 @@ export async function addUserToBoard(userId: string, boardId: string) {
             user_id: userId,
             board_id: boardId,
             role: "contributor",
+            color: userColor,
+            name: userName
         },
-        update: {},
+        update: {name: userName, color: userColor},
     })
 
 }
@@ -89,17 +91,32 @@ export async function updateBoardName(boardId: string, newName: string){
 }
 
 export async function getBoardMembers(boardId: string){
-    return prisma.app_users.findMany({
+    return prisma.board_members.findMany({
         where: {
-            board_members: {
-                some: {
-                    board_id: boardId,
-                },
+            board_id: boardId,
+        }
+    })
+}
+
+export async function changeAccessToBoardByUserId(boardId: string, userId: string, isAllowed: boolean){
+    return prisma.board_members.update({
+        where: {
+            board_id_user_id: {
+                user_id: userId,
+                board_id: boardId,
             },
         },
-        select: {
-            id: true,
-            name: true
+        data: {access: isAllowed}
+    })
+}
+
+export async function getBoardMemberByUserId(boardId: string, userId: string){
+    return prisma.board_members.findUnique({
+        where: {
+            board_id_user_id: {
+                user_id: userId,
+                board_id: boardId,
+            },
         }
-    });
+    })
 }
