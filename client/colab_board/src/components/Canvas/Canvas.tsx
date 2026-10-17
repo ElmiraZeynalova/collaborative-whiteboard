@@ -14,6 +14,7 @@ import { getShapeType } from '../../utils/yShapeGetters'
 import RemoteCursors from './RemoteCursors'
 import CanvasStage from './CanvasStage'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
+import { useClientStore } from '../../store/clientStore'
 
 const SCALE_BY = 1.05
 const MIN_SCALE = 0.1
@@ -238,8 +239,11 @@ export default function Canvas() {
     }
 
     function updateMyPointer(x: number, y: number) {
+        const userName = useClientStore.getState().userName
+        if(!userName) return
         provider.setAwarenessField('cursor', { x, y })
     }
+
     function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
 
         setContextMenu(null)

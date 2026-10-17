@@ -21,6 +21,7 @@ export default function BoardTopSection(){
     const timerRef = useRef<number | undefined>(undefined)
     const {yBoard} = useCanvasYjs()
     const {loggedIn} = useAuthState()
+    const userRole = useClientStore(state => state.userRole)
 
     function updateBoardNameLocaly(boardName: string){
         yBoard.set("name", boardName)
@@ -102,13 +103,14 @@ export default function BoardTopSection(){
                 </button>
             
                 <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
-                    <input
+                    {userRole !== "contributor" ? <input
                         value={boardName ?? ""}
                         onChange={(e) => setBoardName(e.currentTarget.value)}
                         className="outline-none p-0 m-0 text-center"
                         size={Math.max(boardName?.length ?? 0, 1)}
 
                     />
+                    : <p>{boardName}</p>}
                     <button 
                         onClick={() => setShowModal(true)}
                         className="cursor-pointer border-l border-black/15 pl-3">Share link</button>

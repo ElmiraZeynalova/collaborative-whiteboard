@@ -2,16 +2,17 @@ import {useHocuspocusAwareness, useHocuspocusProvider } from '@hocuspocus/provid
 import { Icon } from '@iconify/react'
 import type {AwarenessUser, Member} from '../../types/awareness'
 import {changeUserAccessToBoard, getAllBoardMembers} from '../../api/boards'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import { useClientStore } from '../../store/clientStore'
 import { useAuthState } from '../../context/AuthContext'
-import {useMemo} from 'react'
+import {useEffect} from 'react'
 
 export default function SideBar({closeBar}: {closeBar: () => void}) {
     const awareness = useHocuspocusAwareness()
     const provider = useHocuspocusProvider()
     const boardId = useClientStore(state => state.boardId)
     const {loggedIn} = useAuthState()
+    const queryClient = useQueryClient()
 
     const changeUserAccessToBoardMutation = useMutation({
         mutationFn: async ({userId, access}: {userId: string, access: boolean}) => {
@@ -19,23 +20,18 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
             const member = await changeUserAccessToBoard(boardId, userId, access)
             return member
         },
-        onSuccess: (member) => {
-            console.log(member)
+        onSuccess: async(member) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['getAllBoardMembers', boardId],
+            })
+
             provider.sendStateless(JSON.stringify({type: 'access', content: {message: 'access prohibited', userId: member.user_id}}))
         },
         onError: (err) => console.log(err)
     })
 
-    const activeMembers = useMemo(() => {
-        if(!awareness) return []
-        return awareness.map(item => {
-            const user = item.user as AwarenessUser
-            if(user) return user.userId
-        })
-    }, [awareness])
-
-    const { data: members = [] } = useQuery({
-        queryKey: ['getAllBoardMembers'],
+    const { data: members = [], isPending } = useQuery({
+        queryKey: ['getAllBoardMembers', boardId],
         queryFn: async() => {
             const members = await getAllBoardMembers(boardId!)
             return members
@@ -43,9 +39,27 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
         enabled: loggedIn,
     })
 
-    console.log(members)
+    const activeMembers = awareness.map(item => {
+        const user = item.user as AwarenessUser
+        if(user) return user.userId
+    }) ?? []
 
-    function handleAccessChange(userId: string, access: boolean){
+    const activeMembersKey = activeMembers
+        .filter((id): id is string => Boolean(id))
+        .sort()
+        .join(',')
+
+    useEffect(() => {
+        if (!loggedIn || !boardId) return
+        queryClient.invalidateQueries({
+            queryKey: ['getAllBoardMembers', boardId],
+        })
+    }, [activeMembersKey, boardId, loggedIn, queryClient])
+
+    // console.log(activeMembers)
+    // console.log(members)
+
+    async function handleAccessChange(userId: string, access: boolean){
         changeUserAccessToBoardMutation.mutateAsync({userId, access})
     }
 
@@ -63,14 +77,15 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                         {awareness.map(item => {
                             const user = item.user as AwarenessUser
                             if(!user) return null
-                            return <UserBadge key={user.userId} userId={user.userId} userName={user.name} userColor={user.color} userRole={user.role} status="active" banUser={() => handleAccessChange(user.userId, false)}/>
+                            return <UserBadge key={user.userId} userId={user.userId} userName={user.name} userColor={user.color} userRole={user.role} status="active" changeAccess={() => handleAccessChange(user.userId, false)}/>
                         })}
                     </section>
                     <section className="flex flex-col gap-2">
                         <p className="text-[#919191] text-sm">All</p>
+                        {isPending && <p>Loading members...</p>}
                         {members.map((member: Member) => {
                             if(activeMembers.includes(member.user_id)) return null
-                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive": "banned"} banUser={() => handleAccessChange(member.user_id, false)}/>
+                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive" : "banned"} changeAccess={() => handleAccessChange(member.user_id, member.access ? false : true)}/>
                         })}
                     </section>
                 </main>
@@ -81,7 +96,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     )
 }
 
-type Props = {userId: string, userName: string, userColor: string, userRole: string, status: 'active' | 'inactive' | 'banned', banUser: () => void}
+type Props = {userId: string, userName: string, userColor: string, userRole: string, status: 'active' | 'inactive' | 'banned', changeAccess: () => void}
 
 function UserBadge(props: Props){
     const userId = useClientStore(state => state.userId)
@@ -102,10 +117,9 @@ function UserBadge(props: Props){
             <p>{props.userRole}</p>
 
             {userRole === "owner" && props.userRole === "contributor" && <button
-                onClick={props.banUser}
+                onClick={props.changeAccess}
                 className="absolute right-0 top-8 z-13 invisible group-hover:visible cursor-pointer shrink-0  bg-white hover:bg-mauve-600 text-sm text-[#FF0000] hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
-                >Ban member
-            </button>}
+                >{props.status === "banned" ? "Unban member" : "Ban user"}</button>}
         </div>
     )
 }

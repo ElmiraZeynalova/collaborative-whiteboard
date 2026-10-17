@@ -8,7 +8,6 @@ import {
 } from '@hocuspocus/provider-react'
 import { useClientStore } from './store/clientStore'
 
-
 export default function App() {
     return (
         <BrowserRouter>
@@ -36,9 +35,8 @@ function BoardPage() {
             const message = JSON.parse(payload)
             if (message.type === 'access') {
                 if(message.content === "access prohibited"){
+                    console.log("GOT BANNED")
                     setIsBanned(true)
-                }else if(message.content === "access allowed"){
-                    setIsBanned(false)
                 }
             }else if(message.type === "connection"){
                 console.log(message.content)

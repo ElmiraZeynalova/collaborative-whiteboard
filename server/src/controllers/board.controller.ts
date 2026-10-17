@@ -5,7 +5,14 @@ import { hocuspocus } from "../index.js";
 
 export async function getAllBoards(req: Request, res: Response){
     try{
-        const boards = await getAllUserBoards(req.user.id)
+        const data = await getAllUserBoards(req.user.id)
+        const boards = data.map(board => {
+            return {
+                id: board.id,
+                name: board.name,
+                userRole: board.board_members[0].role
+            }
+        })
         res.status(200).json(boards)
     }catch(error){
         res.status(400).json({error: (error as Error).message})
@@ -34,7 +41,7 @@ export async function createBoard(req: Request, res: Response){
 export async function deleteBoard(req: Request, res: Response){
     try{
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-        const board = await deleteUserBoard(id)
+        const board = await deleteUserBoard(id, req.user.id)
         res.status(200).json(board)
     }catch(error){
         res.status(400).json({error: (error as Error).message})
@@ -72,7 +79,7 @@ export async function changeBoardName(req: Request, res: Response){
     try{
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
         const {name} = req.body
-        const board = await updateBoardName(id, name)
+        const board = await updateBoardName(id, name, req.user.id)
         res.status(200).json(board)
     }catch(error){
         res.status(400).json({error: (error as Error).message})

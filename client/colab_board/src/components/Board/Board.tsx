@@ -239,19 +239,25 @@ function UserNameModal({showModal, setShowModal}: {showModal: boolean, setShowMo
 function BanModal({showModal}: {showModal: boolean}){
     const navigate = useNavigate()
     const setBoardName = useClientStore(state => state.setBoardName)
+
     return(
         <Modal open={showModal} closeModal={() => {}}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
                 <Modal.Content>
-                    <div className="flex flex-col gap-4">
-                        <p>You don't have permission to access this board</p>
+                    <div className="flex flex-col gap-2">
+                        <p className="text-lg">You don't have permission to access this board</p>
                         <button
                             className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
                             onClick={() => {
                                 setBoardName(null)
-                                navigate("/")}}>Back to dashboard</button>
+                                navigate("/")}}>Back to dashboard
+                        </button>
+                        <button
+                            className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                            onClick={() => window.location.reload()}>Recheck access
+                        </button>
                     </div>
                 </Modal.Content>
             </Modal.Container>
