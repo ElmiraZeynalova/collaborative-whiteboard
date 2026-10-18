@@ -19,6 +19,13 @@ export function generateColor() {
         .padStart(6, '0')}`
 }
 
+type MemberToJoin = {
+    board_id: string
+    name?: string
+    color?: string
+    is_hidden?: boolean
+}
+
 export default function Board(){
     const [showNameModal, setShowNameModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
@@ -37,6 +44,7 @@ export default function Board(){
     const setUserRole = useClientStore(state => state.setUserRole)
     const setUserColor = useClientStore(state => state.setUserColor)
     const userColor = useClientStore(state => state.userColor)
+    const queryClient = useQueryClient()
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
@@ -52,6 +60,22 @@ export default function Board(){
             }
         },
         enabled: loggedIn && userId !== null && !!id,
+    })
+
+
+    const joinBoardMutation = useMutation({
+        mutationFn: async (member: MemberToJoin) => {
+            return joinBoard(member)
+        },
+        onSuccess: (entry) => {
+            if(showNameModal) setShowNameModal(false)
+            setUserName(entry.name)
+            setUserRole(entry.role)
+            setUserColor(entry.color)
+            queryClient.setQueryData(['getBoardMember'], entry)
+            
+        },
+        onError: (err) => console.error(err),
     })
 
     useEffect(() => {
@@ -73,6 +97,11 @@ export default function Board(){
         
         if(member.name === null){
             setShowNameModal(true)
+            return
+        }
+
+        if(member.is_hidden){
+            joinBoardMutation.mutateAsync({board_id: id, is_hidden: false})
             return
         }
 
@@ -129,21 +158,18 @@ export default function Board(){
         if (!userName || !userRole || !userId || !userColor) return
 
         provider.setAwarenessField('user', {
-            role: userRole,
-            name: userName,
             color: userColor,
             userId
          
         })
-        
 
         provider.sendStateless(JSON.stringify({type: 'connection', content: `${userName} entered the room`}))
         
-    }, [provider, userName, userRole, userId, userColor])
+    }, [provider, userId, userColor])
 
     return(
         <>
-            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} />}
+            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutateAsync(data)}/>}
             {isBanned && <BanModal showModal={isBanned} />}
             <div>
                 <BoardTopSection/>
@@ -155,30 +181,11 @@ export default function Board(){
 }
 
 
-function UserNameModal({showModal, setShowModal}: {showModal: boolean, setShowModal: (state: boolean) => void}){
+function UserNameModal({showModal, setShowModal, joinBoardMutation}: {showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => {}}){
     const {loggedIn} = useAuthState()
     const navigate = useNavigate()
     const userNameRef = useRef<HTMLInputElement | null>(null)
-    const setUserName = useClientStore(state => state.setUserName)
-    const setUserRole = useClientStore(state => state.setUserRole)
-    const queryClient = useQueryClient()
     const boardId = useClientStore(state => state.boardId)
-    const setUserColor = useClientStore(state => state.setUserColor)
-
-    const joinBoardMutation = useMutation({
-        mutationFn: async ({ boardId, userName, color }: { boardId: string, userName: string, color: string }) => {
-            return joinBoard(boardId, userName, color)
-        },
-        onSuccess: (entry) => {
-            setShowModal(false)
-            setUserName(entry.name)
-            setUserRole(entry.role)
-            setUserColor(entry.color)
-            queryClient.setQueryData(['getBoardMember'], entry)
-            
-        },
-        onError: (err) => console.error(err),
-    })
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -187,11 +194,11 @@ function UserNameModal({showModal, setShowModal}: {showModal: boolean, setShowMo
 
         if (!name || !boardId) return
 
-        const color =  generateColor()
+        const color = generateColor()
 
-        joinBoardMutation.mutateAsync({
-            boardId,
-            userName: name,
+        joinBoardMutation({
+            board_id: boardId,
+            name: name,
             color: color
         })
     }

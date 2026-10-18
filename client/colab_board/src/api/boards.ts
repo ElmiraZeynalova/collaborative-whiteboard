@@ -4,6 +4,12 @@ type Board = {
     id: string
     name: string
 }
+type MemberToJoin = {
+    board_id: string
+    name?: string
+    color?: string
+    is_hidden?: boolean
+}
 
 export async function getAllUsersBoards(){
     const {data} = await apiClient.get("/api/boards/")
@@ -20,8 +26,8 @@ export async function createBoard(board: Board){
     return data 
 }
 
-export async function joinBoard(boardId: string, userName: string, userColor: string){
-    const {data} = await apiClient.post(`/api/boards/${boardId}/join`, {userName, userColor})
+export async function joinBoard(member: MemberToJoin){
+    const {data} = await apiClient.post(`/api/boards/${member.board_id}/join`, member)
     return data 
 }
 
@@ -31,7 +37,7 @@ export async function getUserRoleAndUserId(boardId: string){
 }
 
 export async function changeBoardName(boardId: string, name: string){
-    const {data} = await apiClient.put(`/api/boards/${boardId}`, {name})
+    const {data} = await apiClient.patch(`/api/boards/${boardId}`, {name})
     return data
 }
 
@@ -47,6 +53,11 @@ export async function getAllBoardMembers(boardId: string){
 
 export async function changeUserAccessToBoard(boardId: string, userId: string, access: boolean){
     const {data} = await apiClient.patch(`/api/boards/${boardId}/members/${userId}/access`, {isAllowed: access})
+    return data
+}
+
+export async function changeUserRole(boardId: string, userId: string, role: string){
+    const {data} = await apiClient.patch(`/api/boards/${boardId}/members/${userId}/role`, {role})
     return data
 }
 

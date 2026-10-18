@@ -5,6 +5,14 @@ type Board = {
     name: string,
 }
 
+type MemberToJoin = {
+    board_id: string
+    name?: string
+    color?: string
+    is_hidden?: boolean
+}
+
+
 export async function getAllUserBoards(userId: string) {
     return prisma.boards.findMany({
         where: {
@@ -81,7 +89,7 @@ export async function deleteUserBoard(boardId: string, userId: string) {
     })
 }
 
-export async function joinUserToBoard(userId: string, boardId: string, userName: string, userColor: string) {
+export async function joinUserToBoard(userId: string, boardId: string, member: MemberToJoin) {
     const existingBoard = await prisma.boards.findUnique({
         where: { id: boardId },
         select: { id: true },
@@ -100,12 +108,10 @@ export async function joinUserToBoard(userId: string, boardId: string, userName:
         },
         create: {
             user_id: userId,
-            board_id: boardId,
             role: "contributor",
-            color: userColor,
-            name: userName
+            ...member
         },
-        update: {name: userName, color: userColor},
+        update: member,
     })
 
 }
@@ -149,7 +155,20 @@ export async function getBoardMembers(boardId: string){
     })
 }
 
-export async function changeAccessToBoardByUserId(boardId: string, userId: string, isAllowed: boolean){
+export async function changeAccessToBoardByUserId(myId: string, boardId: string, userId: string, isAllowed: boolean){
+
+    const member = await prisma.board_members.findUnique({
+        where: {
+            board_id_user_id: {
+                user_id: myId,
+                board_id: boardId,
+            },
+        },
+        select: {role: true}
+    })
+
+    if(!member || member.role === "contributor") throw new Error("You don't have permission to change this member's access to board.")
+
     return prisma.board_members.update({
         where: {
             board_id_user_id: {
@@ -158,6 +177,30 @@ export async function changeAccessToBoardByUserId(boardId: string, userId: strin
             },
         },
         data: {access: isAllowed}
+    })
+}
+
+export async function changeUserBoardRole(myId: string, boardId: string, userId: string, role: string){
+    const member = await prisma.board_members.findUnique({
+        where: {
+            board_id_user_id: {
+                user_id: myId,
+                board_id: boardId,
+            },
+        },
+        select: {role: true}
+    })
+
+    if(!member || member.role !== "owner") throw new Error("You don't have permission to change this member's role.")
+
+    return prisma.board_members.update({
+        where: {
+            board_id_user_id: {
+                user_id: userId,
+                board_id: boardId,
+            },
+        },
+        data: {role: role}
     })
 }
 

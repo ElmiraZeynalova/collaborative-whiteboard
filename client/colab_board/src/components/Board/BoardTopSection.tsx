@@ -22,6 +22,7 @@ export default function BoardTopSection(){
     const {yBoard} = useCanvasYjs()
     const {loggedIn} = useAuthState()
     const userRole = useClientStore(state => state.userRole)
+    const [newBoardName, setNewBoardName] = useState<string | null>(null)
 
     function updateBoardNameLocaly(boardName: string){
         yBoard.set("name", boardName)
@@ -34,13 +35,14 @@ export default function BoardTopSection(){
     }
 
     const changeBoardNameMutation = useMutation({
-        mutationFn: async(boardName: string) => {
-            if(boardName === null || boardName.trim().length === 0) return
-            const board = await changeBoardName(boardId!, boardName)
+        mutationFn: async(newBoardName: string) => {
+            if(newBoardName === null || newBoardName.trim().length === 0) return
+            const board = await changeBoardName(boardId!, newBoardName)
             return board
         },
         onSuccess: (board) => {
             yBoard.set("name", board.name)
+            setBoardName(board.name)
         },
         onError: (err) => console.log(err)
     })
@@ -51,13 +53,15 @@ export default function BoardTopSection(){
     }
 
     useEffect(() => {
+        if(!newBoardName) return
+        console.log(newBoardName)
         timerRef.current = setTimeout(() => {
-            loggedIn ? changeBoardNameMutation.mutateAsync(boardName ?? "") : updateBoardNameLocaly(boardName!)
+            loggedIn ? changeBoardNameMutation.mutateAsync(newBoardName) : updateBoardNameLocaly(boardName!)
         }, 5000)
         return () => {
             clearTimeout(timerRef.current)
         }
-    }, [boardName])
+    }, [newBoardName])
 
     return(
         <>
@@ -104,8 +108,8 @@ export default function BoardTopSection(){
             
                 <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
                     {userRole !== "contributor" ? <input
-                        value={boardName ?? ""}
-                        onChange={(e) => setBoardName(e.currentTarget.value)}
+                        value={newBoardName ?? boardName ?? ""}
+                        onChange={(e) => setNewBoardName(e.target.value)}
                         className="outline-none p-0 m-0 text-center"
                         size={Math.max(boardName?.length ?? 0, 1)}
 

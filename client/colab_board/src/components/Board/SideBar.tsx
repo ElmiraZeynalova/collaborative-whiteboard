@@ -1,7 +1,7 @@
 import {useHocuspocusAwareness, useHocuspocusProvider } from '@hocuspocus/provider-react'
 import { Icon } from '@iconify/react'
-import type {AwarenessUser, Member} from '../../types/awareness'
-import {changeUserAccessToBoard, getAllBoardMembers} from '../../api/boards'
+import type {AwarenessUser, Member, Role} from '../../types/awareness'
+import {changeUserAccessToBoard, getAllBoardMembers, changeUserRole} from '../../api/boards'
 import { useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import { useClientStore } from '../../store/clientStore'
 import { useAuthState } from '../../context/AuthContext'
@@ -13,6 +13,20 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     const boardId = useClientStore(state => state.boardId)
     const {loggedIn} = useAuthState()
     const queryClient = useQueryClient()
+
+    const changeUserRoleMutation = useMutation({
+        mutationFn: async ({userId, role}: {userId: string, role: Role}) => {
+            if(!boardId || !userId) return
+            const member = await changeUserRole(boardId, userId, role)
+            return member
+        },
+        onSuccess: async() => {
+            await queryClient.invalidateQueries({
+                queryKey: ['getAllBoardMembers', boardId],
+            })
+        },
+        onError: (err) => console.log(err)
+    })
 
     const changeUserAccessToBoardMutation = useMutation({
         mutationFn: async ({userId, access}: {userId: string, access: boolean}) => {
@@ -56,11 +70,12 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
         })
     }, [activeMembersKey, boardId, loggedIn, queryClient])
 
-    // console.log(activeMembers)
-    // console.log(members)
-
     async function handleAccessChange(userId: string, access: boolean){
-        changeUserAccessToBoardMutation.mutateAsync({userId, access})
+        await changeUserAccessToBoardMutation.mutateAsync({userId, access})
+    }
+
+    async function handleRoleChange(userId: string, role: Role){
+        await changeUserRoleMutation.mutateAsync({userId, role})
     }
 
     return (
@@ -74,10 +89,9 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                 <main className="flex flex-col p-2 gap-4">
                     <section className="flex flex-col gap-2">
                         <p className="text-[#919191] text-sm">Active</p>
-                        {awareness.map(item => {
-                            const user = item.user as AwarenessUser
-                            if(!user) return null
-                            return <UserBadge key={user.userId} userId={user.userId} userName={user.name} userColor={user.color} userRole={user.role} status="active" changeAccess={() => handleAccessChange(user.userId, false)}/>
+                        {members.map((member: Member) => {
+                            if(!activeMembers.includes(member.user_id)) return null
+                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status="active" changeAccess={(access: boolean) => handleAccessChange(member.user_id, access)} changeRole={(role: Role) => handleRoleChange(member.user_id, role)} />
                         })}
                     </section>
                     <section className="flex flex-col gap-2">
@@ -85,7 +99,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                         {isPending && <p>Loading members...</p>}
                         {members.map((member: Member) => {
                             if(activeMembers.includes(member.user_id)) return null
-                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive" : "banned"} changeAccess={() => handleAccessChange(member.user_id, member.access ? false : true)}/>
+                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive" : "banned"} changeAccess={(access: boolean) => handleAccessChange(member.user_id, access)} changeRole={(role: Role) => handleRoleChange(member.user_id, role)} />
                         })}
                     </section>
                 </main>
@@ -96,30 +110,61 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     )
 }
 
-type Props = {userId: string, userName: string, userColor: string, userRole: string, status: 'active' | 'inactive' | 'banned', changeAccess: () => void}
+type Props = {userId: string, userName: string, userColor: string, userRole: Role, status: 'active' | 'inactive' | 'banned', changeAccess: (access: boolean) => void, changeRole: (role: Role) => void}
 
-function UserBadge(props: Props){
+function UserBadge(memberData: Props){
     const userId = useClientStore(state => state.userId)
     const userRole = useClientStore(state => state.userRole)
 
     const backgroundColor = {
-        active: props.userColor,
-        inactive: `color-mix(in srgb, ${props.userColor} 55%, white)`,
+        active: memberData.userColor,
+        inactive: `color-mix(in srgb, ${memberData.userColor} 55%, white)`,
         banned: '#6b7280',
-    }[props.status]
+    }[memberData.status]
 
     return(              
         <div
             className="relative cursor-pointer group px-3 py-1 rounded-full text-white flex items-center"
             style={{ backgroundColor }}
         >
-            <p className="grow">{props.userId === userId ? "Me" : props.userName}</p>
-            <p>{props.userRole}</p>
+            <p className="grow">{memberData.userId === userId ? "Me" : memberData.userName}</p>
+            <p>{memberData.userRole}</p>
 
-            {userRole === "owner" && props.userRole === "contributor" && <button
-                onClick={props.changeAccess}
-                className="absolute right-0 top-8 z-13 invisible group-hover:visible cursor-pointer shrink-0  bg-white hover:bg-mauve-600 text-sm text-[#FF0000] hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
-                >{props.status === "banned" ? "Unban member" : "Ban user"}</button>}
+            <Menu myRole={userRole!} memberData={memberData}/>
         </div>
     )
+}
+
+function Menu({myRole, memberData}: {myRole: Role, memberData: Props}){
+    
+    if(myRole === "owner" && memberData.userRole !== "owner"){
+        return(
+            <div className="flex gap-1 absolute right-0 top-8 z-13 invisible group-hover:visible shrink-0 bg-transparent">
+                {memberData.status !== "banned" && <button
+                    onClick={() => memberData.changeRole(memberData.userRole === "contributor" ? "admin" : "contributor")}
+                    className="bg-white cursor-pointer hover:bg-mauve-600 text-sm text-black hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
+                    >{memberData.userRole === "contributor" ? "Make admin" : "Make contributor"}
+                </button>}
+                <button
+                    onClick={() => memberData.changeAccess(memberData.status === "banned" ? true : false)}
+                    className="bg-white cursor-pointer hover:bg-[#FF0000] text-sm text-[#FF0000] hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
+                    >{memberData.status === "banned" ? "Unban member" : "Ban user"}
+                </button>
+            </div>
+        )
+    }
+
+    if(myRole === "admin" && memberData.userRole === "contributor"){
+        return(
+            <div className="absolute right-0 top-8 z-13 invisible group-hover:visible shrink-0 bg-white">
+                <button
+                    onClick={() => memberData.changeAccess(memberData.status === "banned" ? true : false)}
+                    className="cursor-pointer hover:bg-mauve-600 text-sm text-[#FF0000] hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
+                    >{memberData.status === "banned" ? "Unban member" : "Ban member"}
+                </button>
+            </div>
+        )
+    }
+
+    return null
 }

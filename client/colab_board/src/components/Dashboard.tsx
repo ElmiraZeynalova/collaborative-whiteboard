@@ -17,7 +17,7 @@ export default function Dashboard(){
     const [rerender, forceRerender] = useState<number>(0)
     const queryClient = useQueryClient()
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null)
-
+    const boardName = useClientStore(state => state.boardName)
     const { data: serverBoards = [] } = useQuery({
         queryKey: ['getUserBoards'],
         queryFn: getAllUsersBoards,
@@ -55,6 +55,19 @@ export default function Dashboard(){
         }
     }, [rerender])
 
+    const boards: Board[] = loggedIn ? [...serverBoards, ...localBoards] : localBoards
+
+    const boardsToShow = useMemo(() => {
+        if (!boardName) return boards
+        const query = boardName.trim().toLowerCase()
+
+        if (!query) return boards
+
+        return boards.filter(board =>
+            board.name.toLowerCase().includes(query)
+        )
+    }, [boards, boardName])
+
     async function handleDeleteBoard(boardId: string){
 
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
@@ -71,7 +84,7 @@ export default function Dashboard(){
         forceRerender((prev) => prev + 1)
     }
 
-    const boards: Board[] = loggedIn ? [...serverBoards, ...localBoards] : localBoards
+   
 
     return (
         <>
@@ -104,7 +117,7 @@ export default function Dashboard(){
                     <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
                         <h3 className="text-center text-xl font-medium">Find or create board</h3>
                         <BoardForm/>
-                        {boards && boards.length > 0 && <UserBoards boards={boards} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard}/>}
+                        {boards && boards.length > 0 && <UserBoards boards={boardsToShow} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard}/>}
                     </div>
                 </div>
             </div>
@@ -175,8 +188,6 @@ function BoardForm(){
     )
 }
 
-
-
 function UserBoards({boards, setBoardToDelete, deleteBoard}: { boards: Board[], setBoardToDelete: (boardId: string) => void, deleteBoard: (id: string) => void}){
     const navigate = useNavigate()
     const {loggedIn} = useAuthState()
@@ -189,37 +200,39 @@ function UserBoards({boards, setBoardToDelete, deleteBoard}: { boards: Board[], 
 
         deleteBoard(board.id)
     }
-
+    if(!boards) return null
     return(
         <section 
             className="flex flex-col mx-4 sm:mx-6">
             <p>Your boards:</p>
             <div
                 className="flex flex-col items-start">
-                {boards.map((board) => (
-                    <div
-                        key={board.id}
-                        className="group flex gap-2 items-center"
-                    >
-                        <button
-                            onClick={() => navigate(`/boards/${board.id}`)}
-                            className="text-[#919191] hover:text-black font-medium cursor-pointer"
-                        >
-                            {board.name}
-                        </button>
+                {boards.map((board) => {
+                    if(!board) return null
+                    return (
+                        <div
+                            key={board.id}
+                            className="group flex gap-2 items-center">
+                            <button
+                                onClick={() => navigate(`/boards/${board.id}`)}
+                                className="text-[#919191] hover:text-black font-medium cursor-pointer"
+                            >
+                                {board.name}
+                            </button>
 
-                        <button 
-                            className="invisible group-hover:visible cursor-pointer"
-                            onClick={() => handleDeleteBoard(board)}>
-                            <Icon
-                                icon="carbon:trash-can"
-                                width={16}
-                                height={16}
-                                className="text-[#919191] hover:text-black"
-                            />
-                        </button>
-                    </div>
-                ))}
+                            <button 
+                                className="invisible group-hover:visible cursor-pointer"
+                                onClick={() => handleDeleteBoard(board)}>
+                                <Icon
+                                    icon="carbon:trash-can"
+                                    width={16}
+                                    height={16}
+                                    className="text-[#919191] hover:text-black"
+                                />
+                            </button>
+                        </div>
+                    )
+                })}
             </div>
         </section>
     )
@@ -246,7 +259,7 @@ function DeleteBoardModal({showModal, setShowModal, deleteBoard}: {showModal: bo
                     <button 
                         type="button"
                         onClick={setShowModal}
-                        className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                        className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-white border-black border-2 font-medium rounded-lg px-3 py-2"
                     >Cancel</button>
                 </Modal.Content>
             </Modal.Container>

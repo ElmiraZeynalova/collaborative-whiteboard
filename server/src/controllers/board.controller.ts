@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import {getAllUserBoards, getUserBoard, createUserBoard, deleteUserBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId} from '../services/board.service.js'
+import {getAllUserBoards, getUserBoard, createUserBoard, deleteUserBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole} from '../services/board.service.js'
 import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
 import { hocuspocus } from "../index.js";
 
@@ -51,9 +51,7 @@ export async function deleteBoard(req: Request, res: Response){
 export async function joinBoard(req: Request, res: Response){
     try{
         const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-        const {userName, userColor} = req.body
-
-        const member = await joinUserToBoard(req.user.id, boardId, userName, userColor)
+        const member = await joinUserToBoard(req.user.id, boardId, req.body)
 
         res.status(200).json(member)
     }catch(error){
@@ -91,7 +89,7 @@ export async function changeUserAccessToBoard(req: Request, res: Response){
         const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
         const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId
         const {isAllowed} = req.body
-        const member = await changeAccessToBoardByUserId(boardId, userId, isAllowed)
+        const member = await changeAccessToBoardByUserId(req.user.id, boardId, userId, isAllowed)
 
         const documentName = `board-${boardId}`;
         const document = hocuspocus.documents.get(documentName);
@@ -99,6 +97,19 @@ export async function changeUserAccessToBoard(req: Request, res: Response){
         if (document) {
             removeUserFromAwareness(document.awareness, userId);
         }
+
+        res.status(200).json(member)
+    }catch(error){
+        res.status(400).json({error: (error as Error).message})
+    }
+}
+
+export async function changeUserRole(req: Request, res: Response){
+    try{
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const userId = Array.isArray(req.params.userId) ? req.params.userId[0] : req.params.userId
+        const {role} = req.body
+        const member = await changeUserBoardRole(req.user.id, boardId, userId, role)
 
         res.status(200).json(member)
     }catch(error){
