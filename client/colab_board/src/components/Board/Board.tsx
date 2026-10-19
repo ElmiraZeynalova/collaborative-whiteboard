@@ -6,12 +6,14 @@ import { useClientStore } from "../../store/clientStore"
 import {useHocuspocusProvider } from '@hocuspocus/provider-react'
 import BoardTopSection from "./BoardTopSection"
 import { useCanvasYjs } from "../../hooks/useCanvasYjs"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import {IndexeddbPersistence} from 'y-indexeddb'
 import { useAuthState } from "../../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { joinBoard, getBoardMember } from "../../api/boards"
 import axios from 'axios'
+import type { Mode } from "../../App"
+//import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
 
 export function generateColor() {
     return `#${Math.floor(Math.random() * 0xffffff)
@@ -26,7 +28,7 @@ type MemberToJoin = {
     is_hidden?: boolean
 }
 
-export default function Board(){
+export default function Board({mode}: {mode: Mode}){
     const [showNameModal, setShowNameModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
     const setIsBanned = useClientStore(state => state.setIsBanned)
@@ -38,13 +40,36 @@ export default function Board(){
     const setBoardId = useClientStore(state => state.setBoardId)
     const { id } = useParams()
     const { yBoard, ydoc } = useCanvasYjs()
-    const {loggedIn} = useAuthState()
-    const userRole = useClientStore(state => state.userRole)
+    const { loggedIn } = useAuthState()
     const userId = useClientStore(state => state.userId)
     const setUserRole = useClientStore(state => state.setUserRole)
     const setUserColor = useClientStore(state => state.setUserColor)
     const userColor = useClientStore(state => state.userColor)
     const queryClient = useQueryClient()
+    const navigate = useNavigate()
+    const location = useLocation();
+ 
+    useEffect(() => {
+        if (loggedIn === false && mode === "server") {
+            navigate("/login", {
+                replace: true,
+                state: {
+                    from: location,
+                },
+            });
+        }
+    }, [loggedIn, navigate, location])
+
+    // console.log(mode)
+    // useEffect(() => {
+    //     if(mode !== "local" || !boardName || !id) return
+
+    //     const name =  yBoard.get("name")
+    //     console.log("board name from yBoard: ", name)
+    //     console.log("boardName: ", boardName)
+    //     saveBoardToLocalStorage(id, boardName)
+        
+    // }, [loggedIn, boardName, id])
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
@@ -59,9 +84,8 @@ export default function Board(){
                 throw error;
             }
         },
-        enabled: loggedIn && userId !== null && !!id,
+        enabled: loggedIn === true && userId !== null && !!id && mode === "server",
     })
-
 
     const joinBoardMutation = useMutation({
         mutationFn: async (member: MemberToJoin) => {
@@ -78,8 +102,20 @@ export default function Board(){
         onError: (err) => console.error(err),
     })
 
+
     useEffect(() => {
-        if(!loggedIn || userId === null || !id || query.isPending || query.isError) return
+        if(mode === "local"){
+            const existingUserData = JSON.parse(localStorage.getItem("user") ?? "{}") ?? {}
+            if(!existingUserData || !existingUserData.name || !existingUserData.color){
+                setShowNameModal(true)
+            }else{
+                setUserName(existingUserData.name)
+                setUserColor(existingUserData.color)
+            }
+            return
+        }
+
+        if(loggedIn !== true || userId === null || !id || query.isPending || query.isError) return
 
         const member = query.data
 
@@ -101,7 +137,7 @@ export default function Board(){
         }
 
         if(member.is_hidden){
-            joinBoardMutation.mutateAsync({board_id: id, is_hidden: false})
+            joinBoardMutation.mutate({board_id: id, is_hidden: false})
             return
         }
 
@@ -109,7 +145,7 @@ export default function Board(){
         setUserRole(member.role)
         setUserColor(member.color)
      
-    }, [query.data, userId, loggedIn, id, query.isPending, query.isError])
+    }, [query.data, userId, loggedIn, id, query.isPending, query.isError, query.isEnabled])
 
 
     useEffect(() => {
@@ -155,24 +191,32 @@ export default function Board(){
 
 
     useEffect(() => {
-        if (!userName || !userRole || !userId || !userColor) return
+        if(!userName) return 
 
-        provider.setAwarenessField('user', {
-            color: userColor,
-            userId
-         
-        })
+        if(mode === "local" && userColor && userName){
+            provider.setAwarenessField('user', {
+                color: userColor,
+                userName: userName
+            })
+        }
+
+        if (userId && userColor && mode === "server"){
+            provider.setAwarenessField('user', {
+                color: userColor,
+                userId
+            })
+        }
 
         provider.sendStateless(JSON.stringify({type: 'connection', content: `${userName} entered the room`}))
         
-    }, [provider, userId, userColor])
+    }, [provider, userId, userName, userColor])
 
     return(
         <>
-            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutateAsync(data)}/>}
+            {showNameModal && <UserNameModal mode={mode} showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)}/>}
             {isBanned && <BanModal showModal={isBanned} />}
             <div>
-                <BoardTopSection/>
+                <BoardTopSection mode={mode}/>
                 <Canvas/>
                 <BoardBottomSection/>
             </div>
@@ -181,20 +225,28 @@ export default function Board(){
 }
 
 
-function UserNameModal({showModal, setShowModal, joinBoardMutation}: {showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => {}}){
-    const {loggedIn} = useAuthState()
-    const navigate = useNavigate()
+function UserNameModal({mode, showModal, setShowModal, joinBoardMutation}: {mode: Mode, showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void}){
     const userNameRef = useRef<HTMLInputElement | null>(null)
     const boardId = useClientStore(state => state.boardId)
+    const setUserName = useClientStore(state => state.setUserName)
+    const setUserColor = useClientStore(state => state.setUserColor)
 
-    async function handleSubmit(e: React.FormEvent) {
+    function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
 
         const name = userNameRef.current?.value.trim()
-
+        console.log(name, boardId)
         if (!name || !boardId) return
 
         const color = generateColor()
+
+        if(mode === "local"){
+            localStorage.setItem("user", JSON.stringify({name, color}))
+            setUserName(name)
+            setUserColor(color)
+            setShowModal(false)
+            return
+        }
 
         joinBoardMutation({
             board_id: boardId,
@@ -221,20 +273,6 @@ function UserNameModal({showModal, setShowModal, joinBoardMutation}: {showModal:
                             type="submit"
                             className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
                         >Enter</button>
-                        {!loggedIn && <><p className="text-center mt-2">or</p>
-                        <button 
-                            type="button"
-                            onClick={() => navigate('/login', {
-                                state: {
-                                    from: {
-                                        pathname: location.pathname,
-                                        search: location.search,
-                                        hash: location.hash
-                                    }
-                                }
-                            })}
-                            className="cursor-pointer text-[#6e6e6e] hover:text-black font-medium mt-2"
-                        >Login</button></>}
                     </form>
                 </Modal.Content>
             </Modal.Container>

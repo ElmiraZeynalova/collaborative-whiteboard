@@ -9,5 +9,6 @@ export type DBBoard = {
 export type Board = {
     id: string
     name: string
-    userRole: string
+    userRole?: string
 }
+

@@ -7,8 +7,10 @@ import { createBoard, getAllUsersBoards, deleteBoard } from "../api/boards"
 import type { Board } from "../types/board"
 import { useMemo, useState } from "react"
 import { Icon } from '@iconify/react'
-import { deleteLocalBoardDB } from "../utils/deleteLocalBoardDB"
+import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
 import Modal from "./Modal"
+import { saveBoardToLocalStorage, deleteBoardFromLocalStorage } from "../utils/localStorageOperations"
+//import { useCanvasYjs } from "../hooks/useCanvasYjs"
 
 export default function Dashboard(){
     const navigate = useNavigate()
@@ -18,10 +20,11 @@ export default function Dashboard(){
     const queryClient = useQueryClient()
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null)
     const boardName = useClientStore(state => state.boardName)
+
     const { data: serverBoards = [] } = useQuery({
         queryKey: ['getUserBoards'],
         queryFn: getAllUsersBoards,
-        enabled: loggedIn,
+        enabled: loggedIn === true,
     })
 
     const logoutMutation = useMutation({
@@ -74,17 +77,13 @@ export default function Dashboard(){
 
         if(!inLocalState){
             await deleteBoardMutation.mutateAsync(boardId)
-            await deleteLocalBoardDB(boardId)
+            await deleteLocalBoardFromIDB(boardId)
             return
         }
-        const existingBoards = JSON.parse(localStorage.getItem("boards") ?? "[]") ?? []
-        const updatedBoards = existingBoards.length > 0 ? existingBoards.filter((b:Board) => b.id !== boardId) : []
-        localStorage.setItem("boards", JSON.stringify(updatedBoards)) 
-        await deleteLocalBoardDB(boardId)
+        deleteBoardFromLocalStorage(boardId)
+        await deleteLocalBoardFromIDB(boardId)
         forceRerender((prev) => prev + 1)
     }
-
-   
 
     return (
         <>
@@ -97,7 +96,7 @@ export default function Dashboard(){
                     {loggedIn ? (
                         <div className="flex justify-end gap-2">
                             <p>You're logged in.</p>
-                            <button onClick={() => logoutMutation.mutateAsync()} className="cursor-pointer text-[#919191] hover:text-black font-medium">
+                            <button onClick={() => logoutMutation.mutate()} className="cursor-pointer text-[#919191] hover:text-black font-medium">
                                 Log out
                             </button>
                         </div>
@@ -117,7 +116,7 @@ export default function Dashboard(){
                     <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
                         <h3 className="text-center text-xl font-medium">Find or create board</h3>
                         <BoardForm/>
-                        {boards && boards.length > 0 && <UserBoards boards={boardsToShow} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard}/>}
+                        {boards && boards.length > 0 && <UserBoards boards={boardsToShow} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard} localBoards={localBoards}/>}
                     </div>
                 </div>
             </div>
@@ -131,11 +130,12 @@ function BoardForm(){
     const setBoardId = useClientStore(state => state.setBoardId)
     const navigate = useNavigate()
     const {loggedIn} = useAuthState()
+    //const {yBoard} = useCanvasYjs()
 
     const createBoardMutation = useMutation({
-        mutationFn: async(id: string) => {
-            if(!boardName || !id) return
-            const board = await createBoard({id: id, name: boardName})
+        mutationFn: async(data: {id: string, name: string} ) => {
+            if(!data.name || !data.id) return
+            const board = await createBoard({id: data.id, name: data.name})
             return board
         },
         onSuccess: (board) => {
@@ -144,26 +144,33 @@ function BoardForm(){
         onError: (err) => console.log(err)
     })
 
-    async function handleSubmit(e: React.FormEvent){
+    
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
-        if(boardName === null || boardName === "") return 
+
+        if(!boardName) return
+
+        const name = boardName.trim()
+        if (!name) return
 
         const id = crypto.randomUUID()
-        if (loggedIn) {
+
+        if (loggedIn === true) {
             try {
-                await createBoardMutation.mutateAsync(id)
+                await createBoardMutation.mutateAsync({ id, name })
+                setBoardId(id)
+                navigate(`/boards/${id}`)
             } catch (error) {
                 console.error("Failed to create board:", error)
-                return
             }
-        }else{
-            const existingBoards = JSON.parse(localStorage.getItem('boards') ?? '[]') 
-            existingBoards.push({id, name: boardName})
-            localStorage.setItem("boards", JSON.stringify(existingBoards))
+
+            return
         }
 
+        saveBoardToLocalStorage(id, name)
         setBoardId(id)
-        navigate(`/boards/${id}`)
+        //yBoard.set("name", name)
+        navigate(`/boards/local/${id}`)
     }
 
     return(
@@ -188,7 +195,7 @@ function BoardForm(){
     )
 }
 
-function UserBoards({boards, setBoardToDelete, deleteBoard}: { boards: Board[], setBoardToDelete: (boardId: string) => void, deleteBoard: (id: string) => void}){
+function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boards: Board[], setBoardToDelete: (boardId: string) => void, deleteBoard: (id: string) => void, localBoards: Board[] }){
     const navigate = useNavigate()
     const {loggedIn} = useAuthState()
 
@@ -200,7 +207,15 @@ function UserBoards({boards, setBoardToDelete, deleteBoard}: { boards: Board[], 
 
         deleteBoard(board.id)
     }
+
+    function handleBoardChoice(boardId: string){
+        const inLocalState = localBoards.find((b: Board) => b.id === boardId)
+
+        inLocalState ? navigate(`/boards/local/${boardId}`) : navigate(`/boards/${boardId}`) 
+    }
+
     if(!boards) return null
+
     return(
         <section 
             className="flex flex-col mx-4 sm:mx-6">
@@ -214,7 +229,7 @@ function UserBoards({boards, setBoardToDelete, deleteBoard}: { boards: Board[], 
                             key={board.id}
                             className="group flex gap-2 items-center">
                             <button
-                                onClick={() => navigate(`/boards/${board.id}`)}
+                                onClick={() => handleBoardChoice(board.id)}
                                 className="text-[#919191] hover:text-black font-medium cursor-pointer"
                             >
                                 {board.name}

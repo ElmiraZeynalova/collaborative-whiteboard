@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useClientStore } from '../store/clientStore'
 
 type AuthContextValue = {
-  loggedIn: boolean
+  loggedIn: boolean | "loading"
 }
 
 type Session = {
@@ -22,12 +22,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ['session'],
     queryFn: async () => {
       try {
-        const session = await userIsValid();
-        setUserId(session.userId)
-        return session
+        return userIsValid();
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 401) {
-          setUserId(null);
           return null;
         }
         throw error;
@@ -37,7 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
-  const loggedIn = query.data !== null && query.data !== undefined;
+  const loggedIn: boolean | "loading" = query.isPending ? "loading" : query.isError ? false : query.data !== null && query.data !== undefined;
+
+  useEffect(() => {
+    if (query.isPending || query.isError) return;
+
+    setUserId(query.data?.userId ?? null);
+  }, [query.data, query.isPending, query.isError, setUserId]);
+
 
   useEffect(() => {
     const handleLogout = () => {
@@ -53,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
         window.removeEventListener('auth:logout', handleLogout)
     }
-  }, [])
+  }, [queryClient, setUserId])
 
   return (
     <AuthContext.Provider value={{ loggedIn }}>

@@ -14,6 +14,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     const {loggedIn} = useAuthState()
     const queryClient = useQueryClient()
 
+    console.log(awareness)
     const changeUserRoleMutation = useMutation({
         mutationFn: async ({userId, role}: {userId: string, role: Role}) => {
             if(!boardId || !userId) return
@@ -50,7 +51,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
             const members = await getAllBoardMembers(boardId!)
             return members
         },
-        enabled: loggedIn,
+        enabled: loggedIn === true,
     })
 
     const activeMembers = awareness.map(item => {
@@ -70,12 +71,12 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
         })
     }, [activeMembersKey, boardId, loggedIn, queryClient])
 
-    async function handleAccessChange(userId: string, access: boolean){
-        await changeUserAccessToBoardMutation.mutateAsync({userId, access})
+    function handleAccessChange(userId: string, access: boolean){
+        changeUserAccessToBoardMutation.mutate({userId, access})
     }
 
-    async function handleRoleChange(userId: string, role: Role){
-        await changeUserRoleMutation.mutateAsync({userId, role})
+    function handleRoleChange(userId: string, role: Role){
+        changeUserRoleMutation.mutate({userId, role})
     }
 
     return (
@@ -122,10 +123,16 @@ function UserBadge(memberData: Props){
         banned: '#6b7280',
     }[memberData.status]
 
+    const color = {
+        active: 'white',
+        inactive: 'black',
+        banned: 'red',
+    }[memberData.status]
+
     return(              
         <div
             className="relative cursor-pointer group px-3 py-1 rounded-full text-white flex items-center"
-            style={{ backgroundColor }}
+            style={{ backgroundColor, color }}
         >
             <p className="grow">{memberData.userId === userId ? "Me" : memberData.userName}</p>
             <p>{memberData.userRole}</p>

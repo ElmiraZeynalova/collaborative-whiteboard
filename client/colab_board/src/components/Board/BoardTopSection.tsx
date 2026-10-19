@@ -7,10 +7,10 @@ import { useClientStore } from '../../store/clientStore'
 import { useMutation } from '@tanstack/react-query'
 import {changeBoardName} from '../../api/boards'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
-import type { Board } from '../../types/board'
-import { useAuthState } from '../../context/AuthContext'
+import { updateBoardNameInLocalStorage } from '../../utils/localStorageOperations'
+import type { Mode } from '../../App'
 
-export default function BoardTopSection(){
+export default function BoardTopSection({mode}: {mode: Mode}){
     const boardName = useClientStore(state => state.boardName)
     const setBoardName = useClientStore(state => state.setBoardName)
     const boardId = useClientStore(state => state.boardId)
@@ -20,18 +20,12 @@ export default function BoardTopSection(){
     const [showUsersSideBar, setShowUsersSideBar] = useState(false)
     const timerRef = useRef<number | undefined>(undefined)
     const {yBoard} = useCanvasYjs()
-    const {loggedIn} = useAuthState()
     const userRole = useClientStore(state => state.userRole)
     const [newBoardName, setNewBoardName] = useState<string | null>(null)
 
     function updateBoardNameLocaly(boardName: string){
         yBoard.set("name", boardName)
-        const localBoards = JSON.parse(localStorage.getItem("boards") ?? "[]") ?? []
-        if(localBoards.length === 0) return
-        const updatedBoards = localBoards.map((board: Board) => {
-            return board.id === boardId ? {id: board.id, name: boardName} : board
-        })
-        localStorage.setItem("boards", JSON.stringify(updatedBoards))
+        updateBoardNameInLocalStorage(boardId!, boardName)
     }
 
     const changeBoardNameMutation = useMutation({
@@ -42,13 +36,15 @@ export default function BoardTopSection(){
         },
         onSuccess: (board) => {
             yBoard.set("name", board.name)
-            setBoardName(board.name)
+            //setBoardName(board.name)
         },
         onError: (err) => console.log(err)
     })
     
     async function handleClick(){
-        await navigator.clipboard.writeText(`${window.location.origin}/boards/${boardId}`)
+        mode === "server" 
+            ? await navigator.clipboard.writeText(`${window.location.origin}/boards/${boardId}`)
+            : await navigator.clipboard.writeText(`${window.location.origin}/boards/local/${boardId}`)
         setShowMessage(true)
     }
 
@@ -56,7 +52,7 @@ export default function BoardTopSection(){
         if(!newBoardName) return
         console.log(newBoardName)
         timerRef.current = setTimeout(() => {
-            loggedIn ? changeBoardNameMutation.mutateAsync(newBoardName) : updateBoardNameLocaly(boardName!)
+            mode === "server" ? changeBoardNameMutation.mutate(newBoardName) : updateBoardNameLocaly(newBoardName)
         }, 5000)
         return () => {
             clearTimeout(timerRef.current)
@@ -107,7 +103,7 @@ export default function BoardTopSection(){
                 </button>
             
                 <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
-                    {userRole !== "contributor" ? <input
+                    {userRole !== "contributor" || mode === "local" ? <input
                         value={newBoardName ?? boardName ?? ""}
                         onChange={(e) => setNewBoardName(e.target.value)}
                         className="outline-none p-0 m-0 text-center"

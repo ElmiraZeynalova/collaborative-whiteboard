@@ -8,19 +8,21 @@ import {
 } from '@hocuspocus/provider-react'
 import { useClientStore } from './store/clientStore'
 
+export type Mode = "local" | "server"
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Dashboard/>}/>
                 <Route path="/login" element={<Login/>}/>
-                <Route path="/boards/:id" element={<BoardPage />} />
+                <Route path="/boards/:id" element={<BoardPage mode="server"/>} />
+                <Route path="/boards/local/:id" element={<BoardPage mode="local"/>} />
             </Routes>
         </BrowserRouter>
     )
 }
 
-function BoardPage() {
+function BoardPage({mode}: {mode: Mode}) {
     const { id } = useParams()
     const setIsBanned = useClientStore(state => state.setIsBanned)
 
@@ -53,7 +55,7 @@ function BoardPage() {
                 token={accessToken} 
                 onStateless={handleStateless} 
                 onAuthenticationFailed={({ reason }) => {console.error('Authentication failed:', reason)}}>
-                <Board />
+                <Board mode={mode}/>
             </HocuspocusRoom>
         </HocuspocusProviderWebsocketComponent>
     )

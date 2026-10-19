@@ -31,7 +31,7 @@ export default function Login(){
         onError: (err) => setError(err.message)
     })
 
-    async function handleSubmit(e: React.FormEvent){
+    function handleSubmit(e: React.FormEvent){
         e.preventDefault()
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email ?? '')) {
             setError('Invalid email address')

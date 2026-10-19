@@ -1,4 +1,4 @@
-export function deleteLocalBoardDB(boardId: string): Promise<void> {
+export function deleteLocalBoardFromIDB(boardId: string): Promise<void> {
     return new Promise((resolve, reject) => {
         const request = indexedDB.deleteDatabase(boardId)
 
