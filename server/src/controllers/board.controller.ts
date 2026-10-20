@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import {getAllUserBoards, getUserBoard, createUserBoard, deleteUserBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole} from '../services/board.service.js'
+import {getAllUserBoards, getBoardById, createBoardServer, createBoardLocal, deleteUserBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole} from '../services/board.service.js'
 import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
 import { hocuspocus } from "../index.js";
 
@@ -22,16 +22,25 @@ export async function getAllBoards(req: Request, res: Response){
 export async function getBoard(req: Request, res: Response){
     try{
         const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
-        const board = await getUserBoard(id)
+        const board = await getBoardById(id)
         res.status(200).json(board)
     }catch(error){
         res.status(400).json({error: (error as Error).message})
     }
 }
 
-export async function createBoard(req: Request, res: Response){
+export async function createServerBoard(req: Request, res: Response){
     try{
-        const board = await createUserBoard(req.body, req.user.id)
+        const board = await createBoardServer(req.body, req.user.id)
+        res.status(201).json(board)
+    }catch(error){
+        res.status(400).json({error: (error as Error).message})
+    }
+}
+
+export async function createLocalBoard(req: Request, res: Response){
+    try{
+        const board = await createBoardLocal(req.body)
         res.status(201).json(board)
     }catch(error){
         res.status(400).json({error: (error as Error).message})

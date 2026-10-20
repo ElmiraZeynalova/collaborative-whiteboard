@@ -5,6 +5,8 @@ export function saveBoardToLocalStorage(id: string, name: string) {
         localStorage.getItem("boards") ?? "[]"
     )
 
+    const existingBoard = existingBoards.find((b: Board) => b.id === id)
+    if(existingBoard) return
     existingBoards.push({ id, name })
 
     localStorage.setItem("boards", JSON.stringify(existingBoards))

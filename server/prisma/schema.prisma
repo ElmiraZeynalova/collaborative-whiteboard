@@ -23,6 +23,7 @@ model boards {
   updated_at    DateTime        @default(now()) @db.Timestamptz(6)
   name          String
   state         Bytes?
+  type          String
   board_members board_members[]
 }
 

@@ -6,3 +6,9 @@ export async function changeUsername(userId: string, name: string){
         data: {name: name},
     })
 }
+
+export async function getUserById(userId: string){
+    return prisma.app_users.findUnique({
+        where: {id: userId},
+    })
+}

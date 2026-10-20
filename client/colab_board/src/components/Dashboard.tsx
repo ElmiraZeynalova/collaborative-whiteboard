@@ -3,15 +3,15 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { logout } from "../api/auth"
 import { useAuthState } from "../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createBoard, getAllUsersBoards, deleteBoard } from "../api/boards"
-import type { Board } from "../types/board"
+import { createServerBoard, createLocalBoard, getAllUsersBoards, deleteBoard } from "../api/boards"
+import type { Board, BoardType } from "../types/board"
 import { useMemo, useState } from "react"
 import { Icon } from '@iconify/react'
 import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
 import Modal from "./Modal"
 import { saveBoardToLocalStorage, deleteBoardFromLocalStorage } from "../utils/localStorageOperations"
-//import { useCanvasYjs } from "../hooks/useCanvasYjs"
 
+// разберись с незакрываем модалки удаления доски (как минимум с локальными он ане закрывается)
 export default function Dashboard(){
     const navigate = useNavigate()
     const location = useLocation()
@@ -130,13 +130,18 @@ function BoardForm(){
     const setBoardId = useClientStore(state => state.setBoardId)
     const navigate = useNavigate()
     const {loggedIn} = useAuthState()
-    //const {yBoard} = useCanvasYjs()
 
     const createBoardMutation = useMutation({
-        mutationFn: async(data: {id: string, name: string} ) => {
-            if(!data.name || !data.id) return
-            const board = await createBoard({id: data.id, name: data.name})
-            return board
+        mutationFn: async(data: {id: string, name: string, type: BoardType} ) => {
+            if(!data.name || !data.id || !data.type) return
+            if(loggedIn === true && data.type === "server"){
+                const board = await createServerBoard({id: data.id, name: data.name, type: data.type})
+                return board
+            }
+            if(data.type === "local" && loggedIn === false){
+                const board = await createLocalBoard({id: data.id, name: data.name, type: data.type}) 
+                return board
+            }
         },
         onSuccess: (board) => {
             console.log(board)
@@ -148,29 +153,27 @@ function BoardForm(){
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
 
-        if(!boardName) return
+        const name = boardName?.trim()
 
-        const name = boardName.trim()
-        if (!name) return
+        if (!name || loggedIn === "loading") return
 
         const id = crypto.randomUUID()
+        const type: BoardType = loggedIn === true ? "server" : "local"
+        console.log(type)
+        try {
+            await createBoardMutation.mutateAsync({ id, name, type })
 
-        if (loggedIn === true) {
-            try {
-                await createBoardMutation.mutateAsync({ id, name })
-                setBoardId(id)
+            if (type === "local") {
+                saveBoardToLocalStorage(id, name)
+                navigate(`/boards/local/${id}`)
+            } else {
                 navigate(`/boards/${id}`)
-            } catch (error) {
-                console.error("Failed to create board:", error)
             }
 
-            return
+            setBoardId(id)
+        } catch (error) {
+            console.error("Failed to create board:", error)
         }
-
-        saveBoardToLocalStorage(id, name)
-        setBoardId(id)
-        //yBoard.set("name", name)
-        navigate(`/boards/local/${id}`)
     }
 
     return(
@@ -257,7 +260,7 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
 function DeleteBoardModal({showModal, setShowModal, deleteBoard}: {showModal: boolean, setShowModal: () => void, deleteBoard: () => void}){
     const {loggedIn} = useAuthState()
     return(
-        <Modal open={showModal} closeModal={setShowModal}>
+        <Modal open={showModal} closeModal={() => setShowModal()}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium">Delete board ?</Modal.Header>

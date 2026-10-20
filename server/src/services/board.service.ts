@@ -1,8 +1,10 @@
 import {prisma} from '../prisma.js'
+import {getUserById} from './members.service.js'
 
 type Board = {
     id: string,
     name: string,
+    type: "local" | "server"
 }
 
 type MemberToJoin = {
@@ -32,25 +34,37 @@ export async function getAllUserBoards(userId: string) {
     })
 }
 
-export async function getUserBoard(boardId: string){
+export async function getBoardById(boardId: string){
     return prisma.boards.findUnique({
         where: {id: boardId},
     });
 }
 
-export async function createUserBoard(board: Board, userId: string) {
-
+export async function createBoardServer(board: Board, userId: string) {
     return prisma.boards.create({
         data: {
             id: board.id,
             name: board.name,
+            type: "server",
             board_members: {
                 create: {
                     user_id: userId,
                     role: 'owner',
                 },
             },
-    }});
+        }
+    });
+}
+
+export async function createBoardLocal(board: Board) {
+    return prisma.boards.create({
+        data: {
+            id: board.id,
+            name: board.name,
+            type: "local"
+        }
+    });
+
 }
 
 export async function deleteUserBoard(boardId: string, userId: string) {
@@ -212,5 +226,19 @@ export async function getBoardMemberByUserId(boardId: string, userId: string){
                 board_id: boardId,
             },
         }
+    })
+}
+
+export async function saveBoardState(state: Uint8Array, boardId: string){
+    return prisma.boards.update({
+        where: {id: boardId},
+        data: {state: Buffer.from(state) }
+    })
+}
+
+export async function getBoardState(boardId: string){
+    return prisma.boards.findUnique({
+        where: {id: boardId},
+        select: {state: true}
     })
 }

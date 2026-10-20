@@ -3,6 +3,7 @@ import {apiClient} from './client'
 type Board = {
     id: string
     name: string
+    type: "local" | "server"
 }
 type MemberToJoin = {
     board_id: string
@@ -21,8 +22,13 @@ export async function getBoard(boardId: string){
     return data 
 }
 
-export async function createBoard(board: Board){
+export async function createServerBoard(board: Board){
     const {data} = await apiClient.post("/api/boards/", board)
+    return data 
+}
+
+export async function createLocalBoard(board: Board){
+    const {data} = await apiClient.post("/api/boards/local", board)
     return data 
 }
 

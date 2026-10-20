@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { joinBoard, getBoardMember } from "../../api/boards"
 import axios from 'axios'
 import type { Mode } from "../../App"
+import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
 //import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
 
 export function generateColor() {
@@ -48,7 +49,7 @@ export default function Board({mode}: {mode: Mode}){
     const queryClient = useQueryClient()
     const navigate = useNavigate()
     const location = useLocation();
- 
+
     useEffect(() => {
         if (loggedIn === false && mode === "server") {
             navigate("/login", {
@@ -59,17 +60,6 @@ export default function Board({mode}: {mode: Mode}){
             });
         }
     }, [loggedIn, navigate, location])
-
-    // console.log(mode)
-    // useEffect(() => {
-    //     if(mode !== "local" || !boardName || !id) return
-
-    //     const name =  yBoard.get("name")
-    //     console.log("board name from yBoard: ", name)
-    //     console.log("boardName: ", boardName)
-    //     saveBoardToLocalStorage(id, boardName)
-        
-    // }, [loggedIn, boardName, id])
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
@@ -177,6 +167,8 @@ export default function Board({mode}: {mode: Mode}){
             if (typeof name === "string" && id) {
                 setBoardName(name)
                 setBoardId(id)
+
+                if(mode === "local") saveBoardToLocalStorage(id, name)
             }
         }
 
@@ -207,9 +199,10 @@ export default function Board({mode}: {mode: Mode}){
             })
         }
 
-        provider.sendStateless(JSON.stringify({type: 'connection', content: `${userName} entered the room`}))
+        provider.sendStateless(JSON.stringify({type: 'connection'}))
         
     }, [provider, userId, userName, userColor])
+
 
     return(
         <>

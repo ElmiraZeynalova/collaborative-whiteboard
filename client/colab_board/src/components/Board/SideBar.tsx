@@ -40,7 +40,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                 queryKey: ['getAllBoardMembers', boardId],
             })
 
-            provider.sendStateless(JSON.stringify({type: 'access', content: {message: 'access prohibited', userId: member.user_id}}))
+            provider.sendStateless(JSON.stringify({type: 'access', content: {userId: member.user_id}}))
         },
         onError: (err) => console.log(err)
     })
