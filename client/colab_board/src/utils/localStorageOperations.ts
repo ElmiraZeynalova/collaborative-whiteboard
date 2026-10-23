@@ -1,10 +1,7 @@
 import type { Board } from "../types/board"
 
 export function saveBoardToLocalStorage(id: string, name: string) {
-    const existingBoards = JSON.parse(
-        localStorage.getItem("boards") ?? "[]"
-    )
-
+    const existingBoards = JSON.parse(localStorage.getItem("boards") ?? "[]") ?? []
     const existingBoard = existingBoards.find((b: Board) => b.id === id)
     if(existingBoard) return
     existingBoards.push({ id, name })

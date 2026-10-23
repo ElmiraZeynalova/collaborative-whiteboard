@@ -106,7 +106,7 @@ export const hocuspocus = new Hocuspocus({
         }
       }
     }
-  
+
     if(message.type === "access"){
       const senderUserId = connection.context.userId
       const boardId = connection.context.boardId

@@ -22,6 +22,12 @@ export async function getBoard(boardId: string){
     return data 
 }
 
+
+export async function getLocalBoard(boardId: string){
+    const {data} = await apiClient.get(`/api/boards/local/${boardId}`)
+    return data 
+}
+
 export async function createServerBoard(board: Board){
     const {data} = await apiClient.post("/api/boards/", board)
     return data 
@@ -47,7 +53,18 @@ export async function changeBoardName(boardId: string, name: string){
     return data
 }
 
-export async function deleteBoard(boardId: string){
+export async function changeLocalBoardName(boardId: string, name: string){
+    const {data} = await apiClient.patch(`/api/boards/local/${boardId}`, {name})
+    return data
+}
+
+export async function deleteLocalBoard(boardId: string){
+    const {data} = await apiClient.delete(`/api/boards/local/${boardId}`)
+    return data
+}
+
+
+export async function deleteServerBoard(boardId: string){
     const {data} = await apiClient.delete(`/api/boards/${boardId}`)
     return data
 }

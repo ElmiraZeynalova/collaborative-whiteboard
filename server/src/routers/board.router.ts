@@ -1,15 +1,18 @@
 import express from 'express'
-import {getAllBoards, getBoard, deleteBoard, joinBoard, getRoleAndUserId, changeBoardName, getAllBoardMembers, changeUserAccessToBoard, getBoardMember, changeUserRole,  createServerBoard, createLocalBoard } from "../controllers/board.controller.js"
+import {getAllBoards, getBoard, deleteBoard, joinBoard, getRoleAndUserId, changeBoardName, getAllBoardMembers, changeUserAccessToBoard, getBoardMember, changeUserRole,  createBoard } from "../controllers/board.controller.js"
 import { authMiddleware } from '../middlewares/authMiddleware.js'
 
 export const boardRouter = express.Router()
 
-boardRouter.post("/local", createLocalBoard)
+boardRouter.post("/local", createBoard)
+boardRouter.delete("/local/:id", deleteBoard)
+boardRouter.get("/local/:id", getBoard)
+boardRouter.patch("/local/:id", changeBoardName)
 
 boardRouter.use(authMiddleware)
 boardRouter.get("/", getAllBoards)
 boardRouter.get("/:id", getBoard)
-boardRouter.post("/", createServerBoard)
+boardRouter.post("/", createBoard)
 boardRouter.delete("/:id", deleteBoard)
 boardRouter.post("/:id/join", joinBoard)
 boardRouter.get("/:id/role", getRoleAndUserId)

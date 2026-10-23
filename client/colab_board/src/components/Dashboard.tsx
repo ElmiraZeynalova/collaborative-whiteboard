@@ -3,15 +3,15 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { logout } from "../api/auth"
 import { useAuthState } from "../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createServerBoard, createLocalBoard, getAllUsersBoards, deleteBoard } from "../api/boards"
+import { createServerBoard, createLocalBoard, getAllUsersBoards, deleteLocalBoard, deleteServerBoard } from "../api/boards"
 import type { Board, BoardType } from "../types/board"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Icon } from '@iconify/react'
 import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
 import Modal from "./Modal"
 import { saveBoardToLocalStorage, deleteBoardFromLocalStorage } from "../utils/localStorageOperations"
+//import {useHocuspocusProvider } from '@hocuspocus/provider-react'
 
-// разберись с незакрываем модалки удаления доски (как минимум с локальными он ане закрывается)
 export default function Dashboard(){
     const navigate = useNavigate()
     const location = useLocation()
@@ -38,18 +38,6 @@ export default function Dashboard(){
         onError: (err) => console.log(err)
     })
 
-    const deleteBoardMutation = useMutation({
-        mutationFn: async(boardId: string) =>{
-            await deleteBoard(boardId)
-        },
-        onSuccess: async() => {
-            setBoardToDelete(null)
-            queryClient.invalidateQueries({
-                queryKey: ['getUserBoards'],
-            })
-        },
-    })
-
     const localBoards = useMemo(() => {
         try {
             return JSON.parse(localStorage.getItem('boards') ?? '[]') ?? []
@@ -57,6 +45,24 @@ export default function Dashboard(){
             return []
         }
     }, [rerender])
+
+    
+    const deleteBoardMutation = useMutation({
+        mutationFn: async(boardId: string) =>{ 
+            const inLocalState = localBoards.find((b: Board) => b.id === boardId)
+            const board = inLocalState 
+                ? await deleteLocalBoard(boardId)
+                : await deleteServerBoard(boardId)
+            return board
+        },
+        onSuccess: async(board) => {
+            console.log(board)
+            setBoardToDelete(null)
+            queryClient.invalidateQueries({
+                queryKey: ['getUserBoards'],
+            })
+        },
+    })
 
     const boards: Board[] = loggedIn ? [...serverBoards, ...localBoards] : localBoards
 
@@ -75,25 +81,25 @@ export default function Dashboard(){
 
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
 
-        if(!inLocalState){
-            await deleteBoardMutation.mutateAsync(boardId)
-            await deleteLocalBoardFromIDB(boardId)
-            return
+        await deleteBoardMutation.mutateAsync(boardId)
+
+        if(inLocalState){
+            deleteBoardFromLocalStorage(boardId)
         }
-        deleteBoardFromLocalStorage(boardId)
+
         await deleteLocalBoardFromIDB(boardId)
         forceRerender((prev) => prev + 1)
     }
 
     return (
         <>
-            {boardToDelete && <DeleteBoardModal showModal={boardToDelete ? true : false} setShowModal={() => setBoardToDelete(null)} deleteBoard={() => handleDeleteBoard(boardToDelete)}/>}
+            {boardToDelete && <DeleteBoardModal showModal={boardToDelete ? true : false} setShowModal={() => setBoardToDelete(null)} deleteBoard={() => handleDeleteBoard(boardToDelete)} isPending={deleteBoardMutation.isPending}/>}
             <div className="flex justify-center min-h-dvh bg-[#f3f3f3] w-full px-4">
                 <div className="flex flex-col gap-2 w-full max-w-md">
                     <h1 className="text-center text-3xl sm:text-4xl font-semibold mb-10 mt-20 sm:mt-40">
                         Collaborative Whiteboard
                     </h1>
-                    {loggedIn ? (
+                    {loggedIn === true ? (
                         <div className="flex justify-end gap-2">
                             <p>You're logged in.</p>
                             <button onClick={() => logoutMutation.mutate()} className="cursor-pointer text-[#919191] hover:text-black font-medium">
@@ -131,17 +137,18 @@ function BoardForm(){
     const navigate = useNavigate()
     const {loggedIn} = useAuthState()
 
+    useEffect(() => {
+        setBoardName(null)
+    }, [])
+
     const createBoardMutation = useMutation({
         mutationFn: async(data: {id: string, name: string, type: BoardType} ) => {
             if(!data.name || !data.id || !data.type) return
-            if(loggedIn === true && data.type === "server"){
-                const board = await createServerBoard({id: data.id, name: data.name, type: data.type})
-                return board
-            }
-            if(data.type === "local" && loggedIn === false){
-                const board = await createLocalBoard({id: data.id, name: data.name, type: data.type}) 
-                return board
-            }
+
+            const board = loggedIn === true
+                ? await createServerBoard({id: data.id, name: data.name, type: data.type})
+                : await createLocalBoard({id: data.id, name: data.name, type: data.type})
+            return board
         },
         onSuccess: (board) => {
             console.log(board)
@@ -159,7 +166,7 @@ function BoardForm(){
 
         const id = crypto.randomUUID()
         const type: BoardType = loggedIn === true ? "server" : "local"
-        console.log(type)
+
         try {
             await createBoardMutation.mutateAsync({ id, name, type })
 
@@ -203,7 +210,7 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
     const {loggedIn} = useAuthState()
 
     function handleDeleteBoard(board: Board){
-        if((board.userRole === "owner") || !loggedIn){
+        if((board.userRole === "owner") || loggedIn === false){
             setBoardToDelete(board.id)
             return
         } 
@@ -257,7 +264,7 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
 }
 
 
-function DeleteBoardModal({showModal, setShowModal, deleteBoard}: {showModal: boolean, setShowModal: () => void, deleteBoard: () => void}){
+function DeleteBoardModal({showModal, setShowModal, deleteBoard, isPending}: {showModal: boolean, setShowModal: () => void, deleteBoard: () => void, isPending: boolean}){
     const {loggedIn} = useAuthState()
     return(
         <Modal open={showModal} closeModal={() => setShowModal()}>
@@ -265,7 +272,7 @@ function DeleteBoardModal({showModal, setShowModal, deleteBoard}: {showModal: bo
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium">Delete board ?</Modal.Header>
                 <Modal.Content className="flex flex-col gap-2">
-                    {loggedIn 
+                    {loggedIn === true
                         ? <p className="text-center">You're owner of this board. <br/> Are you sure you want to permanently delete it?</p>
                         : <p className="text-center">Are you sure you want to permanently delete this board?</p>
                     }
@@ -273,7 +280,7 @@ function DeleteBoardModal({showModal, setShowModal, deleteBoard}: {showModal: bo
                         type="button"
                         onClick={deleteBoard}
                         className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
-                    >Delete board</button>
+                    >{isPending ? "Deleting board..." : "Delete board"}</button>
                     <button 
                         type="button"
                         onClick={setShowModal}

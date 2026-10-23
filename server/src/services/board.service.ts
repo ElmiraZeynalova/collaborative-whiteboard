@@ -40,7 +40,7 @@ export async function getBoardById(boardId: string){
     });
 }
 
-export async function createBoardServer(board: Board, userId: string) {
+export async function createServerBoard(board: Board, userId: string) {
     return prisma.boards.create({
         data: {
             id: board.id,
@@ -56,7 +56,7 @@ export async function createBoardServer(board: Board, userId: string) {
     });
 }
 
-export async function createBoardLocal(board: Board) {
+export async function createLocalBoard(board: Board) {
     return prisma.boards.create({
         data: {
             id: board.id,
@@ -67,7 +67,13 @@ export async function createBoardLocal(board: Board) {
 
 }
 
-export async function deleteUserBoard(boardId: string, userId: string) {
+export async function deleteLocalBoard(boardId: string){
+    return prisma.boards.delete({
+        where: {id: boardId}
+    })
+}
+
+export async function deleteServerBoard(boardId: string, userId: string) {
     const member = await prisma.board_members.findUnique({
         where: {
             board_id_user_id: {
@@ -85,12 +91,13 @@ export async function deleteUserBoard(boardId: string, userId: string) {
     }
 
     if (member.role === 'owner') {
-        return prisma.boards.delete({
+        const board = await prisma.boards.delete({
             where: { id: boardId },
         })
+        return {deleted: true, board}
     }
     
-    return prisma.board_members.update({
+    const updatedMember = await prisma.board_members.update({
         where: {
             board_id_user_id: {
                 board_id: boardId,
@@ -101,6 +108,7 @@ export async function deleteUserBoard(boardId: string, userId: string) {
             is_hidden: true,
         },
     })
+    return {deleted: false, updatedMember}
 }
 
 export async function joinUserToBoard(userId: string, boardId: string, member: MemberToJoin) {
@@ -139,6 +147,22 @@ export async function getUserRoleAndId(userId: string, boardId: string){
             },
         },
         select: {role: true, user_id: true}
+    })
+}
+
+export async function updateBoardNameLocaly(boardId: string, newName: string){
+    const board = await prisma.boards.findUnique({
+        where: { 
+            id: boardId
+        },
+        select: {type: true}
+    })
+
+    if(board?.type !== "local") throw new Error("You cannot change this boards name.")
+
+    return prisma.boards.update({
+        where: {id: boardId},
+        data: {name: newName}
     })
 }
 

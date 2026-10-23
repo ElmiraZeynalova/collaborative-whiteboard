@@ -5,6 +5,11 @@ export type AwarenessUser = {
     userId: string
 }
 
+export type LocalAwarenessUser = {
+    name: string
+    color: string
+}
+
 export type AwarenessCursor = {
     x: number
     y: number

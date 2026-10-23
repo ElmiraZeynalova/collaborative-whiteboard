@@ -10,11 +10,11 @@ import { useParams, useNavigate, useLocation } from "react-router-dom"
 import {IndexeddbPersistence} from 'y-indexeddb'
 import { useAuthState } from "../../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { joinBoard, getBoardMember } from "../../api/boards"
+import { joinBoard, getBoardMember, getLocalBoard } from "../../api/boards"
 import axios from 'axios'
-import type { Mode } from "../../App"
-import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
-//import { saveBoardToLocalStorage } from "../../utils/localStorageOperations"
+import { deleteBoardFromLocalStorage, saveBoardToLocalStorage, updateBoardNameInLocalStorage } from "../../utils/localStorageOperations"
+import { deleteLocalBoardFromIDB } from "../../utils/iDBOperations"
+import type { Mode } from "../../store/clientStore"
 
 export function generateColor() {
     return `#${Math.floor(Math.random() * 0xffffff)
@@ -30,7 +30,9 @@ type MemberToJoin = {
 }
 
 export default function Board({mode}: {mode: Mode}){
+    const setBoardMode = useClientStore(state => state.setBoardMode)
     const [showNameModal, setShowNameModal] = useState<boolean>(false)
+   // const [showLocalBoardDeletedModal, setShowLocalBoardDeletedModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
     const setIsBanned = useClientStore(state => state.setIsBanned)
     const userName = useClientStore(state => state.userName)
@@ -49,6 +51,12 @@ export default function Board({mode}: {mode: Mode}){
     const queryClient = useQueryClient()
     const navigate = useNavigate()
     const location = useLocation();
+    const deletedBoardId = useClientStore(state => state.deletedBoardId)
+    const setDeletedBoardId = useClientStore(state => state.setDeletedBoardId)
+
+    useEffect(() => {
+        setBoardMode(mode)
+    }, [mode, setBoardMode, id])
 
     useEffect(() => {
         if (loggedIn === false && mode === "server") {
@@ -60,6 +68,31 @@ export default function Board({mode}: {mode: Mode}){
             });
         }
     }, [loggedIn, navigate, location])
+
+    const localBoardQuery = useQuery({
+        queryKey: ['getLocalBoard', id],
+        queryFn: async() => {
+            if(!id) return undefined
+            try {
+                return await getLocalBoard(id)
+            } catch (error) {
+                if (axios.isAxiosError(error) && error.response?.status === 400) {
+                    return null;
+                }
+                throw error;
+            }
+        },
+        enabled: !!id && mode === "local",
+    })
+
+    useEffect(() => {
+        if(localBoardQuery.isPending) return
+        if(!localBoardQuery.data){
+            setDeletedBoardId(id!)
+            return
+        }
+        updateBoardNameInLocalStorage(id!,localBoardQuery.data.name)
+    }, [localBoardQuery.isPending, localBoardQuery.data])
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
@@ -163,11 +196,10 @@ export default function Board({mode}: {mode: Mode}){
     useEffect(() => {
         const handleYjsChange = () => {
             const name = yBoard.get("name")
-
+         
             if (typeof name === "string" && id) {
                 setBoardName(name)
                 setBoardId(id)
-
                 if(mode === "local") saveBoardToLocalStorage(id, name)
             }
         }
@@ -188,7 +220,7 @@ export default function Board({mode}: {mode: Mode}){
         if(mode === "local" && userColor && userName){
             provider.setAwarenessField('user', {
                 color: userColor,
-                userName: userName
+                name: userName
             })
         }
 
@@ -206,10 +238,19 @@ export default function Board({mode}: {mode: Mode}){
 
     return(
         <>
-            {showNameModal && <UserNameModal mode={mode} showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)}/>}
+            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)}/>}
             {isBanned && <BanModal showModal={isBanned} />}
+            {deletedBoardId === id && 
+                <LocalBoardDeletedModal 
+                    showModal={deletedBoardId === id} 
+                    handleLocalBoardDeletion={() => {
+                        if(mode === "local") deleteBoardFromLocalStorage(id!)
+                        deleteLocalBoardFromIDB(id!)
+                    }}
+                />
+            }
             <div>
-                <BoardTopSection mode={mode}/>
+                <BoardTopSection />
                 <Canvas/>
                 <BoardBottomSection/>
             </div>
@@ -218,11 +259,12 @@ export default function Board({mode}: {mode: Mode}){
 }
 
 
-function UserNameModal({mode, showModal, setShowModal, joinBoardMutation}: {mode: Mode, showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void}){
+function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void}){
     const userNameRef = useRef<HTMLInputElement | null>(null)
     const boardId = useClientStore(state => state.boardId)
     const setUserName = useClientStore(state => state.setUserName)
     const setUserColor = useClientStore(state => state.setUserColor)
+    const mode = useClientStore(state => state.boardMode)
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
@@ -283,20 +325,43 @@ function BanModal({showModal}: {showModal: boolean}){
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
-                <Modal.Content>
-                    <div className="flex flex-col gap-2">
-                        <p className="text-lg">You don't have permission to access this board</p>
-                        <button
-                            className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
-                            onClick={() => {
-                                setBoardName(null)
-                                navigate("/")}}>Back to dashboard
-                        </button>
-                        <button
-                            className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
-                            onClick={() => window.location.reload()}>Recheck access
-                        </button>
-                    </div>
+                <Modal.Content className="flex flex-col gap-2">        
+                    <p className="text-lg">You don't have permission to access this board</p>
+                    <button
+                        className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                        onClick={() => {
+                            setBoardName(null)
+                            navigate("/")}}>Back to dashboard
+                    </button>
+                    <button
+                        className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                        onClick={() => window.location.reload()}>Recheck access
+                    </button>
+                </Modal.Content>
+            </Modal.Container>
+        </Modal>
+    )
+}
+
+
+function LocalBoardDeletedModal({showModal, handleLocalBoardDeletion}: {showModal: boolean, handleLocalBoardDeletion: () => void}){
+    const navigate = useNavigate()
+    const setBoardName = useClientStore(state => state.setBoardName)
+
+    return(
+        <Modal open={showModal} closeModal={() => {}}>
+            <Modal.Overlay />
+            <Modal.Container>
+                <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
+                <Modal.Content className="flex flex-col gap-2">
+                    <p className="text-md">This board was deleted</p>
+                    <button
+                        className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
+                        onClick={() => {
+                            handleLocalBoardDeletion()
+                            setBoardName(null)
+                            navigate("/")}}>Back to dashboard
+                    </button>
                 </Modal.Content>
             </Modal.Container>
         </Modal>

@@ -5,12 +5,11 @@ import Modal from '../Modal'
 import SideBar from './SideBar'
 import { useClientStore } from '../../store/clientStore'
 import { useMutation } from '@tanstack/react-query'
-import {changeBoardName} from '../../api/boards'
+import {changeBoardName, changeLocalBoardName} from '../../api/boards'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 import { updateBoardNameInLocalStorage } from '../../utils/localStorageOperations'
-import type { Mode } from '../../App'
 
-export default function BoardTopSection({mode}: {mode: Mode}){
+export default function BoardTopSection(){
     const boardName = useClientStore(state => state.boardName)
     const setBoardName = useClientStore(state => state.setBoardName)
     const boardId = useClientStore(state => state.boardId)
@@ -22,21 +21,19 @@ export default function BoardTopSection({mode}: {mode: Mode}){
     const {yBoard} = useCanvasYjs()
     const userRole = useClientStore(state => state.userRole)
     const [newBoardName, setNewBoardName] = useState<string | null>(null)
-
-    function updateBoardNameLocaly(boardName: string){
-        yBoard.set("name", boardName)
-        updateBoardNameInLocalStorage(boardId!, boardName)
-    }
+    const mode = useClientStore(state => state.boardMode)
 
     const changeBoardNameMutation = useMutation({
         mutationFn: async(newBoardName: string) => {
             if(newBoardName === null || newBoardName.trim().length === 0) return
-            const board = await changeBoardName(boardId!, newBoardName)
+            const board = mode === "server"
+                ? await changeBoardName(boardId!, newBoardName)
+                : await changeLocalBoardName(boardId!, newBoardName)
             return board
         },
         onSuccess: (board) => {
             yBoard.set("name", board.name)
-            //setBoardName(board.name)
+            if(board.type === "local") updateBoardNameInLocalStorage(board.id, board.name)
         },
         onError: (err) => console.log(err)
     })
@@ -50,10 +47,7 @@ export default function BoardTopSection({mode}: {mode: Mode}){
 
     useEffect(() => {
         if(!newBoardName) return
-        console.log(newBoardName)
-        timerRef.current = setTimeout(() => {
-            mode === "server" ? changeBoardNameMutation.mutate(newBoardName) : updateBoardNameLocaly(newBoardName)
-        }, 5000)
+        timerRef.current = setTimeout(() => changeBoardNameMutation.mutate(newBoardName), 5000)
         return () => {
             clearTimeout(timerRef.current)
         }

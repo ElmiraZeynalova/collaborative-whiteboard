@@ -6,9 +6,8 @@ import {
     HocuspocusProviderWebsocketComponent,
     HocuspocusRoom,
 } from '@hocuspocus/provider-react'
-import { useClientStore } from './store/clientStore'
+import { useClientStore, type Mode } from './store/clientStore'
 
-export type Mode = "local" | "server"
 export default function App() {
     return (
         <BrowserRouter>
@@ -25,6 +24,7 @@ export default function App() {
 function BoardPage({mode}: {mode: Mode}) {
     const { id } = useParams()
     const setIsBanned = useClientStore(state => state.setIsBanned)
+    const setDeletedBoardId = useClientStore(state => state.setDeletedBoardId)
 
     if (!id) {
         return <Navigate to="/" replace />
@@ -42,6 +42,8 @@ function BoardPage({mode}: {mode: Mode}) {
                 }
             }else if(message.type === "connection"){
                 console.log(message.content)
+            }else if(message.type === "board-deleted"){
+                setDeletedBoardId(message.content.boardId)
             }
         } catch (error) {
             console.error('Invalid stateless message:', error)

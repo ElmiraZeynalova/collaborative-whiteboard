@@ -1,11 +1,12 @@
 import {useHocuspocusAwareness, useHocuspocusProvider } from '@hocuspocus/provider-react'
 import { Icon } from '@iconify/react'
-import type {AwarenessUser, Member, Role} from '../../types/awareness'
+import type {AwarenessUser, LocalAwarenessUser, Member, Role} from '../../types/awareness'
 import {changeUserAccessToBoard, getAllBoardMembers, changeUserRole} from '../../api/boards'
 import { useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import { useClientStore } from '../../store/clientStore'
 import { useAuthState } from '../../context/AuthContext'
 import {useEffect} from 'react'
+
 
 export default function SideBar({closeBar}: {closeBar: () => void}) {
     const awareness = useHocuspocusAwareness()
@@ -13,8 +14,8 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     const boardId = useClientStore(state => state.boardId)
     const {loggedIn} = useAuthState()
     const queryClient = useQueryClient()
+    const mode = useClientStore(state => state.boardMode)
 
-    console.log(awareness)
     const changeUserRoleMutation = useMutation({
         mutationFn: async ({userId, role}: {userId: string, role: Role}) => {
             if(!boardId || !userId) return
@@ -57,7 +58,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     const activeMembers = awareness.map(item => {
         const user = item.user as AwarenessUser
         if(user) return user.userId
-    }) ?? []
+    }).filter(id => typeof id === 'string') 
 
     const activeMembersKey = activeMembers
         .filter((id): id is string => Boolean(id))
@@ -87,23 +88,11 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                     <h3 className="text-md font-medium truncate mx-2">Board members</h3>
                     <Icon icon="lucide:users" width={20} height={20} className="shrink-0"/>
                 </header>
-                <main className="flex flex-col p-2 gap-4">
-                    <section className="flex flex-col gap-2">
-                        <p className="text-[#919191] text-sm">Active</p>
-                        {members.map((member: Member) => {
-                            if(!activeMembers.includes(member.user_id)) return null
-                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status="active" changeAccess={(access: boolean) => handleAccessChange(member.user_id, access)} changeRole={(role: Role) => handleRoleChange(member.user_id, role)} />
-                        })}
-                    </section>
-                    <section className="flex flex-col gap-2">
-                        <p className="text-[#919191] text-sm">All</p>
-                        {isPending && <p>Loading members...</p>}
-                        {members.map((member: Member) => {
-                            if(activeMembers.includes(member.user_id)) return null
-                            return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive" : "banned"} changeAccess={(access: boolean) => handleAccessChange(member.user_id, access)} changeRole={(role: Role) => handleRoleChange(member.user_id, role)} />
-                        })}
-                    </section>
-                </main>
+                {mode === "server" 
+                    ? <ServerMemberSection members={members} activeMembers={activeMembers} isPending={isPending} handleAccessChange={(userId: string, access: boolean) => handleAccessChange(userId, access)} handleRoleChange={(userId: string, role: Role) => handleRoleChange(userId, role)}/>
+                    : <LocalMemberSection/>
+                }
+
             </div>
 
          
@@ -111,9 +100,64 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
     )
 }
 
-type Props = {userId: string, userName: string, userColor: string, userRole: Role, status: 'active' | 'inactive' | 'banned', changeAccess: (access: boolean) => void, changeRole: (role: Role) => void}
+type MembersProps = {
+    members: Member[] 
+    activeMembers: string[] 
+    isPending: boolean
+    handleAccessChange: (userId: string, access: boolean) => void
+    handleRoleChange: (userId: string, role: Role) => void
+}
 
-function UserBadge(memberData: Props){
+function ServerMemberSection(props: MembersProps){
+    return(
+        <main className="flex flex-col p-2 gap-4">
+            <section className="flex flex-col gap-2">
+                <p className="text-[#919191] text-sm">Active</p>
+                {props.members.map((member: Member) => {
+                    if(!props.activeMembers.includes(member.user_id)) return null
+                    return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status="active" changeAccess={(access: boolean) => props.handleAccessChange(member.user_id, access)} changeRole={(role: Role) => props.handleRoleChange(member.user_id, role)} />
+                })}
+            </section>
+            <section className="flex flex-col gap-2">
+                <p className="text-[#919191] text-sm">All</p>
+                {props.isPending && <p>Loading members...</p>}
+                {props.members.map((member: Member) => {
+                    if(props.activeMembers.includes(member.user_id)) return null
+                    return <UserBadge key={member.user_id} userId={member.user_id} userName={member.name} userColor={member.color} userRole={member.role} status={member.access ? "inactive" : "banned"} changeAccess={(access: boolean) => props.handleAccessChange(member.user_id, access)} changeRole={(role: Role) => props.handleRoleChange(member.user_id, role)} />
+                })}
+            </section>
+        </main>
+    )
+}
+
+function LocalMemberSection(){
+    const awareness = useHocuspocusAwareness()
+    const provider = useHocuspocusProvider()
+    const myClientId = provider.document.clientID
+
+    return(
+        <main className="flex flex-col p-2 gap-4">
+            <section className="flex flex-col gap-2">
+                {awareness.map((item) => {
+                    const member = item.user as LocalAwarenessUser
+                    if(!member || !member.name || !member.color) return null
+                    return (
+                        <div
+                            key={item.clientId}
+                            className="px-3 py-1 rounded-full text-white flex items-center"
+                            style={{ backgroundColor: `${member.color}`}}>
+                            <p className="grow">{item.clientId === myClientId ? "Me" : member.name}</p>
+                        </div>
+                    )
+                })}
+            </section>
+        </main>
+    )
+}
+
+type BadgeProps = {userId: string, userName: string, userColor: string, userRole: Role, status: 'active' | 'inactive' | 'banned', changeAccess: (access: boolean) => void, changeRole: (role: Role) => void}
+
+function UserBadge(memberData: BadgeProps){
     const userId = useClientStore(state => state.userId)
     const userRole = useClientStore(state => state.userRole)
 
@@ -142,7 +186,7 @@ function UserBadge(memberData: Props){
     )
 }
 
-function Menu({myRole, memberData}: {myRole: Role, memberData: Props}){
+function Menu({myRole, memberData}: {myRole: Role, memberData: BadgeProps}){
     
     if(myRole === "owner" && memberData.userRole !== "owner"){
         return(
