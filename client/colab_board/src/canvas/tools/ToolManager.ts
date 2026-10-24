@@ -10,21 +10,30 @@ import Pencil from "./Pencil";
 import Sticker from "./Sticker";
 import Selection from "./Selection";
 import Tool from "./Tool";
+import * as Y from 'yjs'
+import type { YShape } from "../../types/shapes";
 
-const TOOL_MAP: Record<string, () => Tool> = {
-    rect: () => new Rect(),
-    ellipse: () => new Ellipse(),
-    romb: () => new Romb(),
-    line: () => new Line(),
-    pencil: () => new Pencil(),
-    selection: () => new Selection(),
-    arrow: () => new Arrow(),
-    sticker: () => new Sticker(),
-    text: () => new Text(),
-    eraser: () => new Eraser()
+type ToolContext = {
+    yShapes: Y.Map<YShape>
+    yShapesOrder: Y.Array<string>
 }
 
-export function getToolInstance(tool: ToolType) {
+const TOOL_MAP: Record<string, (ctx: ToolContext) => Tool> = {
+    rect: (ctx) => new Rect(ctx),
+    ellipse: (ctx) => new Ellipse(ctx),
+    romb: (ctx) => new Romb(ctx),
+    line: (ctx) => new Line(ctx),
+    pencil: (ctx) => new Pencil(ctx),
+    selection: (ctx) => new Selection(ctx),
+    arrow: (ctx) => new Arrow(ctx),
+    sticker: (ctx) => new Sticker(ctx),
+    text: (ctx) => new Text(ctx),
+    eraser: (ctx) => new Eraser(ctx),
+}
+
+
+export function getToolInstance(tool: ToolType, ctx: ToolContext) {
     const factory = TOOL_MAP[tool]
-    return factory ? factory() : null
+
+    return factory ? factory(ctx) : null
 }

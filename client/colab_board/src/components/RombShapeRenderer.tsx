@@ -1,23 +1,33 @@
 import {Line} from 'react-konva'
-import { type RombShape } from '../types/shapes'
+import { type YShape } from '../types/shapes'
+import { getShapeNumber, getShapeStringValue } from '../utils/yShapeGetters'
 
-export default function RombShapeRenderer({shape, commonProps}: {shape: RombShape, commonProps: any}){
+export default function RombShapeRenderer({shape, commonProps}: {shape: YShape, commonProps: any}){
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const width = getShapeNumber(shape, 'width')
+    const height = getShapeNumber(shape, 'height')
+    const fillStyle = getShapeStringValue(shape, 'fillStyle')
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const strokeWidth = getShapeNumber(shape, 'strokeWidth')
+    const rotation = getShapeNumber(shape, 'rotation')
+
     return(
         <Line
             {...commonProps}
             points={[
-                shape.width / 2, 0,
-                shape.width, shape.height / 2,
-                shape.width / 2, shape.height,
-                0, shape.height / 2,
+                width / 2, 0,
+                width, height / 2,
+                width / 2, height,
+                0, height / 2,
             ]}
-            x={shape.x}
-            y={shape.y}
+            x={x}
+            y={y}
             closed
-            rotation={shape.rotation ?? 0}
-            fill={shape.fillStyle}
-            stroke={shape.strokeStyle}
-            strokeWidth={shape.strokeWidth}
+            rotation={rotation ?? 0}
+            fill={fillStyle}
+            stroke={strokeStyle}
+            strokeWidth={strokeWidth}
         />
     )
 }

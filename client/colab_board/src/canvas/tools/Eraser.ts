@@ -1,72 +1,44 @@
 import Tool from './Tool'
-import { useClientStore } from '../../store/clientStore'
 import { useCanvasStore } from '../../store/canvasStore'
 import { useToolStore } from '../../store/toolStore'
-import type { EraserShape, ShapeChanges } from "../../types/shapes"
+import * as Y from 'yjs'
+import type { YShape, Point } from '../../types/shapes'
 
 export default class Eraser extends Tool{
     readonly type = 'eraser'
     onPointerDown(pos: { x: number; y: number }): void {
-        const addShape = useCanvasStore.getState().addShape
-        const setCurrentlyDrawingShapeId = useCanvasStore.getState().setCurrentlyDrawingShapeId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
-
-        const strokeWidth = useToolStore.getState().strokeWidth
+        const canvasStore = useCanvasStore.getState()
+        const toolStore = useToolStore.getState()
+        const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
+        const strokeWidth = toolStore.strokeWidth
 
         const shapeId =  crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
-        const eraserShape: EraserShape = {
-            id: shapeId,
-            userId: userId,
-            type: this.type,
-            isDeleted: false,
-            x: pos.x,
-            y: pos.y,
-            points: [{x: pos.x, y: pos.y}],
-            strokeStyle: '#ffffff',
-            strokeWidth: strokeWidth,
-        }
+        const yEraserShape = new Y.Map() as YShape
+        yEraserShape.set("id", shapeId)
+        yEraserShape.set("type", this.type)
+        yEraserShape.set("isDeleted", false)
+        yEraserShape.set("x", pos.x)
+        yEraserShape.set("y", pos.y)
+        yEraserShape.set("points", [{x: pos.x, y: pos.y}])
+        yEraserShape.set("strokeStyle", "#ffffff")
+        yEraserShape.set("strokeWidth", strokeWidth)
 
-        addShape(eraserShape)
+        this.ctx.yShapes.set(shapeId, yEraserShape)
+        this.ctx.yShapesOrder.push([shapeId])
     }
 
     onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
-        const updateShape = useCanvasStore.getState().updateShape
-        const shape = useCanvasStore.getState().shapes[shapeId]
+        const yEraserShape = this.ctx.yShapes.get(shapeId)
 
-        if (!shape || shape.type !== this.type) return
-        const thisShape: EraserShape = shape
-
-        const changes: ShapeChanges = {
-            points: [...thisShape.points, {x: pos.x, y: pos.y}]
-        }
-        updateShape(shapeId, changes)
+        if (!yEraserShape) return
+        const existingPoints = yEraserShape.get("points") as Point[]
+        yEraserShape.set('points', [...existingPoints,  {x: pos.x, y: pos.y}])
     }
 
-
-    onPointerUp(shapeId: string): void {
-        const store = useCanvasStore.getState()
-        const shape = store.shapes[shapeId]
-
-        if (!shape || shape.type !== this.type) return
-
-        const message = {
-            type: "shape:add",
-            shape,
-            shapesOrder: store.shapesOrder,
-        }
-
-        useClientStore.getState().ws?.send(
-            JSON.stringify(message)
-        )
-
-        store.setCurrentlyDrawingShapeId(null)
-
-        store.pushToUndo({
-            type: "add",
-            shapes: [shape],
-        })
+    
+    onPointerUp(): void {
+        useCanvasStore.getState().setCurrentlyDrawingShapeId(null)
     }
 }

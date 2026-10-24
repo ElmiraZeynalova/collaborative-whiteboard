@@ -1,50 +1,40 @@
 import Tool from './Tool'
-import { type TextShape } from '../../types/shapes';
 import { useToolStore } from '../../store/toolStore';
-import { useClientStore } from '../../store/clientStore';
 import { useCanvasStore } from '../../store/canvasStore';
+import * as Y from 'yjs'
+import type { YShape } from '../../types/shapes'
 
 export default class Text extends Tool{
     readonly type = 'text'
 
     onPointerDown(pos: { x: number; y: number }): void {
-        const addShape = useCanvasStore.getState().addShape
-        const setEditingTextId = useCanvasStore.getState().setEditingTextId
-        const userId = useClientStore.getState().userId
-        if(!userId) return
+        const canvasStore = useCanvasStore.getState()
+        const toolStore = useToolStore.getState()
 
-        const strokeColor = useToolStore.getState().strokeColor
-        const strokeWidth = useToolStore.getState().strokeWidth
-        const fontSize = useToolStore.getState().fontSize
-        const textAlign = useToolStore.getState().textAlign
+        const strokeColor = toolStore.strokeColor
+        const strokeWidth = toolStore.strokeWidth
+        const fontSize = toolStore.fontSize
+        const textAlign = toolStore.textAlign
 
         const shapeId =  crypto.randomUUID()
 
-        const textShape: TextShape = {
-            id: shapeId,
-            userId: userId,
-            type: this.type,
-            isDeleted: false,
-            x: pos.x,
-            y: pos.y,
-            strokeStyle: strokeColor,
-            strokeWidth: strokeWidth,
-            fontSize: fontSize,
-            textAlign: textAlign,
-            text: "",
-            width: 0,
-        }
+        const yStickerShape = new Y.Map() as YShape
+        yStickerShape.set("id", shapeId)
+        yStickerShape.set("type", this.type)
+        yStickerShape.set("isDeleted", false)
+        yStickerShape.set("x", pos.x)
+        yStickerShape.set("y", pos.y)
+        yStickerShape.set("width", 0)
+        yStickerShape.set("strokeStyle", strokeColor)
+        yStickerShape.set("strokeWidth", strokeWidth)
+        yStickerShape.set("fontSize", fontSize)
+        yStickerShape.set("textAlign", textAlign)
+        yStickerShape.set("text", "")
 
-        addShape(textShape)
-        setEditingTextId(shapeId)
-        const message = {
-            type: "shape:add",
-            shape: textShape,
-            shapesOrder: useCanvasStore.getState().shapesOrder,
-        }
+        this.ctx.yShapes.set(shapeId, yStickerShape)
+        this.ctx.yShapesOrder.push([shapeId])
 
-        useClientStore.getState().ws?.send(JSON.stringify(message))
-
+        canvasStore.setEditingTextId(shapeId)
     }
 
 }

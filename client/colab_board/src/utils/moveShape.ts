@@ -1,26 +1,34 @@
-import {type Shape, type ShapeChanges} from '../types/shapes'
+import type {ShapeChanges, YShape} from '../types/shapes'
+import { getShapeNumber, getShapePoints, getShapeType } from './yShapeGetters'
 
-export function moveShape(shape: Shape, dx: number, dy: number): ShapeChanges{
-    switch(shape.type){
+export function moveShape(shape: YShape, dx: number, dy: number): ShapeChanges{
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const startX = getShapeNumber(shape, 'startX')
+    const startY = getShapeNumber(shape, 'startY')
+    const shapeType = getShapeType(shape)
+    const points = getShapePoints(shape)
+
+    switch(shapeType){
         case "rect":
-            return {x: shape.x + dx, y: shape.y + dy}
+            return {x: x + dx, y: y + dy}
         case "ellipse":
-            return {x: shape.x + dx, y: shape.y + dy}
+            return {x: x + dx, y: y + dy}
         case "romb":
-            return {x: shape.x + dx, y: shape.y + dy}
+            return {x: x + dx, y: y + dy}
         case "sticker":
-            return {x: shape.x + dx, y: shape.y + dy}
+            return {x: x + dx, y: y + dy}
         case "text":
-            return {x: shape.x + dx, y: shape.y + dy}
+            return {x: x + dx, y: y + dy}
         case "line":
         case "arrow":
-            return {startX: shape.startX + dx, startY: shape.startY + dy, x: shape.x + dx, y: shape.y + dy}
+            return {startX: startX + dx, startY: startY + dy, x: x + dx, y: y + dy}
         case "pencil":
         case "eraser":
             return {
-                x: shape.x + dx,
-                y: shape.y + dy,
-                points: shape.points.map(p => ({ x: p.x + dx, y: p.y + dy }))
+                x: x + dx,
+                y: y + dy,
+                points: points.map(p => ({ x: p.x + dx, y: p.y + dy }))
             }
     }
     return {}

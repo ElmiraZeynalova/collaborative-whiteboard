@@ -33,6 +33,7 @@ Modal.Container = function Container({ children, className }: { children: ReactN
 }
 
 Modal.Overlay = function Overlay() {
+    //const closeModal = useContext(ModalContext)
     return (
         <div className="fixed inset-0 bg-black/55"></div>
     )

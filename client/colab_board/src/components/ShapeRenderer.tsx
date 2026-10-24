@@ -1,14 +1,15 @@
-import { type Shape } from "../types/shapes"
+import { type YShape } from "../types/shapes"
 import PencilShapeRenderer from "./PencilShapeRenderer"
 import RombShapeRenderer from './RombShapeRenderer'
 import {Rect, Text, Ellipse, Group} from 'react-konva'
 import type { KonvaEventObject, Node } from 'konva/lib/Node'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
-import { registerShapeNode } from '../canvas/shapeNodeRegistry'
-import { handleShapeDragEnd } from '../canvas/shapeInteractions'
+import { registerShapeNode } from '../utils/shapeNodeRegistry'
+import { handleShapeDragEnd } from '../utils/shapeInteractions'
 import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from "../store/canvasStore"
 import LineShapeRenderer from "./LineShapeRenderer"
+import { getShapeId, getShapeNumber, getShapeRadius, getShapeStringValue, getShapeType } from "../utils/yShapeGetters"
 
 export function getFontSizeNumber(fontSize: string){
     let fontSizeNumber 
@@ -23,48 +24,63 @@ export function getFontSizeNumber(fontSize: string){
     }
     return fontSizeNumber
 }
-export default function ShapeRenderer({shape}: {shape: Shape}){
+export default function ShapeRenderer({shape}: {shape: YShape}){
+    const shapeId = getShapeId(shape)
+    const shapeType = getShapeType(shape)
     const tool = useToolStore(state => state.tool)
-    const isSelectable = tool?.type === 'selection'
+    const isSelectable = tool === 'selection'
     const editingTextId = useCanvasStore(state => state.editingTextId)
     const setEditingTextId = useCanvasStore(state => state.setEditingTextId)
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
-    const isSelected = selectedShapesIds.includes(shape.id)
+    const isSelected = selectedShapesIds.includes(shapeId)
 
     const commonProps = {
-        id: shape.id,
-        ref: (node: Node | null) => registerShapeNode(shape.id, node),
+        id: shapeId,
+        ref: (node: Node | null) => registerShapeNode(shapeId, node),
         draggable: isSelectable,
         onDragEnd: (e: KonvaEventObject<DragEvent>) => handleShapeDragEnd(shape, e.target),
     }
 
-    switch(shape.type){
+    const x = getShapeNumber(shape, 'x')
+    const y = getShapeNumber(shape, 'y')
+    const width = getShapeNumber(shape, 'width')
+    const height = getShapeNumber(shape, 'height')
+    const radius = getShapeRadius(shape)
+    const fillStyle = getShapeStringValue(shape, 'fillStyle')
+    const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
+    const strokeWidth = getShapeNumber(shape, 'strokeWidth')
+    const rotation = getShapeNumber(shape, 'rotation')
+    const text = getShapeStringValue(shape, 'text')
+    const fontSize = getShapeStringValue(shape, 'fontSize')
+    const textAlign = getShapeStringValue(shape, 'textAlign')
+
+    switch(shapeType){
         case 'ellipse':
            return(
             <Ellipse
                 {...commonProps}
-                x={shape.x}
-                y={shape.y}
-                radiusX={shape.radius.x}
-                radiusY={shape.radius.y}
-                fill={shape.fillStyle}
-                stroke={shape.strokeStyle}
-                strokeWidth={shape.strokeWidth}
-                rotation={shape.rotation ?? 0}
+                x={x}
+                y={y}
+                radiusX={radius.x}
+                radiusY={radius.y}
+                fill={fillStyle}
+                stroke={strokeStyle}
+                strokeWidth={strokeWidth}
+                rotation={rotation ?? 0}
 
             />)
         case 'rect':
             return(
                 <Rect
                     {...commonProps}
-                    x={shape.x}
-                    y={shape.y}
-                    width={shape.width}
-                    height={shape.height}
-                    fill={shape.fillStyle}
-                    stroke={shape.strokeStyle}
-                    strokeWidth={shape.strokeWidth}
-                    rotation={shape.rotation ?? 0}
+                    x={x}
+                    y={y}
+                    width={width}
+                    height={height}
+                    fill={fillStyle}
+                    stroke={strokeStyle}
+                    strokeWidth={strokeWidth}
+                    rotation={rotation ?? 0}
                 />
             )
         case 'line':
@@ -77,21 +93,21 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
         case 'romb':
             return <RombShapeRenderer shape={shape} commonProps={commonProps}/>
         case 'text':
-            if(shape.id === editingTextId) return null
+            if(shapeId === editingTextId) return null
             return(
                 <Text
                     {...commonProps}
-                    x={shape.x}
-                    y={shape.y}
-                    width={shape.width}
-                    align={shape.textAlign}
-                    text={shape.text}
-                    fontSize={getFontSizeNumber(shape.fontSize)}
+                    x={x}
+                    y={y}
+                    width={width}
+                    align={textAlign}
+                    text={text}
+                    fontSize={getFontSizeNumber(fontSize)}
                     fontFamily="Calibri"
-                    fill={shape.strokeStyle}
+                    fill={strokeStyle}
                     lineHeight={1.2}
-                    rotation={shape.rotation ?? 0}
-                    onDblClick={() => setEditingTextId(shape.id)}
+                    rotation={rotation ?? 0}
+                    onDblClick={() => setEditingTextId(shapeId)}
                 />
             )
         case 'sticker':
@@ -102,20 +118,20 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
             return(
                 <Group
                     {...commonProps}
-                    x={shape.x}
-                    y={shape.y}
-                    width={shape.width}
-                    height={shape.height}
-                    rotation={shape.rotation ?? 0}
+                    x={x}
+                    y={y}
+                    width={width}
+                    height={height}
+                    rotation={rotation ?? 0}
                 >
                     <Rect
                         x={0}
                         y={0}
-                        width={shape.width}
-                        height={shape.height}
-                        fill={shape.fillStyle}
-                        stroke={shape.strokeStyle}
-                        strokeWidth={shape.strokeWidth}
+                        width={width}
+                        height={height}
+                        fill={fillStyle}
+                        stroke={strokeStyle}
+                        strokeWidth={strokeWidth}
                         cornerRadius={20}
                         shadowEnabled={true}
                         shadowBlur={6}
@@ -123,22 +139,22 @@ export default function ShapeRenderer({shape}: {shape: Shape}){
                         shadowOffsetX={4}
                         shadowOffsetY={4}
                     />
-                    <Text x={20} y={20} fill={shape.strokeStyle} fontSize={14} fontFamily="Calibri" text={formattedDate}/>
-                    {shape.id !== editingTextId && <Text
+                    <Text x={20} y={20} fill={strokeStyle} fontSize={14} fontFamily="Calibri" text={formattedDate}/>
+                    {shapeId !== editingTextId && <Text
                         x={STICKER_PADDING_X / 2}
                         y={STICKER_PADDING_TOP}
-                        width={shape.width - STICKER_PADDING_X}
-                        height={shape.height - STICKER_PADDING_TOP - STICKER_PADDING_BOTTOM}
+                        width={width - STICKER_PADDING_X}
+                        height={height - STICKER_PADDING_TOP - STICKER_PADDING_BOTTOM}
                         align="center"
                         verticalAlign="middle"
-                        text={shape.text}
-                        fontSize={getFontSizeNumber(shape.fontSize)}
+                        text={text}
+                        fontSize={getFontSizeNumber(fontSize)}
                         fontFamily="Calibri"
-                        fill={shape.strokeStyle}
+                        fill={strokeStyle}
                         lineHeight={1.2}
                         padding={10}
                         wrap="char"
-                        onDblClick={() => setEditingTextId(shape.id)}
+                        onDblClick={() => setEditingTextId(shapeId)}
                     />}
                 </Group>
 

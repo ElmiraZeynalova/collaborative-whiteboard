@@ -1,20 +1,65 @@
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
-import Board from './components/Board'
+import { BrowserRouter, Route, Routes, Navigate, useParams } from 'react-router-dom'
+import Board from './components/Board/Board'
+import Dashboard from './components/Dashboard'
+import Login from './components/Login'
+import {
+    HocuspocusProviderWebsocketComponent,
+    HocuspocusRoom,
+} from '@hocuspocus/provider-react'
+import { useClientStore, type Mode } from './store/clientStore'
 
-export default function App(){
-  return(
-    <BrowserRouter>
-      <Routes>
-        <Route path="/board/:id" element={<Board/>}/>
-        <Route path="/" element={<NewBoard/>}/>
-      </Routes>
-    </BrowserRouter>
-  )
+export default function App() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route path="/" element={<Dashboard/>}/>
+                <Route path="/login" element={<Login/>}/>
+                <Route path="/boards/:id" element={<BoardPage mode="server"/>} />
+                <Route path="/boards/local/:id" element={<BoardPage mode="local"/>} />
+            </Routes>
+        </BrowserRouter>
+    )
 }
 
-function NewBoard(){
-  const id = crypto.randomUUID()
-  return(
-    <Navigate to={`/board/${id}`} replace/>
-  )
+function BoardPage({mode}: {mode: Mode}) {
+    const { id } = useParams()
+    const setIsBanned = useClientStore(state => state.setIsBanned)
+    const setDeletedBoardId = useClientStore(state => state.setDeletedBoardId)
+
+    if (!id) {
+        return <Navigate to="/" replace />
+    }
+
+    const accessToken = localStorage.getItem("accessToken") ?? ""
+
+    function handleStateless({ payload }: { payload: string }) {
+        try {
+            const message = JSON.parse(payload)
+            if (message.type === 'access') {
+                if(message.content === "access prohibited"){
+                    console.log("GOT BANNED")
+                    setIsBanned(true)
+                }
+            }else if(message.type === "connection"){
+                console.log(message.content)
+            }else if(message.type === "board-deleted"){
+                setDeletedBoardId(message.content.boardId)
+            }
+        } catch (error) {
+            console.error('Invalid stateless message:', error)
+        }
+    }
+
+    return (
+        <HocuspocusProviderWebsocketComponent url="ws://127.0.0.1:1234">
+            <HocuspocusRoom 
+                name={mode === "local" ? `board-local-${id}` : `board-${id}`}
+                token={accessToken} 
+                onStateless={handleStateless} 
+                onAuthenticationFailed={({ reason }) => {console.error('Authentication failed:', reason)}}>
+                <Board mode={mode}/>
+            </HocuspocusRoom>
+        </HocuspocusProviderWebsocketComponent>
+    )
 }
+
