@@ -170,5 +170,10 @@ server.on('upgrade', (request, socket, head) => {
   ws.handleUpgrade(request, socket, head)
 })
 
-server.listen(1234, () => console.log('Listening on http://127.0.0.1:1234'))
+const port = Number(process.env.PORT) || 1234
+
+server.listen(port, () => {
+  console.log(`Server listening on port ${port}`)
+})
+
 

@@ -10,7 +10,6 @@ import { Icon } from '@iconify/react'
 import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
 import Modal from "./Modal"
 import { saveBoardToLocalStorage, deleteBoardFromLocalStorage } from "../utils/localStorageOperations"
-//import {useHocuspocusProvider } from '@hocuspocus/provider-react'
 
 export default function Dashboard(){
     const navigate = useNavigate()

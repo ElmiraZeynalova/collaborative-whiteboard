@@ -1,5 +1,4 @@
 import {prisma} from '../prisma.js'
-import {getUserById} from './members.service.js'
 
 type Board = {
     id: string,

@@ -51,7 +51,7 @@ function BoardPage({mode}: {mode: Mode}) {
     }
 
     return (
-        <HocuspocusProviderWebsocketComponent url="ws://127.0.0.1:1234">
+        <HocuspocusProviderWebsocketComponent url={import.meta.env.VITE_HOCUSPOCUS_URL}>
             <HocuspocusRoom 
                 name={mode === "local" ? `board-local-${id}` : `board-${id}`}
                 token={accessToken} 
