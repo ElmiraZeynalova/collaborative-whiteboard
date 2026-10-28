@@ -1,8 +1,7 @@
 # Collaborative Whiteboard
 
 Real-time collaborative whiteboard with shared boards, role-based access control and CRDT-based synchronization.
-
-**[Live demo](https://collaborative-whiteboard-plum.vercel.app/)**
+Feel free to try: [https://collaborative-whiteboard-plum.vercel.app/](https://collaborative-whiteboard-plum.vercel.app/)
 
 ## Features
 
@@ -33,7 +32,7 @@ The project development went through a couple of stages:
 1. **Custom implementation.** I first built a WebSocket synchronization layer and a shape engine from scratch to understand how real-time sync and state consistency work.
 2. **Migration to Konva + Yjs/Hocuspocus.** I then moved rendering to Konva and synchronization to Yjs/Hocuspocus. A CRDT-based approach handles concurrent edits and conflict resolution far more reliably than a hand-written solution.
 
-**Guest boards** require no account therefore have no roles, stored in IndexedDB and server. **Account boards** are stored in IndexedDB as well and synchronized through the server, where roles and permissions are enforced.
+**Guest boards** require no account therefore have no roles and are stored in IndexedDB and server. **Account boards** are stored in IndexedDB as well and synchronized through the server, where roles and permissions are enforced.
 
 ## Roles and Permissions
 
