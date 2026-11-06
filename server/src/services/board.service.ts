@@ -3,7 +3,6 @@ import {prisma} from '../prisma.js'
 type Board = {
     id: string,
     name: string,
-    type: "local" | "server"
 }
 
 type MemberToJoin = {
@@ -39,12 +38,12 @@ export async function getBoardById(boardId: string){
     });
 }
 
-export async function createServerBoard(board: Board, userId: string) {
+export async function createAccountBoard(board: Board, userId: string) {
     return prisma.boards.create({
         data: {
             id: board.id,
             name: board.name,
-            type: "server",
+            is_guest: false,
             board_members: {
                 create: {
                     user_id: userId,
@@ -55,24 +54,24 @@ export async function createServerBoard(board: Board, userId: string) {
     });
 }
 
-export async function createLocalBoard(board: Board) {
+export async function createGuestBoard(board: Board) {
     return prisma.boards.create({
         data: {
             id: board.id,
             name: board.name,
-            type: "local"
+            is_guest: true
         }
     });
 
 }
 
-export async function deleteLocalBoard(boardId: string){
+export async function deleteGuestBoard(boardId: string){
     return prisma.boards.delete({
         where: {id: boardId}
     })
 }
 
-export async function deleteServerBoard(boardId: string, userId: string) {
+export async function deleteAccountBoard(boardId: string, userId: string) {
     const member = await prisma.board_members.findUnique({
         where: {
             board_id_user_id: {
@@ -149,15 +148,15 @@ export async function getUserRoleAndId(userId: string, boardId: string){
     })
 }
 
-export async function updateBoardNameLocaly(boardId: string, newName: string){
+export async function updateGuestBoardName(boardId: string, newName: string){
     const board = await prisma.boards.findUnique({
         where: { 
             id: boardId
         },
-        select: {type: true}
+        select: {is_guest: true}
     })
 
-    if(board?.type !== "local") throw new Error("You cannot change this boards name.")
+    if(board?.is_guest) throw new Error("You cannot change this boards name.")
 
     return prisma.boards.update({
         where: {id: boardId},
@@ -165,7 +164,7 @@ export async function updateBoardNameLocaly(boardId: string, newName: string){
     })
 }
 
-export async function updateBoardName(boardId: string, newName: string, userId: string){
+export async function updateAccountBoardName(boardId: string, newName: string, userId: string){
     const userRole = await prisma.board_members.findUnique({
         where: { 
             board_id_user_id: {

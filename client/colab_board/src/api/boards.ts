@@ -3,7 +3,6 @@ import {apiClient} from './client'
 type Board = {
     id: string
     name: string
-    type: "local" | "server"
 }
 type MemberToJoin = {
     board_id: string
@@ -17,24 +16,24 @@ export async function getAllUsersBoards(){
     return data 
 }
 
-export async function getBoard(boardId: string){
+export async function getAccountBoard(boardId: string){
     const {data} = await apiClient.get(`/api/boards/${boardId}`)
     return data 
 }
 
 
-export async function getLocalBoard(boardId: string){
-    const {data} = await apiClient.get(`/api/boards/local/${boardId}`)
+export async function getGuestBoard(boardId: string){
+    const {data} = await apiClient.get(`/api/boards/guest/${boardId}`)
     return data 
 }
 
-export async function createServerBoard(board: Board){
+export async function createAccountBoard(board: Board){
     const {data} = await apiClient.post("/api/boards/", board)
     return data 
 }
 
-export async function createLocalBoard(board: Board){
-    const {data} = await apiClient.post("/api/boards/local", board)
+export async function createGuestBoard(board: Board){
+    const {data} = await apiClient.post("/api/boards/guest", board)
     return data 
 }
 
@@ -48,23 +47,23 @@ export async function getUserRoleAndUserId(boardId: string){
     return data 
 }
 
-export async function changeBoardName(boardId: string, name: string){
+export async function changeAccountBoardName(boardId: string, name: string){
     const {data} = await apiClient.patch(`/api/boards/${boardId}`, {name})
     return data
 }
 
-export async function changeLocalBoardName(boardId: string, name: string){
-    const {data} = await apiClient.patch(`/api/boards/local/${boardId}`, {name})
+export async function changeGuestBoardName(boardId: string, name: string){
+    const {data} = await apiClient.patch(`/api/boards/guest/${boardId}`, {name})
     return data
 }
 
-export async function deleteLocalBoard(boardId: string){
-    const {data} = await apiClient.delete(`/api/boards/local/${boardId}`)
+export async function deleteGuestBoard(boardId: string){
+    const {data} = await apiClient.delete(`/api/boards/guest/${boardId}`)
     return data
 }
 
 
-export async function deleteServerBoard(boardId: string){
+export async function deleteAccountBoard(boardId: string){
     const {data} = await apiClient.delete(`/api/boards/${boardId}`)
     return data
 }

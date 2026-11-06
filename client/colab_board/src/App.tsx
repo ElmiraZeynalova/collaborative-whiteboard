@@ -14,8 +14,8 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<Dashboard/>}/>
                 <Route path="/login" element={<Login/>}/>
-                <Route path="/boards/:id" element={<BoardPage mode="server"/>} />
-                <Route path="/boards/local/:id" element={<BoardPage mode="local"/>} />
+                <Route path="/boards/:id" element={<BoardPage mode="account"/>} />
+                <Route path="/boards/guest/:id" element={<BoardPage mode="guest"/>} />
             </Routes>
         </BrowserRouter>
     )
@@ -53,7 +53,7 @@ function BoardPage({mode}: {mode: Mode}) {
     return (
         <HocuspocusProviderWebsocketComponent url={import.meta.env.VITE_HOCUSPOCUS_URL}>
             <HocuspocusRoom 
-                name={mode === "local" ? `board-local-${id}` : `board-${id}`}
+                name={mode === "guest" ? `board-guest-${id}` : `board-${id}`}
                 token={accessToken} 
                 onStateless={handleStateless} 
                 onAuthenticationFailed={({ reason }) => {console.error('Authentication failed:', reason)}}>

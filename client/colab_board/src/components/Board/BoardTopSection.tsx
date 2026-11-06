@@ -5,7 +5,7 @@ import Modal from '../Modal'
 import SideBar from './SideBar'
 import { useClientStore } from '../../store/clientStore'
 import { useMutation } from '@tanstack/react-query'
-import {changeBoardName, changeLocalBoardName} from '../../api/boards'
+import {changeAccountBoardName, changeGuestBoardName} from '../../api/boards'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 import { updateBoardNameInLocalStorage } from '../../utils/localStorageOperations'
 
@@ -26,22 +26,22 @@ export default function BoardTopSection(){
     const changeBoardNameMutation = useMutation({
         mutationFn: async(newBoardName: string) => {
             if(newBoardName === null || newBoardName.trim().length === 0) return
-            const board = mode === "server"
-                ? await changeBoardName(boardId!, newBoardName)
-                : await changeLocalBoardName(boardId!, newBoardName)
+            const board = mode === "account"
+                ? await changeAccountBoardName(boardId!, newBoardName)
+                : await changeGuestBoardName(boardId!, newBoardName)
             return board
         },
         onSuccess: (board) => {
             yBoard.set("name", board.name)
-            if(board.type === "local") updateBoardNameInLocalStorage(board.id, board.name)
+            if(board.is_guest) updateBoardNameInLocalStorage(board.id, board.name)
         },
         onError: (err) => console.log(err)
     })
     
     async function handleClick(){
-        mode === "server" 
+        mode === "account" 
             ? await navigator.clipboard.writeText(`${window.location.origin}/boards/${boardId}`)
-            : await navigator.clipboard.writeText(`${window.location.origin}/boards/local/${boardId}`)
+            : await navigator.clipboard.writeText(`${window.location.origin}/boards/guest/${boardId}`)
         setShowMessage(true)
     }
 
@@ -97,7 +97,7 @@ export default function BoardTopSection(){
                 </button>
             
                 <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
-                    {userRole !== "contributor" || mode === "local" ? <input
+                    {userRole !== "contributor" || mode === "guest" ? <input
                         value={newBoardName ?? boardName ?? ""}
                         onChange={(e) => setNewBoardName(e.target.value)}
                         className="outline-none p-0 m-0 text-center"

@@ -3,8 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { logout } from "../api/auth"
 import { useAuthState } from "../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createServerBoard, createLocalBoard, getAllUsersBoards, deleteLocalBoard, deleteServerBoard } from "../api/boards"
-import type { Board, BoardType } from "../types/board"
+import { createAccountBoard, createGuestBoard, getAllUsersBoards, deleteGuestBoard, deleteAccountBoard } from "../api/boards"
+import type { Board } from "../types/board"
 import { useEffect, useMemo, useState } from "react"
 import { Icon } from '@iconify/react'
 import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
@@ -50,8 +50,8 @@ export default function Dashboard(){
         mutationFn: async(boardId: string) =>{ 
             const inLocalState = localBoards.find((b: Board) => b.id === boardId)
             const board = inLocalState 
-                ? await deleteLocalBoard(boardId)
-                : await deleteServerBoard(boardId)
+                ? await deleteGuestBoard(boardId)
+                : await deleteAccountBoard(boardId)
             return board
         },
         onSuccess: async(board) => {
@@ -141,12 +141,12 @@ function BoardForm(){
     }, [])
 
     const createBoardMutation = useMutation({
-        mutationFn: async(data: {id: string, name: string, type: BoardType} ) => {
-            if(!data.name || !data.id || !data.type) return
+        mutationFn: async(data: {id: string, name: string, isGuest: boolean} ) => {
+            if(!data.name || !data.id || data.isGuest === undefined) return
 
-            const board = loggedIn === true
-                ? await createServerBoard({id: data.id, name: data.name, type: data.type})
-                : await createLocalBoard({id: data.id, name: data.name, type: data.type})
+            const board = !data.isGuest
+                ? await createAccountBoard({id: data.id, name: data.name})
+                : await createGuestBoard({id: data.id, name: data.name})
             return board
         },
         onSuccess: (board) => {
@@ -164,14 +164,14 @@ function BoardForm(){
         if (!name || loggedIn === "loading") return
 
         const id = crypto.randomUUID()
-        const type: BoardType = loggedIn === true ? "server" : "local"
+        const isGuest = loggedIn === true ? false : true
 
         try {
-            await createBoardMutation.mutateAsync({ id, name, type })
+            await createBoardMutation.mutateAsync({ id, name, isGuest })
 
-            if (type === "local") {
+            if (isGuest) {
                 saveBoardToLocalStorage(id, name)
-                navigate(`/boards/local/${id}`)
+                navigate(`/boards/guest/${id}`)
             } else {
                 navigate(`/boards/${id}`)
             }
@@ -220,7 +220,7 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
     function handleBoardChoice(boardId: string){
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
 
-        inLocalState ? navigate(`/boards/local/${boardId}`) : navigate(`/boards/${boardId}`) 
+        inLocalState ? navigate(`/boards/guest/${boardId}`) : navigate(`/boards/${boardId}`) 
     }
 
     if(!boards) return null

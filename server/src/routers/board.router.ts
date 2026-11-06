@@ -4,10 +4,10 @@ import { authMiddleware } from '../middlewares/authMiddleware.js'
 
 export const boardRouter = express.Router()
 
-boardRouter.post("/local", createBoard)
-boardRouter.delete("/local/:id", deleteBoard)
-boardRouter.get("/local/:id", getBoard)
-boardRouter.patch("/local/:id", changeBoardName)
+boardRouter.post("/guest", createBoard)
+boardRouter.delete("/guest/:id", deleteBoard)
+boardRouter.get("/guest/:id", getBoard)
+boardRouter.patch("/guest/:id", changeBoardName)
 
 boardRouter.use(authMiddleware)
 boardRouter.get("/", getAllBoards)
