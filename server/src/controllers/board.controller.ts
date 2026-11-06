@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import {getAllUserBoards, getBoardById, createGuestBoard, createAccountBoard, deleteGuestBoard, deleteAccountBoard, joinUserToBoard, getUserRoleAndId, updateGuestBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole, updateAccountBoardName} from '../services/board.service.js'
 import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
-import { hocuspocus } from "../index.js";
+import { hocuspocus } from "../hocuspocus.js";
 
 export async function getAllBoards(req: Request, res: Response){
     try{

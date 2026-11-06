@@ -1,5 +1,5 @@
 import {prisma} from '../prisma.js'
-import bcrypt from 'bcrypt'
+import bcrypt from "bcryptjs"
 import { generateTokens } from '../utils/generateTokens.js'
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'

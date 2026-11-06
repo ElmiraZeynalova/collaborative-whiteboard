@@ -1,5 +1,5 @@
 import {create} from 'zustand'
-export type Mode = "local" | "server"
+export type Mode = "guest" | "account"
 
 interface ClientStore {
     boardMode: null | Mode

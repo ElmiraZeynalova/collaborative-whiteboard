@@ -1,0 +1,14 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "collaborative-board"
+resolve_s3 = true
+s3_prefix = "collaborative-board"
+region = "eu-north-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "FrontendUrl=\"http://localhost:5173\" SubnetIds=\"subnet-02720de3bb62a502d,subnet-0ca26e6f488e50a52\" SecurityGroupId=\"sg-0d779a5724555509e\""
+image_repositories = []
+
+[default.global.parameters]
+region = "eu-north-1"

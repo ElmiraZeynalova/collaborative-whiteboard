@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  DatabaseUrl:
+    Type: String
+    NoEcho: true
+  JwtAccessSecret:
+    Type: String
+    NoEcho: true
+  JwtRefreshSecret:
+    Type: String
+    NoEcho: true
+  FrontendUrl:
+    Type: String
+    Default: "http://localhost:5173"
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 29
+    MemorySize: 512
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambda.handler
+      VpcConfig:
+        SubnetIds: !Ref SubnetIds
+        SecurityGroupIds: [!Ref SecurityGroupId]
+      Environment:
+        Variables:
+          DATABASE_URL: !Ref DatabaseUrl
+          JWT_ACCESS_SECRET: !Ref JwtAccessSecret
+          JWT_REFRESH_SECRET: !Ref JwtRefreshSecret
+          FRONTEND_URL: !Ref FrontendUrl
+          NODE_ENV: production
+      Events:
+        Any:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Format: esm
+        Target: es2022
+        Sourcemap: true
+        EntryPoints: [src/lambda.ts]
+        OutExtension: [".js=.mjs"]
+        Banner: ["js=import{createRequire}from'module';const require=createRequire(import.meta.url);"]
+
+Outputs:
+  ApiUrl:
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

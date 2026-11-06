@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser'
 
 const app = express();
 
+app.set("trust proxy", 1)
 app.use(express.json());
 app.use(express.urlencoded({extended: true}))
 app.use(cookieParser()) 
@@ -33,5 +34,5 @@ app.use(
 
 app.use("/api/boards", boardRouter);
 app.use("/api/auth", authRouter);
-
+app.get("/api/health", (_req, res) => res.send("ok"));
 export default app;

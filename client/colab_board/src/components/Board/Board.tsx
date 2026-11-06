@@ -10,7 +10,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom"
 import {IndexeddbPersistence} from 'y-indexeddb'
 import { useAuthState } from "../../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { joinBoard, getBoardMember, getLocalBoard } from "../../api/boards"
+import { joinBoard, getBoardMember, getGuestBoard } from "../../api/boards"
 import axios from 'axios'
 import { deleteBoardFromLocalStorage, saveBoardToLocalStorage, updateBoardNameInLocalStorage } from "../../utils/localStorageOperations"
 import { deleteLocalBoardFromIDB } from "../../utils/iDBOperations"
@@ -32,7 +32,6 @@ type MemberToJoin = {
 export default function Board({mode}: {mode: Mode}){
     const setBoardMode = useClientStore(state => state.setBoardMode)
     const [showNameModal, setShowNameModal] = useState<boolean>(false)
-   // const [showLocalBoardDeletedModal, setShowLocalBoardDeletedModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
     const setIsBanned = useClientStore(state => state.setIsBanned)
     const userName = useClientStore(state => state.userName)
@@ -59,7 +58,7 @@ export default function Board({mode}: {mode: Mode}){
     }, [mode, setBoardMode, id])
 
     useEffect(() => {
-        if (loggedIn === false && mode === "server") {
+        if (loggedIn === false && mode === "account") {
             navigate("/login", {
                 replace: true,
                 state: {
@@ -74,7 +73,7 @@ export default function Board({mode}: {mode: Mode}){
         queryFn: async() => {
             if(!id) return undefined
             try {
-                return await getLocalBoard(id)
+                return await getGuestBoard(id)
             } catch (error) {
                 if (axios.isAxiosError(error) && error.response?.status === 400) {
                     return null;
@@ -82,7 +81,7 @@ export default function Board({mode}: {mode: Mode}){
                 throw error;
             }
         },
-        enabled: !!id && mode === "local",
+        enabled: !!id && mode === "guest",
     })
 
     useEffect(() => {
@@ -107,7 +106,7 @@ export default function Board({mode}: {mode: Mode}){
                 throw error;
             }
         },
-        enabled: loggedIn === true && userId !== null && !!id && mode === "server",
+        enabled: loggedIn === true && userId !== null && !!id && mode === "account",
     })
 
     const joinBoardMutation = useMutation({
@@ -127,7 +126,7 @@ export default function Board({mode}: {mode: Mode}){
 
 
     useEffect(() => {
-        if(mode === "local"){
+        if(mode === "guest"){
             const existingUserData = JSON.parse(localStorage.getItem("user") ?? "{}") ?? {}
             if(!existingUserData || !existingUserData.name || !existingUserData.color){
                 setShowNameModal(true)
@@ -200,7 +199,7 @@ export default function Board({mode}: {mode: Mode}){
             if (typeof name === "string" && id) {
                 setBoardName(name)
                 setBoardId(id)
-                if(mode === "local") saveBoardToLocalStorage(id, name)
+                if(mode === "guest") saveBoardToLocalStorage(id, name)
             }
         }
 
@@ -217,14 +216,14 @@ export default function Board({mode}: {mode: Mode}){
     useEffect(() => {
         if(!userName) return 
 
-        if(mode === "local" && userColor && userName){
+        if(mode === "guest" && userColor && userName){
             provider.setAwarenessField('user', {
                 color: userColor,
                 name: userName
             })
         }
 
-        if (userId && userColor && mode === "server"){
+        if (userId && userColor && mode === "account"){
             provider.setAwarenessField('user', {
                 color: userColor,
                 userId
@@ -244,7 +243,7 @@ export default function Board({mode}: {mode: Mode}){
                 <LocalBoardDeletedModal 
                     showModal={deletedBoardId === id} 
                     handleLocalBoardDeletion={() => {
-                        if(mode === "local") deleteBoardFromLocalStorage(id!)
+                        if(mode === "guest") deleteBoardFromLocalStorage(id!)
                         deleteLocalBoardFromIDB(id!)
                     }}
                 />
@@ -275,7 +274,7 @@ function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal
 
         const color = generateColor()
 
-        if(mode === "local"){
+        if(mode === "guest"){
             localStorage.setItem("user", JSON.stringify({name, color}))
             setUserName(name)
             setUserColor(color)
