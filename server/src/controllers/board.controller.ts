@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import {getAllUserBoards, getBoardById, createServerBoard, createLocalBoard, deleteLocalBoard, deleteServerBoard, joinUserToBoard, getUserRoleAndId, updateBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole, updateBoardNameLocaly} from '../services/board.service.js'
+import {getAllUserBoards, getBoardById, createGuestBoard, createAccountBoard, deleteGuestBoard, deleteAccountBoard, joinUserToBoard, getUserRoleAndId, updateGuestBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole, updateAccountBoardName} from '../services/board.service.js'
 import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
 import { hocuspocus } from "../index.js";
 
@@ -34,10 +34,10 @@ export async function createBoard(req: Request, res: Response){
         const userId = req.user?.id
 
         if(!userId){
-            const board = await createLocalBoard(req.body)
+            const board = await createGuestBoard(req.body)
             return res.status(201).json(board)
         }
-        const board = await createServerBoard(req.body, userId)
+        const board = await createAccountBoard(req.body, userId)
         return res.status(201).json(board)
     }catch(error){
         return res.status(400).json({error: (error as Error).message})
@@ -49,12 +49,12 @@ export async function deleteBoard(req: Request, res: Response){
         const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
         const userId = req.user?.id
         if(!userId){
-            const board = await deleteLocalBoard(boardId)
+            const board = await deleteGuestBoard(boardId)
             return res.status(200).json(board)
         }
         const documentName = `board-${boardId}`;
         const document = hocuspocus.documents.get(documentName);
-        const board = await deleteServerBoard(boardId, userId)
+        const board = await deleteAccountBoard(boardId, userId)
         if(board.deleted && document) {
             document.broadcastStateless(
                 JSON.stringify({
@@ -101,10 +101,10 @@ export async function changeBoardName(req: Request, res: Response){
         const {name} = req.body
         const userId = req.user?.id
         if(!userId){
-            const board = await updateBoardNameLocaly(boardId, name)
+            const board = await updateGuestBoardName(boardId, name)
             return res.status(200).json(board)
         }
-        const board = await updateBoardName(boardId, name, req.user.id)
+        const board = await updateAccountBoardName(boardId, name, req.user.id)
         res.status(200).json(board)
     }catch(error){
         res.status(400).json({error: (error as Error).message})

@@ -11,8 +11,8 @@ export const hocuspocus = new Hocuspocus({
 
   async onAuthenticate({ token, documentName }) {
 
-    const isLocalDocument = documentName.startsWith("board-local-")
-    const boardId = documentName.replace(isLocalDocument ? /^board-local-/ : /^board-/, "")
+    const isLocalDocument = documentName.startsWith("board-guest-")
+    const boardId = documentName.replace(isLocalDocument ? /^board-guest-/ : /^board-/, "")
 
     const board = await getBoardById(boardId)
 
@@ -21,7 +21,7 @@ export const hocuspocus = new Hocuspocus({
     }
 
     if (isLocalDocument) {
-      if (board.type !== "local") {
+      if (!board.is_guest) {
         throw new Error("Invalid board type")
       }
 
@@ -31,7 +31,7 @@ export const hocuspocus = new Hocuspocus({
       }
     }
 
-    if (board.type !== "server") {
+    if (board.is_guest) {
       throw new Error("Invalid board type")
     }
 
@@ -61,8 +61,8 @@ export const hocuspocus = new Hocuspocus({
   },
 
   async onLoadDocument({ document, documentName }) {
-    const isLocalBoard = documentName.startsWith("board-local-")
-    const boardId = isLocalBoard ? documentName.replace(/^board-local-/, "") : documentName.replace(/^board-/, '')
+    const isLocalBoard = documentName.startsWith("board-guest-")
+    const boardId = isLocalBoard ? documentName.replace(/^board-guest-/, "") : documentName.replace(/^board-/, '')
     const board = await getBoardState(boardId)
     if (board?.state) {
         Y.applyUpdate(document, new Uint8Array(board.state))
@@ -73,8 +73,8 @@ export const hocuspocus = new Hocuspocus({
   },
 
   async onStoreDocument({ document, documentName }) {
-    const isLocalBoard = documentName.startsWith("board-local-")
-    const boardId = isLocalBoard ? documentName.replace(/^board-local-/, "") : documentName.replace(/^board-/, '')
+    const isLocalBoard = documentName.startsWith("board-guest-")
+    const boardId = isLocalBoard ? documentName.replace(/^board-guest-/, "") : documentName.replace(/^board-/, '')
     const state = Y.encodeStateAsUpdate(document)
     await saveBoardState(state, boardId)
   },
