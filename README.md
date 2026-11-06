@@ -1,7 +1,7 @@
 # Collaborative Whiteboard
 
 Real-time collaborative whiteboard with shared boards, role-based access control and CRDT-based synchronization.
-Feel free to try: [https://collaborative-whiteboard-plum.vercel.app/](https://collaborative-whiteboard-plum.vercel.app/)
+Feel free to try: [https://collaborative-whiteboard-plum.vercel.app/](d18fd4vg2lc443.cloudfront.net)
 
 ## Features
 
