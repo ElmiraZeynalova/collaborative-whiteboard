@@ -88,7 +88,7 @@ export default function SideBar({closeBar}: {closeBar: () => void}) {
                     <h3 className="text-md font-medium truncate mx-2">Board members</h3>
                     <Icon icon="lucide:users" width={20} height={20} className="shrink-0"/>
                 </header>
-                {mode === "server" 
+                {mode === "account" 
                     ? <ServerMemberSection members={members} activeMembers={activeMembers} isPending={isPending} handleAccessChange={(userId: string, access: boolean) => handleAccessChange(userId, access)} handleRoleChange={(userId: string, role: Role) => handleRoleChange(userId, role)}/>
                     : <LocalMemberSection/>
                 }
