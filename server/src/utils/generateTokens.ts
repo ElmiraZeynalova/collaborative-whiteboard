@@ -14,7 +14,7 @@ export const generateTokens = (userId: string) => {
         expiresIn: "1d" 
     })
     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
-        expiresIn: "60d"
+        expiresIn: "60d", jwtid: crypto.randomUUID()
     })
     return {accessToken, refreshToken}
 }

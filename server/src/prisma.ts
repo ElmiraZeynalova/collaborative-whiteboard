@@ -6,7 +6,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
-    ssl: { ca: rdsCa },
+    ssl: process.env.NODE_ENV === "production" ? { ca: rdsCa } : undefined,
 });
 
 export const prisma = new PrismaClient({

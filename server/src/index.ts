@@ -37,5 +37,8 @@ const ws = crossws({hooks: {
   }});
 server.on("upgrade", (req, socket, head) => ws.handleUpgrade(req, socket, head));
 
-server.listen(Number(process.env.PORT) || 1234);
+const port = Number(process.env.PORT) || 1234;
 
+server.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
