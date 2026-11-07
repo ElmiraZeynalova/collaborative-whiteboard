@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest"
   },
   "dependencies": {
     "@hocuspocus/provider": "^4.7.0",
@@ -22,6 +23,7 @@
     "react-konva": "^19.3.0",
     "react-router-dom": "^7.18.3",
     "tailwindcss": "^4.3.3",
+    "vitest": "^5.1.0",
     "y-indexeddb": "^9.0.12",
     "yjs": "^13.6.33",
     "zustand": "^5.0.15"

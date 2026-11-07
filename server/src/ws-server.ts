@@ -46,3 +46,5 @@ const port = Number(process.env.PORT) || 1234;
 server.listen(port, () => {
   console.log(`WS server listening on port ${port}`);
 });
+
+//git pull && npm ci && npm run build && sudo systemctl restart hocuspocus.
