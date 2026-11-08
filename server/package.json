@@ -7,10 +7,15 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "postinstall": "prisma generate"
+    "start": "dotenv -e .env.dev node dist/index.js",
+    "postinstall": "prisma generate",
+    "dev": "dotenv -e .env.dev -- tsx watch src/index.ts",
+    "start:test": "dotenv -e .env.test -- tsx src/index.ts",
+    "prisma:dev": "dotenv -e .env.dev -- prisma migrate dev",
+    "prisma:test": "dotenv -e .env.test -- prisma migrate deploy",
+    "prisma:studio": "dotenv -e .env.dev -- prisma studio",
+    "prisma:studio:test": "dotenv -e .env.test -- prisma studio"
   },
   "keywords": [],
   "author": "",
@@ -43,6 +48,7 @@
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.2.1",
     "@types/ws": "^8.18.1",
+    "dotenv-cli": "^11.1.0",
     "esbuild": "^0.28.2",
     "prisma": "^7.10.0",
     "supertest": "^7.3.2",

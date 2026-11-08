@@ -10,27 +10,13 @@ app.set("trust proxy", 1)
 app.use(express.json());
 app.use(express.urlencoded({extended: true}))
 app.use(cookieParser()) 
+
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL, 
+  process.env.FRONTEND_URL!, 
 ];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.includes(origin) ||
-        /^https:\/\/collaborative-whiteboard-.*\.vercel\.app$/.test(origin)
-      ) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
+app.use(cors({origin: allowedOrigins, credentials: true}));
 
 app.use("/api/boards", boardRouter);
 app.use("/api/auth", authRouter);
