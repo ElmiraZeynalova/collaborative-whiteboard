@@ -18,10 +18,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PROD_PASSWORD}
       POSTGRES_DB: board_prod
     ports:
-      - "127.0.0.1:5434:5432"
+      - "5434:5432"
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
     restart: unless-stopped
 
 volumes:
   postgres_prod_data:
+
+
+ 
