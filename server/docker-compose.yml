@@ -9,3 +9,19 @@ services:
       - "5433:5432"
     tmpfs:
       - /var/lib/postgresql/data  
+
+  db-prod:
+    image: postgres:16
+    container_name: board-db-prod
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PROD_PASSWORD}
+      POSTGRES_DB: board_prod
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:

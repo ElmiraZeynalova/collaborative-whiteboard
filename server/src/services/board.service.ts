@@ -156,7 +156,7 @@ export async function updateGuestBoardName(boardId: string, newName: string){
         select: {is_guest: true}
     })
 
-    if(board?.is_guest) throw new Error("You cannot change this boards name.")
+    if(!board?.is_guest) throw new Error("You cannot change this boards name.")
 
     return prisma.boards.update({
         where: {id: boardId},

@@ -8,3 +8,4 @@ export default function setup() {
 }
 
 //docker compose up -d db-test, затем npm test
+//docker compose down
