@@ -193,9 +193,11 @@ export default function Board({mode}: {mode: Mode}){
 
 
     useEffect(() => {
+        console.log("ATTEMPTING TO SET BOARD ID FROM YJS")
         const handleYjsChange = () => {
             const name = yBoard.get("name")
-         
+            console.log("BOARD NAME: ", name, id)
+            setBoardId(id!)
             if (typeof name === "string" && id) {
                 setBoardName(name)
                 setBoardId(id)

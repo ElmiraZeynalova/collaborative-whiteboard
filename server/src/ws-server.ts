@@ -16,13 +16,17 @@ const server = createServer((req, res) => {
 const ws = crossws({
   hooks: {
     open(peer) {
+      console.log("WS OPEN:", peer.id);
+
       const clientConnection = hocuspocus.handleConnection(
         peer.websocket as unknown as WebSocketLike,
         peer.request as Request,
       );
+
       (peer as any)._hocuspocus = clientConnection;
     },
     message(peer, message) {
+      console.log("WS MESSAGE:", peer.id, message.uint8Array().length);
       (peer as any)._hocuspocus?.handleMessage(message.uint8Array());
     },
     close(peer, event) {
@@ -39,6 +43,9 @@ const ws = crossws({
 });
 
 server.on("upgrade", (request, socket, head) => {
+  console.log("UPGRADE REQUEST:", request.url);
+  console.log("UPGRADE HEADERS:", request.headers);
+
   ws.handleUpgrade(request, socket, head);
 });
 
