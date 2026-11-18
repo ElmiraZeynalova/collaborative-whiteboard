@@ -1,5 +1,5 @@
 import express from 'express'
-import {getAllBoards, getBoard, deleteBoard, joinBoard, getRoleAndUserId, changeBoardName, getAllBoardMembers, changeUserAccessToBoard, getBoardMember, changeUserRole,  createBoard } from "../controllers/board.controller.js"
+import {verifyShareAccess, getShareBoardToken, getAllBoards, getBoard, deleteBoard, joinBoard, getRoleAndUserId, changeBoardName, getAllBoardMembers, changeUserAccessToBoard, getBoardMember, changeUserRole,  createBoard } from "../controllers/board.controller.js"
 import { authMiddleware } from '../middlewares/authMiddleware.js'
 
 export const boardRouter = express.Router()
@@ -12,6 +12,8 @@ boardRouter.patch("/guest/:id", changeBoardName)
 boardRouter.use(authMiddleware)
 boardRouter.get("/", getAllBoards)
 boardRouter.get("/:id", getBoard)
+boardRouter.get("/:id/share-token", getShareBoardToken)
+boardRouter.post("/:id/verify-share", verifyShareAccess)
 boardRouter.post("/", createBoard)
 boardRouter.delete("/:id", deleteBoard)
 boardRouter.post("/:id/join", joinBoard)

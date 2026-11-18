@@ -4,7 +4,7 @@ export type Mode = "guest" | "account"
 interface ClientStore {
     boardMode: null | Mode
     userId: string | null
-    userRole: "owner" | "contributor" | null
+    userRole: "owner" | "contributor" | "admin" | null
     userName: string | null
     userColor: string | null
     isBanned: boolean
@@ -13,7 +13,7 @@ interface ClientStore {
     boardName: string | null
     setBoardMode: (mode: Mode) => void
     setUserId: (id: string | null) => void
-    setUserRole: (role:  "owner" | "contributor") => void
+    setUserRole: (role:  "owner" | "contributor" | "admin") => void
     setUserName: (name: string) => void
     setUserColor: (color: string) => void
     setIsBanned: (state: boolean) => void

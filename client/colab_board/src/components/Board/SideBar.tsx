@@ -163,14 +163,14 @@ function UserBadge(memberData: BadgeProps){
 
     const backgroundColor = {
         active: memberData.userColor,
-        inactive: `color-mix(in srgb, ${memberData.userColor} 55%, white)`,
-        banned: '#6b7280',
+        inactive: `color-mix(in srgb, ${memberData.userColor} 25%, #dcd6d6)`,
+        banned: '#8d8d8d',
     }[memberData.status]
 
     const color = {
         active: 'white',
-        inactive: 'black',
-        banned: 'red',
+        inactive: '#7c7c7c',
+        banned: '#f23b3b',
     }[memberData.status]
 
     return(              
@@ -199,7 +199,7 @@ function Menu({myRole, memberData}: {myRole: Role, memberData: BadgeProps}){
                 <button
                     onClick={() => memberData.changeAccess(memberData.status === "banned" ? true : false)}
                     className="bg-white cursor-pointer hover:bg-[#FF0000] text-sm text-[#FF0000] hover:text-white hover:border-transparent border-black border font-normal rounded-lg px-2 py-1"
-                    >{memberData.status === "banned" ? "Unban member" : "Ban user"}
+                    >{memberData.status === "banned" ? "Unban member" : "Ban member"}
                 </button>
             </div>
         )

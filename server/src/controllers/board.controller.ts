@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import {getAllUserBoards, getBoardById, createGuestBoard, createAccountBoard, deleteGuestBoard, deleteAccountBoard, joinUserToBoard, getUserRoleAndId, updateGuestBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole, updateAccountBoardName} from '../services/board.service.js'
+import {verifyBoardShareToken, getBoardToken, getAllUserBoards, getBoardById, createGuestBoard, createAccountBoard, deleteGuestBoard, deleteAccountBoard, joinUserToBoard, getUserRoleAndId, updateGuestBoardName, getBoardMembers, changeAccessToBoardByUserId, getBoardMemberByUserId, changeUserBoardRole, updateAccountBoardName} from '../services/board.service.js'
 import {removeUserFromAwareness} from '../utils/removeUserFromAwareness.js'
 import { hocuspocus } from "../hocuspocus.js";
 
@@ -166,3 +166,34 @@ export async function getBoardMember(req: Request, res: Response){
     }
 }
 
+export async function getShareBoardToken(req: Request, res: Response){
+    try{
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const userId = req.user?.id
+        const shareToken = await getBoardToken(boardId, userId)
+        res.status(200).json(shareToken)
+    }catch(error){
+        res.status(400).json({error: (error as Error).message})
+    }
+}
+
+export async function verifyShareAccess(req: Request, res: Response) {
+    try {
+        const boardId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id
+        const { shareToken } = req.body;
+
+        if (!shareToken || typeof shareToken !== "string") {
+            return res.status(400).json({
+                error: "Share token is required"
+            });
+        }
+
+        const result = await verifyBoardShareToken(boardId, shareToken);
+
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(500).json({
+            error: (error as Error).message
+        });
+    }
+}

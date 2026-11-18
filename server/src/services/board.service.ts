@@ -1,4 +1,5 @@
 import {prisma} from '../prisma.js'
+import crypto from 'crypto'
 
 type Board = {
     id: string,
@@ -23,18 +24,30 @@ export async function getAllUserBoards(userId: string) {
                 },
             },
         },
-        include: {
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
             board_members: {
                 where: { user_id: userId },
-                select: { role: true },
+                select: {
+                    role: true,
+                },
             },
         },
-    })
+    });
 }
 
 export async function getBoardById(boardId: string){
     return prisma.boards.findUnique({
         where: {id: boardId},
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true
+        }
     });
 }
 
@@ -44,12 +57,19 @@ export async function createAccountBoard(board: Board, userId: string) {
             id: board.id,
             name: board.name,
             is_guest: false,
+            share_token: crypto.randomBytes(13).toString("base64url"),
             board_members: {
                 create: {
                     user_id: userId,
                     role: 'owner',
                 },
             },
+        },
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
         }
     });
 }
@@ -60,6 +80,12 @@ export async function createGuestBoard(board: Board) {
             id: board.id,
             name: board.name,
             is_guest: true
+        },
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
         }
     });
 
@@ -67,7 +93,13 @@ export async function createGuestBoard(board: Board) {
 
 export async function deleteGuestBoard(boardId: string){
     return prisma.boards.delete({
-        where: {id: boardId}
+        where: {id: boardId},
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
+        }
     })
 }
 
@@ -160,7 +192,13 @@ export async function updateGuestBoardName(boardId: string, newName: string){
 
     return prisma.boards.update({
         where: {id: boardId},
-        data: {name: newName}
+        data: {name: newName},
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
+        }
     })
 }
 
@@ -179,7 +217,13 @@ export async function updateAccountBoardName(boardId: string, newName: string, u
 
     return prisma.boards.update({
         where: {id: boardId},
-        data: {name: newName}
+        data: {name: newName},
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
+        }
     })
 }
 
@@ -254,13 +298,54 @@ export async function getBoardMemberByUserId(boardId: string, userId: string){
 export async function saveBoardState(state: Uint8Array, boardId: string){
     return prisma.boards.update({
         where: {id: boardId},
-        data: {state: Buffer.from(state) }
+        data: {state: Buffer.from(state)},
+        select: {
+            id: true,
+            state: true,
+            name: true,
+            is_guest: true,
+        }
     })
 }
 
 export async function getBoardState(boardId: string){
     return prisma.boards.findUnique({
         where: {id: boardId},
-        select: {state: true}
+        select: {state: true},
     })
+}
+
+export async function getBoardToken(boardId: string, userId: string){
+    const member = await prisma.board_members.findUnique({
+        where: {
+            board_id_user_id: {
+                user_id: userId,
+                board_id: boardId,
+            },
+        },
+        select: {role: true}
+    })
+
+    if(!member || member.role === "contributor") throw new Error("You don't have permission to share this board.")
+    
+    return prisma.boards.findUnique({
+        where: { id: boardId },
+        select: { share_token: true }
+    });
+}
+
+
+export async function verifyBoardShareToken(
+    boardId: string,
+    token: string
+) {
+    const board = await prisma.boards.findUnique({
+        where: { id: boardId },
+        select: { share_token: true }
+    });
+
+    return {
+        shareTokenIsValid:
+            !!board?.share_token && board.share_token === token
+    };
 }

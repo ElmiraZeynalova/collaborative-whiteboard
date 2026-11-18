@@ -24,6 +24,7 @@ model boards {
   name          String
   state         Bytes?
   is_guest      Boolean
+  share_token   String?         @unique
   board_members board_members[]
 }
 

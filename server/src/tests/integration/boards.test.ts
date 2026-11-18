@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest"
 import app from "../../app.js"
 import {prisma} from '../../prisma.js'
@@ -364,3 +364,177 @@ describe("changes member access", () => {
         );
     });
 })
+
+describe("Board sharing", () => {
+    let owner: Awaited<ReturnType<typeof createUser>>;
+    let admin: Awaited<ReturnType<typeof createUser>>;
+    let contributor: Awaited<ReturnType<typeof createUser>>;
+    let outsider: Awaited<ReturnType<typeof createUser>>;
+
+    let boardId: string;
+    let shareToken: string;
+
+    beforeEach(async () => {
+        const setup = await init(1, "admin");
+
+        owner = setup.owner;
+        admin = setup.user;
+        boardId = setup.boards[0].id;
+
+        contributor = await createUser();
+        outsider = await createUser();
+
+        await prisma.board_members.create({
+            data: {
+                board_id: boardId,
+                user_id: contributor.userId,
+                role: "contributor",
+            },
+        });
+
+        shareToken = crypto.randomUUID();
+
+        await prisma.boards.update({
+            where: { id: boardId },
+            data: { share_token: shareToken },
+        });
+    });
+    describe("GET /api/boards/:id/share-token", () => {
+        it("should return share token for owner", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}/share-token`)
+                .set(bearer(owner.accessToken));
+
+            expect(res.status).toBe(200);
+            expect(res.body.share_token).toBe(shareToken);
+        });
+
+        it("should return share token for admin", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}/share-token`)
+                .set(bearer(admin.accessToken));
+
+            expect(res.status).toBe(200);
+            expect(res.body.share_token).toBe(shareToken);
+        });
+
+        it("should reject contributor", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}/share-token`)
+                .set(bearer(contributor.accessToken));
+
+            expect(res.status).toBe(400);
+        });
+
+        it("should reject non-member", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}/share-token`)
+                .set(bearer(outsider.accessToken));
+
+            expect(res.status).toBe(400);
+        });
+
+        it("should reject unauthenticated request", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}/share-token`);
+
+            expect(res.status).toBe(401);
+        });
+
+        it("should reject non-existing board", async () => {
+            const res = await request(app)
+                .get("/api/boards/non-existing-id/share-token")
+                .set(bearer(owner.accessToken));
+
+            expect(res.status).toBe(400);
+        });
+    });
+    describe("POST /api/boards/:id/verify-share", () => {
+        it("should verify correct token", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({ shareToken });
+
+            expect(res.status).toBe(200);
+            expect(res.body.shareTokenIsValid).toBe(true);
+        });
+
+        it("should reject incorrect token", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({ shareToken: "wrong-token" });
+
+            expect(res.status).toBe(200);
+            expect(res.body.shareTokenIsValid).toBe(false);
+        });
+
+        it("should reject token belonging to another board", async () => {
+            const anotherToken = crypto.randomUUID();
+
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({ shareToken: anotherToken });
+
+            expect(res.status).toBe(200);
+            expect(res.body.shareTokenIsValid).toBe(false);
+        });
+
+        it("should reject empty token", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({ shareToken: "" });
+
+            expect(res.status).toBe(400);
+        });
+
+        it("should reject missing token", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({});
+
+            expect(res.status).toBe(400);
+        });
+
+        it("should return false for non-existing board", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${crypto.randomUUID()}/verify-share`)
+                .set(bearer(outsider.accessToken))
+                .send({ shareToken });
+
+            expect(res.status).toBe(200);
+            expect(res.body.shareTokenIsValid).toBe(false);
+        });
+
+        it("should reject unauthenticated request", async () => {
+            const res = await request(app)
+                .post(`/api/boards/${boardId}/verify-share`)
+                .send({ shareToken });
+
+            expect(res.status).toBe(401);
+        });
+        it("should not expose share token in board response", async () => {
+            const res = await request(app)
+                .get(`/api/boards/${boardId}`)
+                .set(bearer(owner.accessToken));
+
+            expect(res.status).toBe(200);
+            expect(res.body).not.toHaveProperty("share_token");
+        });
+        it("should not expose share token in user boards", async () => {
+            const res = await request(app)
+                .get("/api/boards")
+                .set(bearer(owner.accessToken));
+
+            expect(res.status).toBe(200);
+
+            for (const board of res.body) {
+                expect(board).not.toHaveProperty("share_token");
+            }
+        });
+    });
+});

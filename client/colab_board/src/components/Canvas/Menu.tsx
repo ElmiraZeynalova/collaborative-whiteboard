@@ -1,6 +1,8 @@
 import { useCanvasYjs } from "../../hooks/useCanvasYjs";
 import { useCanvasStore } from "../../store/canvasStore"
 import { moveBackward, moveForward, moveToFront, moveToBack } from "../../utils/shapeLayering"
+import * as Y from "yjs";
+import type { YShapeValue } from '../../types/shapes';
 
 const menuOptions = ["Duplicate",  "Bring forward", "Send backward", "Bring to front", "Send to back", "Delete"]
 
@@ -15,13 +17,23 @@ export default function Menu({className, closeModal, position}: {className?: str
                 shape?.set("isDeleted", true)
             }
         }else if (menuOption === 'Duplicate') {
+            if (!yShapes || !yShapesOrder) return;
+
             for (const id of selectedShapesIds) {
-                const shape = yShapes?.get(id)
-                if(!shape) return
-                const newId = crypto.randomUUID()
-                shape?.set("id", newId)
-                yShapes?.set(newId, shape)
-                yShapesOrder?.push([newId])
+                const shape = yShapes.get(id);
+                if (!shape) continue;
+
+                const newId = crypto.randomUUID();
+                const newShape = new Y.Map<YShapeValue>();
+
+                shape.forEach((value, key) => {
+                    newShape.set(key, value);
+                });
+
+                newShape.set("id", newId);
+
+                yShapes.set(newId, newShape);
+                yShapesOrder.push([newId]);
             }
         }else if(menuOption === "Bring forward"){
             if(!yShapesOrder) return

@@ -69,7 +69,7 @@ export default function Board({mode}: {mode: Mode}){
     }, [loggedIn, navigate, location])
 
     const localBoardQuery = useQuery({
-        queryKey: ['getLocalBoard', id],
+        queryKey: ['getGiestBoard', id],
         queryFn: async() => {
             if(!id) return undefined
             try {

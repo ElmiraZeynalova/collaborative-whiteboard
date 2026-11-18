@@ -88,3 +88,14 @@ export async function getBoardMember(boardId: string, userId: string){
     return data
 }
 
+export async function getShareBoardToken(boardId: string){
+    const {data} = await apiClient.get(`/api/boards/${boardId}/share-token`)
+    return data
+}
+
+export async function verifyShareAccess(boardId: string, shareToken: string){
+    const {data} = await apiClient.post(`/api/boards/${boardId}/verify-share`, {shareToken})
+    return data
+}
+
+
