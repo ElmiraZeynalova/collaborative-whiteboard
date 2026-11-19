@@ -7,7 +7,7 @@ import { getToolInstance } from '../../canvas/tools/ToolManager'
 import Tool from '../../canvas/tools/Tool'
 import TextArea from './TextArea'
 import { getShapeNodes } from '../../utils/shapeNodeRegistry'
-import { handleTransformEnd } from '../../utils/shapeInteractions'
+import { handleTransformEnd } from '../../utils/shapeHandlers'
 import type { ShapeChanges } from '../../types/shapes'
 import Menu from './Menu'
 import { getShapeType } from '../../utils/yShapeGetters'
@@ -21,7 +21,7 @@ const MIN_SCALE = 0.1
 const MAX_SCALE = 10
 
 export default function Canvas() {
-    const {provider, yShapes, yShapesOrder} = useCanvasYjs()
+    const { provider, yShapes, yShapesOrder } = useCanvasYjs()
     const stageRef = useRef<Konva.Stage>(null)
     const tool = useToolStore(state => state.tool)
     const toolInstanceRef = useRef<Tool | null>(null)
@@ -39,7 +39,7 @@ export default function Canvas() {
     const strokeWidth = useToolStore(state => state.strokeWidth)
     const fontSize = useToolStore(state => state.fontSize)
     const textAlign = useToolStore(state => state.textAlign)
-    const [contextMenu, setContextMenu] = useState<{x: number, y: number} | null>(null)
+    const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null)
     const [, forceRender] = useState(0)
 
     useEffect(() => {
@@ -61,7 +61,7 @@ export default function Canvas() {
 
         const resizableIds = selectedShapesIds.filter(id => {
             const shape = yShapes.get(id)
-            if(!shape) return
+            if (!shape) return
             const shapeType = getShapeType(shape)
             return (
                 shape &&
@@ -90,17 +90,17 @@ export default function Canvas() {
     }, [])
 
     useEffect(() => {
-        toolInstanceRef.current = getToolInstance(tool, {yShapes, yShapesOrder})
+        toolInstanceRef.current = getToolInstance(tool, { yShapes, yShapesOrder })
         setSelectedShapesIds([])
     }, [tool])
 
     useEffect(() => {
         if (!useToolStore.getState().toolSettingChangedByUser) return
-        if(selectedShapesIds.length === 0) return
+        if (selectedShapesIds.length === 0) return
 
-        for(const id of selectedShapesIds){
+        for (const id of selectedShapesIds) {
             const shape = yShapes.get(id)
-            if(!shape) return
+            if (!shape) return
             const shapeChanges = figureChanges(id)
 
             if (!shapeChanges) continue
@@ -115,7 +115,7 @@ export default function Canvas() {
     function figureChanges(id: string) {
         const changedSetting = useToolStore.getState().toolSettingChanged
         const shape = yShapes.get(id)
-        if(!shape) return
+        if (!shape) return
         const shapeType = getShapeType(shape)
         let changes: ShapeChanges = {}
 
@@ -156,7 +156,7 @@ export default function Canvas() {
 
     const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
         e.evt.preventDefault()
-        if (editingTextId) return 
+        if (editingTextId) return
         const stage = stageRef.current
         if (!stage) return
 
@@ -188,7 +188,7 @@ export default function Canvas() {
     const handleContextMenu = (e: Konva.KonvaEventObject<PointerEvent>) => {
         e.evt.preventDefault()
 
-        if(selectedShapesIds.length === 0) return
+        if (selectedShapesIds.length === 0) return
         setContextMenu({
             x: e.evt.clientX,
             y: e.evt.clientY,
@@ -240,7 +240,7 @@ export default function Canvas() {
 
     function updateMyPointer(x: number, y: number) {
         const userName = useClientStore.getState().userName
-        if(!userName) return
+        if (!userName) return
         provider.setAwarenessField('cursor', { x, y })
     }
 
@@ -262,7 +262,7 @@ export default function Canvas() {
         }
 
         const targetId = getShapeId(e.target)
-       
+
         toolInstanceRef.current?.onPointerDown(
             pointerPosition,
             modifiers,
@@ -278,7 +278,7 @@ export default function Canvas() {
         const pointerPosition = stageRef.current?.getRelativePointerPosition()
 
         if (!pointerPosition) return
-        
+
         updateMyPointer(pointerPosition.x, pointerPosition.y)
 
         toolInstanceRef.current?.onPointerMove(
@@ -301,7 +301,7 @@ export default function Canvas() {
 
     return (
         <div className="relative">
-           <CanvasStage
+            <CanvasStage
                 stageRef={stageRef}
                 transformerRef={transformerRef}
                 yShapes={yShapes}
@@ -313,9 +313,9 @@ export default function Canvas() {
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onContextMenu={handleContextMenu}
-                onTransformerEnd= {handleTransformerEnd}
+                onTransformerEnd={handleTransformerEnd}
             />
-            <RemoteCursors stageRef={stageRef}/>
+            <RemoteCursors stageRef={stageRef} />
             {contextMenu && (<Menu position={contextMenu} closeModal={() => setContextMenu(null)} />)}
             {stageReady && stageRef.current && <TextArea stage={stageRef.current} />}
         </div>

@@ -12,17 +12,19 @@ export function moveForward(
     order: Y.Array<string>,
     selectedIds: string[]
 ) {
-    for (const id of selectedIds) {
-        const index = getIdIndex(id, order)
+    for (const id of [...selectedIds].reverse()) {
+        const index = getIdIndex(id, order);
 
         if (index === -1 || index === order.length - 1) {
-            continue
+            continue;
         }
 
-        const nextId = order.get(index + 1)
+        const nextId = order.get(index + 1);
 
-        order.delete(index, 2)
-        order.insert(index, [nextId, id])
+        if (selectedIds.includes(nextId)) continue;
+
+        order.delete(index, 2);
+        order.insert(index, [nextId, id]);
     }
 }
 
@@ -31,34 +33,43 @@ export function moveBackward(
     selectedIds: string[]
 ) {
     for (const id of selectedIds) {
-        const index = getIdIndex(id, order)
+        const index = getIdIndex(id, order);
 
-        if (index <= 0) {
-            continue
-        }
+        if (index <= 0) continue;
 
-        const prevId = order.get(index - 1)
+        const prevId = order.get(index - 1);
 
-        order.delete(index - 1, 2)
-        order.insert(index - 1, [id, prevId])
+        if (selectedIds.includes(prevId)) continue;
+
+        order.delete(index - 1, 2);
+        order.insert(index - 1, [id, prevId]);
     }
 }
 
-export function moveToFront(yShapesOrder: Y.Array<string>, selectedShapesIds: string[]){
-    for(const id of selectedShapesIds){
-        const thisIdIndex = getIdIndex(id, yShapesOrder)
-    
-        yShapesOrder.delete(thisIdIndex, 1)
-        yShapesOrder.push([id])
-    }
+export function moveToFront(
+    order: Y.Array<string>,
+    selectedIds: string[]
+) {
+    const selected = new Set(selectedIds);
+    const current = order.toArray();
+
+    const unselected = current.filter(id => !selected.has(id));
+    const selectedInOrder = current.filter(id => selected.has(id));
+
+    order.delete(0, order.length);
+    order.insert(0, [...unselected, ...selectedInOrder]);
 }
 
+export function moveToBack(
+    order: Y.Array<string>,
+    selectedIds: string[]
+) {
+    const selected = new Set(selectedIds);
+    const current = order.toArray();
 
-export function moveToBack(yShapesOrder: Y.Array<string>, selectedShapesIds: string[]){
-    for(const id of selectedShapesIds){
-        const thisIdIndex = getIdIndex(id, yShapesOrder)
-    
-        yShapesOrder.delete(thisIdIndex, 1)
-        yShapesOrder.insert(0, [id])
-    }
+    const selectedInOrder = current.filter(id => selected.has(id));
+    const unselected = current.filter(id => !selected.has(id));
+
+    order.delete(0, order.length);
+    order.insert(0, [...selectedInOrder, ...unselected]);
 }

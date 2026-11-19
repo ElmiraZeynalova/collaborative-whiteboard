@@ -1,30 +1,30 @@
 import { type YShape } from "../types/shapes"
 import PencilShapeRenderer from "./PencilShapeRenderer"
 import RombShapeRenderer from './RombShapeRenderer'
-import {Rect, Text, Ellipse, Group} from 'react-konva'
+import { Rect, Text, Ellipse, Group } from 'react-konva'
 import type { KonvaEventObject, Node } from 'konva/lib/Node'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
 import { registerShapeNode } from '../utils/shapeNodeRegistry'
-import { handleShapeDragEnd } from '../utils/shapeInteractions'
+import { handleShapeDragEnd } from '../utils/shapeHandlers'
 import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from "../store/canvasStore"
 import LineShapeRenderer from "./LineShapeRenderer"
 import { getShapeId, getShapeNumber, getShapeRadius, getShapeStringValue, getShapeType } from "../utils/yShapeGetters"
 
-export function getFontSizeNumber(fontSize: string){
-    let fontSizeNumber 
-    if(fontSize === "S"){
+export function getFontSizeNumber(fontSize: string) {
+    let fontSizeNumber
+    if (fontSize === "S") {
         fontSizeNumber = 14
-    }else if(fontSize === "M"){
+    } else if (fontSize === "M") {
         fontSizeNumber = 20
-    }else if(fontSize === "L"){
+    } else if (fontSize === "L") {
         fontSizeNumber = 30
-    }else if(fontSize === "XL"){
+    } else if (fontSize === "XL") {
         fontSizeNumber = 40
     }
     return fontSizeNumber
 }
-export default function ShapeRenderer({shape}: {shape: YShape}){
+export default function ShapeRenderer({ shape }: { shape: YShape }) {
     const shapeId = getShapeId(shape)
     const shapeType = getShapeType(shape)
     const tool = useToolStore(state => state.tool)
@@ -54,23 +54,23 @@ export default function ShapeRenderer({shape}: {shape: YShape}){
     const fontSize = getShapeStringValue(shape, 'fontSize')
     const textAlign = getShapeStringValue(shape, 'textAlign')
 
-    switch(shapeType){
+    switch (shapeType) {
         case 'ellipse':
-           return(
-            <Ellipse
-                {...commonProps}
-                x={x}
-                y={y}
-                radiusX={radius.x}
-                radiusY={radius.y}
-                fill={fillStyle}
-                stroke={strokeStyle}
-                strokeWidth={strokeWidth}
-                rotation={rotation ?? 0}
+            return (
+                <Ellipse
+                    {...commonProps}
+                    x={x}
+                    y={y}
+                    radiusX={radius.x}
+                    radiusY={radius.y}
+                    fill={fillStyle}
+                    stroke={strokeStyle}
+                    strokeWidth={strokeWidth}
+                    rotation={rotation ?? 0}
 
-            />)
+                />)
         case 'rect':
-            return(
+            return (
                 <Rect
                     {...commonProps}
                     x={x}
@@ -84,17 +84,17 @@ export default function ShapeRenderer({shape}: {shape: YShape}){
                 />
             )
         case 'line':
-            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps}/>
-        case 'arrow': 
-            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps}/>
-        case 'pencil': 
+            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps} />
+        case 'arrow':
+            return <LineShapeRenderer shape={shape} isSelected={isSelected} commonProps={commonProps} />
+        case 'pencil':
         case 'eraser':
-            return <PencilShapeRenderer shape={shape} commonProps={commonProps}/>
+            return <PencilShapeRenderer shape={shape} commonProps={commonProps} />
         case 'romb':
-            return <RombShapeRenderer shape={shape} commonProps={commonProps}/>
+            return <RombShapeRenderer shape={shape} commonProps={commonProps} />
         case 'text':
-            if(shapeId === editingTextId) return null
-            return(
+            if (shapeId === editingTextId) return null
+            return (
                 <Text
                     {...commonProps}
                     x={x}
@@ -112,10 +112,10 @@ export default function ShapeRenderer({shape}: {shape: YShape}){
             )
         case 'sticker':
             const formattedDate = new Date().toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                });
-            return(
+                month: 'short',
+                day: 'numeric',
+            });
+            return (
                 <Group
                     {...commonProps}
                     x={x}
@@ -139,7 +139,7 @@ export default function ShapeRenderer({shape}: {shape: YShape}){
                         shadowOffsetX={4}
                         shadowOffsetY={4}
                     />
-                    <Text x={20} y={20} fill={strokeStyle} fontSize={14} fontFamily="Calibri" text={formattedDate}/>
+                    <Text x={20} y={20} fill={strokeStyle} fontSize={14} fontFamily="Calibri" text={formattedDate} />
                     {shapeId !== editingTextId && <Text
                         x={STICKER_PADDING_X / 2}
                         y={STICKER_PADDING_TOP}

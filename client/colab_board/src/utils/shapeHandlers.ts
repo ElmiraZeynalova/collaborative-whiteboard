@@ -1,7 +1,7 @@
 import type Konva from 'konva'
 import type { ShapeChanges, YShape, YShapeValue } from '../types/shapes'
-import { moveShape } from '../utils/moveShape'
-import {getShapeNumber, getShapePoints, getShapeRadius, getShapeType } from '../utils/yShapeGetters'
+import { moveShape } from './moveShape'
+import { getShapeNumber, getShapePoints, getShapeRadius, getShapeType } from './yShapeGetters'
 const ABSOLUTE_POSITION_TYPES = ['rect', 'ellipse', 'romb', 'sticker', 'text', 'arrow']
 
 function getDragDelta(shape: YShape, node: Konva.Node) {
@@ -40,7 +40,7 @@ export function handleShapeDragEnd(shape: YShape, node: Konva.Node) {
     }
 
     if (resetNode) {
-        node.position({ x: 0, y: 0 })   
+        node.position({ x: 0, y: 0 })
     }
 }
 
@@ -68,7 +68,7 @@ export function handleTransformEnd(shape: YShape, node: Konva.Node) {
             height: Math.max(5, height * scaleY),
         }
     } else if (shapeType === 'ellipse') {
-        const radius = getShapeRadius(shape) 
+        const radius = getShapeRadius(shape)
         changes = {
             ...changes,
             radius: {
@@ -77,7 +77,7 @@ export function handleTransformEnd(shape: YShape, node: Konva.Node) {
             },
         }
     } else if (shapeType === 'pencil' || shapeType === 'eraser') {
-        const points = getShapePoints(shape) 
+        const points = getShapePoints(shape)
         changes = {
             ...changes,
             points: points.map(point => ({
