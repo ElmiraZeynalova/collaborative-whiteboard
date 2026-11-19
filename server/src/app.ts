@@ -8,17 +8,20 @@ const app = express();
 
 app.set("trust proxy", 1)
 app.use(express.json());
-app.use(express.urlencoded({extended: true}))
-app.use(cookieParser()) 
+app.use(express.urlencoded({ extended: true }))
+app.use(cookieParser())
 
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL!, 
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL!,
 ];
 
-app.use(cors({origin: allowedOrigins, credentials: true}));
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 app.use("/api/boards", boardRouter);
 app.use("/api/auth", authRouter);
-app.get("/api/health", (_req, res) => res.send("ok"));
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok' })
+})
 export default app;

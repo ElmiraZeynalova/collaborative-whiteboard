@@ -8,17 +8,14 @@ import Tool from '../../canvas/tools/Tool'
 import TextArea from './TextArea'
 import { getShapeNodes } from '../../utils/shapeNodeRegistry'
 import { handleTransformEnd } from '../../utils/shapeHandlers'
-import type { ShapeChanges } from '../../types/shapes'
+import { getFigureChanges } from '../../utils/figureChanges'
+import { calculateZoom } from '../../utils/canvasZoom'
 import Menu from './Menu'
 import { getShapeType } from '../../utils/yShapeGetters'
 import RemoteCursors from './RemoteCursors'
 import CanvasStage from './CanvasStage'
 import { useCanvasYjs } from '../../hooks/useCanvasYjs'
 import { useClientStore } from '../../store/clientStore'
-
-const SCALE_BY = 1.05
-const MIN_SCALE = 0.1
-const MAX_SCALE = 10
 
 export default function Canvas() {
     const { provider, yShapes, yShapesOrder } = useCanvasYjs()
@@ -95,64 +92,36 @@ export default function Canvas() {
     }, [tool])
 
     useEffect(() => {
-        if (!useToolStore.getState().toolSettingChangedByUser) return
-        if (selectedShapesIds.length === 0) return
+        const toolState = useToolStore.getState();
+
+        if (!toolState.toolSettingChangedByUser) return;
+        if (selectedShapesIds.length === 0) return;
+
+        const changedSetting = toolState.toolSettingChanged;
+        if (changedSetting === null) return;
+
+        const settings = {
+            fillColor: toolState.fillColor,
+            strokeColor: toolState.strokeColor,
+            strokeWidth: toolState.strokeWidth,
+            fontSize: Number(toolState.fontSize),
+            textAlign: toolState.textAlign,
+        };
 
         for (const id of selectedShapesIds) {
-            const shape = yShapes.get(id)
-            if (!shape) return
-            const shapeChanges = figureChanges(id)
+            const shape = yShapes.get(id);
+            if (!shape) continue;
 
-            if (!shapeChanges) continue
+            const shapeType = getShapeType(shape);
+
+            const shapeChanges = getFigureChanges(shapeType, changedSetting, settings);
 
             for (const [key, value] of Object.entries(shapeChanges)) {
-                shape.set(key, value)
+                shape.set(key, value);
             }
         }
 
     }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds])
-
-    function figureChanges(id: string) {
-        const changedSetting = useToolStore.getState().toolSettingChanged
-        const shape = yShapes.get(id)
-        if (!shape) return
-        const shapeType = getShapeType(shape)
-        let changes: ShapeChanges = {}
-
-        switch (changedSetting) {
-            case 'fillColor':
-                if (
-                    shapeType === 'rect' ||
-                    shapeType === 'ellipse' ||
-                    shapeType === 'romb' ||
-                    shapeType === 'sticker'
-                ) {
-                    changes = { fillStyle: fillColor }
-                }
-                break
-
-            case 'strokeColor':
-                changes = { strokeStyle: strokeColor }
-                break
-
-            case 'strokeWidth':
-                changes = { strokeWidth }
-                break
-
-            case 'fontSize':
-                if (shapeType === 'text' || shapeType === 'sticker') {
-                    changes = { fontSize }
-                }
-                break
-
-            case 'textAlign':
-                if (shapeType === 'text') {
-                    changes = { textAlign }
-                }
-                break
-        }
-        return changes
-    }
 
     const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
         e.evt.preventDefault()
@@ -164,25 +133,23 @@ export default function Canvas() {
         if (!pointer) return
 
         const oldScale = stage.scaleX()
+        const result = calculateZoom({
+            pointer,
+            stagePosition: {
+                x: stage.x(),
+                y: stage.y(),
+            },
+            oldScale,
+            deltaY: e.evt.deltaY,
+        });
 
-        const mousePointTo = {
-            x: (pointer.x - stage.x()) / oldScale,
-            y: (pointer.y - stage.y()) / oldScale,
-        }
+        stage.scale({
+            x: result.scale,
+            y: result.scale,
+        });
 
-        const direction = e.evt.deltaY > 0 ? -1 : 1
-
-        const scaleChange = direction > 0 ? SCALE_BY : 1 / SCALE_BY
-        const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, oldScale * scaleChange))
-
-        const newPos = {
-            x: pointer.x - mousePointTo.x * newScale,
-            y: pointer.y - mousePointTo.y * newScale,
-        }
-
-        stage.scale({ x: newScale, y: newScale })
-        stage.position(newPos)
-        setScale(newScale)
+        stage.position(result.position);
+        setScale(result.scale);
     }
 
     const handleContextMenu = (e: Konva.KonvaEventObject<PointerEvent>) => {
@@ -252,7 +219,9 @@ export default function Canvas() {
         }
 
         const pointerPosition = stageRef.current?.getRelativePointerPosition()
-
+        console.log('POINTER DOWN')
+        console.log('Pointer position:', pointerPosition)
+        console.log('Active tool:', toolInstanceRef.current?.type)
         if (!pointerPosition) return
 
         const modifiers = {

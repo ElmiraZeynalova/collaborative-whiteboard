@@ -2,32 +2,27 @@ import type Konva from 'konva'
 import type { ShapeChanges, YShape, YShapeValue } from '../types/shapes'
 import { moveShape } from './moveShape'
 import { getShapeNumber, getShapePoints, getShapeRadius, getShapeType } from './yShapeGetters'
-const ABSOLUTE_POSITION_TYPES = ['rect', 'ellipse', 'romb', 'sticker', 'text', 'arrow']
+const ABSOLUTE_POSITION_TYPES = ['rect', 'ellipse', 'romb', 'sticker', 'text']
 
 function getDragDelta(shape: YShape, node: Konva.Node) {
     const shapeType = getShapeType(shape)
 
-    if (shapeType === 'line') {
-        return { dx: node.x(), dy: node.y(), resetNode: true }
-    }
-    if (shapeType === 'arrow') {
-        const startX = getShapeNumber(shape, 'startX')
-        const startY = getShapeNumber(shape, 'startY')
-        return { dx: node.x() - startX, dy: node.y() - startY, resetNode: false }
-    }
     if (ABSOLUTE_POSITION_TYPES.includes(shapeType)) {
         const x = getShapeNumber(shape, 'x')
         const y = getShapeNumber(shape, 'y')
-        return { dx: node.x() - x, dy: node.y() - y, resetNode: false }
-    }
-    if (shapeType === 'pencil' || shapeType === 'eraser') {
+
         return {
-            dx: node.x(),
-            dy: node.y(),
-            resetNode: true
+            dx: node.x() - x,
+            dy: node.y() - y,
+            resetNode: false
         }
     }
-    return { dx: node.x(), dy: node.y(), resetNode: true }
+
+    return {
+        dx: node.x(),
+        dy: node.y(),
+        resetNode: true
+    }
 }
 
 export function handleShapeDragEnd(shape: YShape, node: Konva.Node) {

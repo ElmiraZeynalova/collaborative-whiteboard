@@ -49,17 +49,16 @@ export default function BoardTopSection() {
     onError: (err) => console.log(err),
   });
 
-    async function createShareUrl() {
+  async function createShareUrl() {
     if (mode === "account" && !shareToken?.share_token) return;
 
-    const url =
-        mode === "account"
-        ? `${window.location.origin}/boards/${boardId}?share=${shareToken.share_token}`
-        : `${window.location.origin}/boards/guest/${boardId}`;
+    const url = mode === "account"
+      ? `${window.location.origin}/boards/${boardId}?share=${shareToken.share_token}`
+      : `${window.location.origin}/boards/guest/${boardId}`;
 
     await navigator.clipboard.writeText(url);
     setShowMessage(true);
-    }
+  }
 
   useEffect(() => {
     if (!newBoardName) return;
@@ -88,6 +87,7 @@ export default function BoardTopSection() {
               Share board link with friends
             </p>
             <button
+              aria-label="cross button"
               className="cursor-pointer"
               onClick={() => {
                 setShowModal(false);
@@ -104,12 +104,13 @@ export default function BoardTopSection() {
           </Modal.Header>
           <Modal.Content className="flex flex-col items-start gap-2 mx-1 mt-2">
             <button
-            onClick={createShareUrl}
-            disabled={mode === "account" && !shareToken?.share_token}
-            type="button"
-            className="cursor-pointer my-2 w-full bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-normal text-md rounded-lg py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="copy link button"
+              onClick={createShareUrl}
+              disabled={mode === "account" && !shareToken?.share_token}
+              type="button"
+              className="cursor-pointer my-2 w-full bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-normal text-md rounded-lg py-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-            Copy board link
+              Copy board link
             </button>
             {showMessage && <p>Link copied to clipboard</p>}
           </Modal.Content>
@@ -131,6 +132,7 @@ export default function BoardTopSection() {
         <div className="px-3 py-2 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15">
           {userRole !== "contributor" || mode === "guest" ? (
             <input
+              aria-label="board name"
               value={newBoardName ?? boardName ?? ""}
               onChange={(e) => setNewBoardName(e.target.value)}
               className="outline-none p-0 m-0 text-center"
@@ -141,6 +143,7 @@ export default function BoardTopSection() {
           )}
           {(userRole === "admin" || userRole === "owner" || mode === "guest") && (
             <button
+              aria-label="Share link"
               onClick={() => setShowModal(true)}
               className="cursor-pointer border-l border-black/15 pl-3"
             >
@@ -149,6 +152,7 @@ export default function BoardTopSection() {
           )}
         </div>
         <button
+          aria-label="members menu"
           onClick={() => setShowUsersSideBar(true)}
           className="cursor-pointer px-2.5 py-2.5 flex items-center gap-4 rounded-lg drop-shadow-md bg-white border border-black/15"
         >

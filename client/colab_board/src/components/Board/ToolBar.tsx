@@ -1,33 +1,35 @@
 import { useToolStore } from '../../store/toolStore'
 import { Icon } from '@iconify/react'
-import {useEffect} from 'react'
+import { useEffect } from 'react'
 import { refreshSettingsBar } from '../../utils/updateSettingsBar'
 
-export default function ToolBar(){
+export default function ToolBar() {
     const setTool = useToolStore(state => state.setTool)
     const tool = useToolStore(state => state.tool)
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
-    
-    useEffect(() => { 
+
+    useEffect(() => {
         setToolSettingChangedByUser(false)
         refreshSettingsBar(tool)
     }, [tool])
 
-    return(
+    return (
         <div className="px-3 py-1 flex items-center gap-4 rounded-xl drop-shadow-md bg-white border border-black/15">
-            <button 
+            <button
+                aria-label="Selection tool"
                 className={`cursor-pointer p-2 rounded-lg ${tool === 'selection' ? "bg-[#D0ECDF]" : "bg-white"}`}
                 onClick={() => setTool("selection")}>
                 <Icon icon="tabler:pointer-2" width={22} height={22} />
             </button>
             <button
+                aria-label="Rectangle tool"
                 className={`cursor-pointer p-2 rounded-lg ${tool === 'rect' ? "bg-[#D0ECDF]" : "bg-white"}`}
                 onClick={() => setTool("rect")}>
                 <Icon icon="ph:rectangle" width={23} height={23} />
             </button>
             <button
                 className={`cursor-pointer p-2 rounded-lg ${tool === 'romb' ? "bg-[#D0ECDF]" : "bg-white"}`}
-                onClick={() => setTool("romb")}> 
+                onClick={() => setTool("romb")}>
                 <Icon icon="lucide:diamond" width={22} height={22} />
             </button>
             <button
@@ -51,6 +53,7 @@ export default function ToolBar(){
                 <Icon icon="mynaui:pencil" width={22} height={22} />
             </button>
             <button
+                aria-label="Text tool"
                 className={`cursor-pointer p-2 rounded-lg ${tool === 'text' ? "bg-[#D0ECDF]" : "bg-white"}`}
                 onClick={() => setTool("text")}>
                 <Icon icon="mi:text" width={22} height={22} />

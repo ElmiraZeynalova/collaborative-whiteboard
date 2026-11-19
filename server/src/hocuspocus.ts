@@ -2,11 +2,12 @@
 import { Hocuspocus, type WebSocketLike } from '@hocuspocus/server'
 import { saveBoardState, getBoardState, getBoardById, getBoardMemberByUserId } from "./services/board.service.js"
 import * as Y from 'yjs'
-import {checkBoardAccess} from './utils/checkBoardAccess.js'
+import { checkBoardAccess } from './utils/checkBoardAccess.js'
 import jwt from 'jsonwebtoken'
 
-export const hocuspocus = new Hocuspocus({
+export const deletedDocuments = new Set<string>()
 
+export const hocuspocus = new Hocuspocus({
   async onAuthenticate({ token, documentName }) {
 
     const isLocalDocument = documentName.startsWith("board-guest-")
@@ -24,7 +25,7 @@ export const hocuspocus = new Hocuspocus({
       }
 
       return {
-       boardId,
+        boardId,
         isGuest: true,
       }
     }
@@ -63,14 +64,21 @@ export const hocuspocus = new Hocuspocus({
     const boardId = isLocalBoard ? documentName.replace(/^board-guest-/, "") : documentName.replace(/^board-/, '')
     const board = await getBoardState(boardId)
     if (board?.state) {
-        Y.applyUpdate(document, new Uint8Array(board.state))
+      Y.applyUpdate(document, new Uint8Array(board.state))
     }
 
 
     return document
   },
 
+  async afterUnloadDocument({ documentName }) {
+    if (deletedDocuments.delete(documentName)) {
+      console.log(`Deleted document unloaded: ${documentName}`)
+    }
+  },
+
   async onStoreDocument({ document, documentName }) {
+    if (deletedDocuments.has(documentName)) return
     const isLocalBoard = documentName.startsWith("board-guest-")
     const boardId = isLocalBoard ? documentName.replace(/^board-guest-/, "") : documentName.replace(/^board-/, '')
     const state = Y.encodeStateAsUpdate(document)
@@ -105,7 +113,7 @@ export const hocuspocus = new Hocuspocus({
       }
     }
 
-    if(message.type === "access"){
+    if (message.type === "access") {
       const senderUserId = connection.context.userId
       const boardId = connection.context.boardId
 
@@ -123,13 +131,13 @@ export const hocuspocus = new Hocuspocus({
 
       for (const client of document.getConnections()) {
         if (!client.context.isGuest && client.context.userId === targetUserId) {
-            client.sendStateless(
-                JSON.stringify({
-                    type: 'access',
-                    content: "access prohibited",
-                })
-            )
-            client.close()
+          client.sendStateless(
+            JSON.stringify({
+              type: 'access',
+              content: "access prohibited",
+            })
+          )
+          client.close()
         }
       }
     }

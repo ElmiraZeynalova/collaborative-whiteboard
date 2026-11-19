@@ -4,10 +4,11 @@ import { useCanvasStore } from '../../store/canvasStore';
 import * as Y from 'yjs'
 import type { YShape } from '../../types/shapes'
 
-export default class Text extends Tool{
+export default class Text extends Tool {
     readonly type = 'text'
 
     onPointerDown(pos: { x: number; y: number }): void {
+        console.log('TEXT TOOL POINTER DOWN', pos)
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
 
@@ -16,25 +17,30 @@ export default class Text extends Tool{
         const fontSize = toolStore.fontSize
         const textAlign = toolStore.textAlign
 
-        const shapeId =  crypto.randomUUID()
+        const shapeId = crypto.randomUUID()
 
-        const yStickerShape = new Y.Map() as YShape
-        yStickerShape.set("id", shapeId)
-        yStickerShape.set("type", this.type)
-        yStickerShape.set("isDeleted", false)
-        yStickerShape.set("x", pos.x)
-        yStickerShape.set("y", pos.y)
-        yStickerShape.set("width", 0)
-        yStickerShape.set("strokeStyle", strokeColor)
-        yStickerShape.set("strokeWidth", strokeWidth)
-        yStickerShape.set("fontSize", fontSize)
-        yStickerShape.set("textAlign", textAlign)
-        yStickerShape.set("text", "")
+        const yTextShape = new Y.Map() as YShape
+        yTextShape.set("id", shapeId)
+        yTextShape.set("type", this.type)
+        yTextShape.set("isDeleted", false)
+        yTextShape.set("x", pos.x)
+        yTextShape.set("y", pos.y)
+        yTextShape.set("width", 0)
+        yTextShape.set("strokeStyle", strokeColor)
+        yTextShape.set("strokeWidth", strokeWidth)
+        yTextShape.set("fontSize", fontSize)
+        yTextShape.set("textAlign", textAlign)
+        yTextShape.set("text", "")
 
-        this.ctx.yShapes.set(shapeId, yStickerShape)
+        this.ctx.yShapes.set(shapeId, yTextShape)
         this.ctx.yShapesOrder.push([shapeId])
+        console.log("SHAPE CREATED", shapeId)
 
         canvasStore.setEditingTextId(shapeId)
+        console.log(
+            'EDITING TEXT ID:',
+            useCanvasStore.getState().editingTextId
+        )
     }
 
 }

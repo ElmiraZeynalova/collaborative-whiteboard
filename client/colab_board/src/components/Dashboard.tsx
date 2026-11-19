@@ -11,10 +11,10 @@ import { deleteLocalBoardFromIDB } from "../utils/iDBOperations"
 import Modal from "./Modal"
 import { saveBoardToLocalStorage, deleteBoardFromLocalStorage } from "../utils/localStorageOperations"
 
-export default function Dashboard(){
+export default function Dashboard() {
     const navigate = useNavigate()
     const location = useLocation()
-    const {loggedIn} = useAuthState()
+    const { loggedIn } = useAuthState()
     const [rerender, forceRerender] = useState<number>(0)
     const queryClient = useQueryClient()
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null)
@@ -27,7 +27,7 @@ export default function Dashboard(){
     })
 
     const logoutMutation = useMutation({
-        mutationFn: async() => {
+        mutationFn: async () => {
             await logout()
         },
         onSuccess: () => {
@@ -45,16 +45,16 @@ export default function Dashboard(){
         }
     }, [rerender])
 
-    
+
     const deleteBoardMutation = useMutation({
-        mutationFn: async(boardId: string) =>{ 
+        mutationFn: async (boardId: string) => {
             const inLocalState = localBoards.find((b: Board) => b.id === boardId)
-            const board = inLocalState 
+            const board = inLocalState
                 ? await deleteGuestBoard(boardId)
                 : await deleteAccountBoard(boardId)
             return board
         },
-        onSuccess: async(board) => {
+        onSuccess: async (board) => {
             console.log(board)
             setBoardToDelete(null)
             queryClient.invalidateQueries({
@@ -76,13 +76,13 @@ export default function Dashboard(){
         )
     }, [boards, boardName])
 
-    async function handleDeleteBoard(boardId: string){
+    async function handleDeleteBoard(boardId: string) {
 
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
 
         await deleteBoardMutation.mutateAsync(boardId)
 
-        if(inLocalState){
+        if (inLocalState) {
             deleteBoardFromLocalStorage(boardId)
         }
 
@@ -92,7 +92,7 @@ export default function Dashboard(){
 
     return (
         <>
-            {boardToDelete && <DeleteBoardModal showModal={boardToDelete ? true : false} setShowModal={() => setBoardToDelete(null)} deleteBoard={() => handleDeleteBoard(boardToDelete)} isPending={deleteBoardMutation.isPending}/>}
+            {boardToDelete && <DeleteBoardModal showModal={boardToDelete ? true : false} setShowModal={() => setBoardToDelete(null)} deleteBoard={() => handleDeleteBoard(boardToDelete)} isPending={deleteBoardMutation.isPending} />}
             <div className="flex justify-center min-h-dvh bg-[#f3f3f3] w-full px-4">
                 <div className="flex flex-col gap-2 w-full max-w-md">
                     <h1 className="text-center text-3xl sm:text-4xl font-semibold mb-10 mt-20 sm:mt-40">
@@ -106,7 +106,7 @@ export default function Dashboard(){
                             </button>
                         </div>
                     ) : (
-                        <button 
+                        <button
                             onClick={() => navigate('/login', {
                                 state: {
                                     from: {
@@ -120,8 +120,8 @@ export default function Dashboard(){
                     )}
                     <div className="flex flex-col bg-white rounded-[18px] py-5 w-full">
                         <h3 className="text-center text-xl font-medium">Find or create board</h3>
-                        <BoardForm/>
-                        {boards && boards.length > 0 && <UserBoards boards={boardsToShow} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard} localBoards={localBoards}/>}
+                        <BoardForm />
+                        {boards && boards.length > 0 && <UserBoards boards={boardsToShow} setBoardToDelete={setBoardToDelete} deleteBoard={handleDeleteBoard} localBoards={localBoards} />}
                     </div>
                 </div>
             </div>
@@ -129,24 +129,24 @@ export default function Dashboard(){
     )
 }
 
-function BoardForm(){
+function BoardForm() {
     const boardName = useClientStore(state => state.boardName)
     const setBoardName = useClientStore(state => state.setBoardName)
     const setBoardId = useClientStore(state => state.setBoardId)
     const navigate = useNavigate()
-    const {loggedIn} = useAuthState()
+    const { loggedIn } = useAuthState()
 
     useEffect(() => {
         setBoardName(null)
     }, [])
 
     const createBoardMutation = useMutation({
-        mutationFn: async(data: {id: string, name: string, isGuest: boolean} ) => {
-            if(!data.name || !data.id || data.isGuest === undefined) return
+        mutationFn: async (data: { id: string, name: string, isGuest: boolean }) => {
+            if (!data.name || !data.id || data.isGuest === undefined) return
 
             const board = !data.isGuest
-                ? await createAccountBoard({id: data.id, name: data.name})
-                : await createGuestBoard({id: data.id, name: data.name})
+                ? await createAccountBoard({ id: data.id, name: data.name })
+                : await createGuestBoard({ id: data.id, name: data.name })
             return board
         },
         onSuccess: (board) => {
@@ -155,7 +155,7 @@ function BoardForm(){
         onError: (err) => console.log(err)
     })
 
-    
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
 
@@ -182,7 +182,7 @@ function BoardForm(){
         }
     }
 
-    return(
+    return (
         <form
             className="flex items-center gap-2 mx-4 sm:mx-6"
             onSubmit={handleSubmit}>
@@ -204,35 +204,35 @@ function BoardForm(){
     )
 }
 
-function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boards: Board[], setBoardToDelete: (boardId: string) => void, deleteBoard: (id: string) => void, localBoards: Board[] }){
+function UserBoards({ boards, setBoardToDelete, deleteBoard, localBoards }: { boards: Board[], setBoardToDelete: (boardId: string) => void, deleteBoard: (id: string) => void, localBoards: Board[] }) {
     const navigate = useNavigate()
-    const {loggedIn} = useAuthState()
+    const { loggedIn } = useAuthState()
 
-    function handleDeleteBoard(board: Board){
-        if((board.userRole === "owner") || loggedIn === false){
+    function handleDeleteBoard(board: Board) {
+        if ((board.userRole === "owner") || loggedIn === false) {
             setBoardToDelete(board.id)
             return
-        } 
+        }
 
         deleteBoard(board.id)
     }
 
-    function handleBoardChoice(boardId: string){
+    function handleBoardChoice(boardId: string) {
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
 
-        inLocalState ? navigate(`/boards/guest/${boardId}`) : navigate(`/boards/${boardId}`) 
+        inLocalState ? navigate(`/boards/guest/${boardId}`) : navigate(`/boards/${boardId}`)
     }
 
-    if(!boards) return null
+    if (!boards) return null
 
-    return(
-        <section 
+    return (
+        <section
             className="flex flex-col mx-4 sm:mx-6">
             <p>Your boards:</p>
             <div
                 className="flex flex-col items-start">
                 {boards.map((board) => {
-                    if(!board) return null
+                    if (!board) return null
                     return (
                         <div
                             key={board.id}
@@ -244,7 +244,8 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
                                 {board.name}
                             </button>
 
-                            <button 
+                            <button
+                                aria-label={`Delete board ${board.name}`}
                                 className="invisible group-hover:visible cursor-pointer"
                                 onClick={() => handleDeleteBoard(board)}>
                                 <Icon
@@ -263,24 +264,24 @@ function UserBoards({boards, setBoardToDelete, deleteBoard, localBoards}: { boar
 }
 
 
-function DeleteBoardModal({showModal, setShowModal, deleteBoard, isPending}: {showModal: boolean, setShowModal: () => void, deleteBoard: () => void, isPending: boolean}){
-    const {loggedIn} = useAuthState()
-    return(
+function DeleteBoardModal({ showModal, setShowModal, deleteBoard, isPending }: { showModal: boolean, setShowModal: () => void, deleteBoard: () => void, isPending: boolean }) {
+    const { loggedIn } = useAuthState()
+    return (
         <Modal open={showModal} closeModal={() => setShowModal()}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium">Delete board ?</Modal.Header>
                 <Modal.Content className="flex flex-col gap-2">
                     {loggedIn === true
-                        ? <p className="text-center">You're owner of this board. <br/> Are you sure you want to permanently delete it?</p>
+                        ? <p className="text-center">You're owner of this board. <br /> Are you sure you want to permanently delete it?</p>
                         : <p className="text-center">Are you sure you want to permanently delete this board?</p>
                     }
-                    <button 
+                    <button
                         type="button"
                         onClick={deleteBoard}
                         className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
                     >{isPending ? "Deleting board..." : "Delete board"}</button>
-                    <button 
+                    <button
                         type="button"
                         onClick={setShowModal}
                         className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-white border-black border-2 font-medium rounded-lg px-3 py-2"

@@ -7,18 +7,18 @@ type ChangedSetting =
     | 'strokeWidth'
     | 'fontSize'
     | 'textAlign'
-    | null
+
 
 interface ToolsStore {
     toolSettingChangedByUser: boolean
-    toolSettingChanged: ChangedSetting
+    toolSettingChanged: ChangedSetting | null
     tool: ToolType,
     fillColor: string,
     strokeColor: string,
     strokeWidth: number,
     fontSize: string,
     textAlign: string,
-    setToolSettingChangedByUser:(value: boolean) => void,
+    setToolSettingChangedByUser: (value: boolean) => void,
     setToolSettingChanged: (setting: ChangedSetting) => void,
     setTool: (tool: ToolType) => void,
     setFillColor: (color: string) => void,
@@ -37,12 +37,12 @@ export const useToolStore = create<ToolsStore>()((set) => ({
     strokeWidth: 0,
     fontSize: "S",
     textAlign: "left",
-    setToolSettingChangedByUser: (value) => set({toolSettingChangedByUser: value}),
+    setToolSettingChangedByUser: (value) => set({ toolSettingChangedByUser: value }),
     setToolSettingChanged: (setting: ChangedSetting) => set({ toolSettingChanged: setting }),
-    setTool: (tool) => set({tool: tool}),
-    setFillColor: (color) => set({fillColor: color}),
-    setStrokeColor: (color) => set({strokeColor: color}),
-    setStrokeWidth: (width) => set({strokeWidth: width}),
-    setFontSize: (size) => set({fontSize: size}),
-    setTextAlign: (align) => set({textAlign: align})
+    setTool: (tool) => set({ tool: tool }),
+    setFillColor: (color) => set({ fillColor: color }),
+    setStrokeColor: (color) => set({ strokeColor: color }),
+    setStrokeWidth: (width) => set({ strokeWidth: width }),
+    setFontSize: (size) => set({ fontSize: size }),
+    setTextAlign: (align) => set({ textAlign: align })
 }))

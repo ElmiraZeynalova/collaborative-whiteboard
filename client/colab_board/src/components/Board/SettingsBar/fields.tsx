@@ -6,10 +6,11 @@ export const FillColor = () => {
     const fillColor = useToolStore(state => state.fillColor)
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
     const setToolSettingChanged = useToolStore(state => state.setToolSettingChanged)
-    return(
+    return (
         <div className="flex gap-2 items-center">
             <p className="text-[#686868]">Fill</p>
-            <input 
+            <input
+                aria-label="Fill color"
                 className="cursor-pointer rounded-full w-7 h-7"
                 value={fillColor}
                 onChange={(e) => {
@@ -17,7 +18,7 @@ export const FillColor = () => {
                     setToolSettingChangedByUser(true)
                     setToolSettingChanged('fillColor')
                 }}
-                type="color"/>
+                type="color" />
         </div>
     )
 }
@@ -27,11 +28,11 @@ export const FontSize = () => {
     const fontSize = useToolStore(state => state.fontSize)
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
     const setToolSettingChanged = useToolStore(state => state.setToolSettingChanged)
-    return(
+    return (
         <div className="flex gap-2 items-center">
             <p className="text-[#686868] whitespace-nowrap">Font size</p>
             <div className="flex gap-2 items-center">{(["S", "M", "L", "XL"] as const).map((item) => (
-                <button 
+                <button
                     key={item}
                     onClick={() => {
                         setToolSettingChangedByUser(true)
@@ -39,7 +40,7 @@ export const FontSize = () => {
                         setFontSize(item)
                     }}
                     className={`cursor-pointer p-2 min-w-8 max-w-8 min-h-8 max-h-8 rounded-lg grid place-content-center ${fontSize === item ? 'bg-[#D0ECDF]' : 'bg-[#F0F0F0]'}`}>
-                        <p className="text-[#5F5F5F] m-0 text-sm">{item}</p>
+                    <p className="text-[#5F5F5F] m-0 text-sm">{item}</p>
                 </button>
             ))}</div>
         </div>
@@ -51,10 +52,10 @@ export const StrokeColor = () => {
     const strokeColor = useToolStore(state => state.strokeColor)
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
     const setToolSettingChanged = useToolStore(state => state.setToolSettingChanged)
-    return(
+    return (
         <div className="flex gap-2 items-center">
             <p className="text-[#686868]">Stroke</p>
-            <input 
+            <input
                 className="cursor-pointer rounded-full w-7 h-7"
                 value={strokeColor}
                 onChange={(e) => {
@@ -62,7 +63,7 @@ export const StrokeColor = () => {
                     setToolSettingChanged('strokeColor')
                     setStrokeColor(e.target.value)
                 }}
-                type="color"/>
+                type="color" />
         </div>
     )
 }
@@ -72,10 +73,10 @@ export const StrokeWidth = () => {
     const strokeWidth = useToolStore(state => state.strokeWidth)
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
     const setToolSettingChanged = useToolStore(state => state.setToolSettingChanged)
-    return(
+    return (
         <div className="flex gap-2 items-center">
             <p className="text-[#686868] whitespace-nowrap">Stroke width</p>
-            <input 
+            <input
                 value={strokeWidth}
                 onChange={(e) => {
                     setToolSettingChangedByUser(true)
@@ -83,7 +84,7 @@ export const StrokeWidth = () => {
                     setStrokeWidth(Number(e.target.value))
                 }}
                 className="cursor-pointer rounded-md w-12 h-8 border-[#D9D9D9] border text-end text-[#686868]"
-                type="number"/>
+                type="number" />
         </div>
     )
 }
@@ -94,18 +95,18 @@ export const TextAlign = () => {
     const setToolSettingChangedByUser = useToolStore(state => state.setToolSettingChangedByUser)
     const setToolSettingChanged = useToolStore(state => state.setToolSettingChanged)
 
-    
+
     const textAlignIcons = {
         "left": <Icon icon="pixelarticons:text-align-left" color="#5F5F5F" width={18} height={18} />,
         "center": <Icon icon="pixelarticons:text-align-center" color="#5F5F5F" width={18} height={18} />,
         "right": <Icon icon="pixelarticons:text-align-right" color="#5F5F5F" width={18} height={18} />
     }
 
-    return(
+    return (
         <div className="flex gap-2 items-center">
             <p className="text-[#686868] whitespace-nowrap">Text align</p>
             <div className="flex gap-2 items-center">{(["left", "center", "right"] as const).map(item => (
-                <button 
+                <button
                     key={item}
                     onClick={() => {
                         setToolSettingChangedByUser(true)
@@ -113,7 +114,7 @@ export const TextAlign = () => {
                         setTextAlign(item)
                     }}
                     className={`cursor-pointer p-2 min-w-8 max-w-8 min-h-8 max-h-8 rounded-lg grid place-content-center ${textAlign === item ? 'bg-[#D0ECDF]' : 'bg-[#F0F0F0]'}`}>
-                        {textAlignIcons[item]}
+                    {textAlignIcons[item]}
                 </button>
             ))}</div>
         </div>

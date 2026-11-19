@@ -1,5 +1,5 @@
 import { useCanvasStore } from "../../store/canvasStore"
-import {useEffect, useRef} from 'react'
+import { useEffect, useRef } from 'react'
 import type Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from "../../utils/constants"
 import { getFontSizeNumber } from "../ShapeRenderer"
@@ -9,12 +9,13 @@ import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const editingTextId = useCanvasStore((state) => state.editingTextId)
     const setEditingTextId = useCanvasStore((state) => state.setEditingTextId)
-    const {yShapes} = useCanvasYjs()
+    const { yShapes } = useCanvasYjs()
     const scale = useCanvasStore((state) => state.scale)
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
 
     const shape = editingTextId ? yShapes?.get(editingTextId) : undefined
-
+    console.log('TextArea editingTextId:', editingTextId)
+    console.log('TextArea shape:', shape)
 
     useEffect(() => {
         if (!editingTextId) return
@@ -141,6 +142,7 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
 
     return (
         <textarea
+            aria-label="textarea"
             ref={textAreaRef}
             defaultValue={text}
             onBlur={finishEditing}
@@ -151,8 +153,8 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
                 zIndex: 20,
                 top: y * scale + stagePos.y,
                 left: x * scale + stagePos.x,
-                whiteSpace: 'pre',  
-                width: `${width * scale}px`,
+                whiteSpace: 'pre',
+                width: `${Math.max(width * scale, 20)}px`,
                 ...commonTextAreaStyle,
             }}
         />

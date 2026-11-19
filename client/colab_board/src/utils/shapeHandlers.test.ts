@@ -61,6 +61,25 @@ function createNode({
 
 
 describe("handleShapeDragEnd", () => {
+    it.each(["ellipse", "romb", "sticker"])(
+        "should update coordinates of %s",
+        (type) => {
+            const shape = createShape({
+                type,
+                x: 100,
+                y: 200,
+            });
+
+            const node = createNode({ x: 130, y: 240 });
+
+            handleShapeDragEnd(shape, node);
+
+            expect(shape.get("x")).toBe(130);
+            expect(shape.get("y")).toBe(240);
+            expect(node.position).not.toHaveBeenCalled();
+        }
+    );
+
     it("should update coordinates of a rect", () => {
         const shape = createShape({
             type: "rect",
@@ -90,11 +109,15 @@ describe("handleShapeDragEnd", () => {
 
         handleShapeDragEnd(shape, node);
 
-        expect(shape.get("x")).toBe(120);
-        expect(shape.get("y")).toBe(150);
-        expect(shape.get("startX")).toBe(70);
-        expect(shape.get("startY")).toBe(130);
-        expect(node.position).not.toHaveBeenCalled();
+        expect(shape.get("x")).toBe(220);
+        expect(shape.get("y")).toBe(350);
+        expect(shape.get("startX")).toBe(170);
+        expect(shape.get("startY")).toBe(220);
+
+        expect(node.position).toHaveBeenCalledWith({
+            x: 0,
+            y: 0,
+        });
     });
 
     it("should update line coordinates and reset node position", () => {
@@ -147,6 +170,29 @@ describe("handleShapeDragEnd", () => {
             x: 0,
             y: 0,
         });
+    });
+
+    it("should move all eraser points", () => {
+        const shape = createShape({
+            type: "eraser",
+            x: 100,
+            y: 200,
+            points: [
+                { x: 10, y: 20 },
+                { x: 30, y: 40 },
+            ],
+        });
+
+        const node = createNode({ x: 5, y: 10 });
+
+        handleShapeDragEnd(shape, node);
+
+        expect(shape.get("x")).toBe(105);
+        expect(shape.get("y")).toBe(210);
+        expect(shape.get("points")).toEqual([
+            { x: 15, y: 30 },
+            { x: 35, y: 50 },
+        ]);
     });
 });
 
@@ -220,5 +266,86 @@ describe("handleTransformEnd", () => {
             x: 40,
             y: 90,
         });
+    });
+    it("should resize romb", () => {
+        const shape = createShape({
+            type: "romb",
+            x: 100,
+            y: 100,
+            width: 60,
+            height: 40,
+        });
+
+        const node = createNode({
+            x: 120,
+            y: 130,
+            scaleX: 2,
+            scaleY: 1.5,
+            rotation: 30,
+        });
+
+        handleTransformEnd(shape, node);
+
+        expect(shape.get("x")).toBe(120);
+        expect(shape.get("y")).toBe(130);
+        expect(shape.get("width")).toBe(120);
+        expect(shape.get("height")).toBe(60);
+        expect(shape.get("rotation")).toBe(30);
+    });
+    it("should resize sticker", () => {
+        const shape = createShape({
+            type: "sticker",
+            x: 100,
+            y: 100,
+            width: 200,
+            height: 150,
+        });
+
+        const node = createNode({
+            x: 110,
+            y: 120,
+            scaleX: 0.5,
+            scaleY: 2,
+            rotation: 15,
+        });
+
+        handleTransformEnd(shape, node);
+
+        expect(shape.get("x")).toBe(110);
+        expect(shape.get("y")).toBe(120);
+        expect(shape.get("width")).toBe(100);
+        expect(shape.get("height")).toBe(300);
+        expect(shape.get("rotation")).toBe(15);
+    });
+
+    it("should scale pencil points", () => {
+        const shape = createShape({
+            type: "pencil",
+            points: [
+                { x: 10, y: 20 },
+                { x: 30, y: 40 },
+                { x: 50, y: 60 },
+            ],
+        });
+
+        const node = createNode({
+            x: 10,
+            y: 20,
+            scaleX: 2,
+            scaleY: 3,
+            rotation: 45,
+        });
+
+        handleTransformEnd(shape, node);
+
+        expect(shape.get("points")).toEqual([
+            { x: 20, y: 60 },
+            { x: 60, y: 120 },
+            { x: 100, y: 180 },
+        ]);
+
+        expect(shape.get("x")).toBe(10);
+        expect(shape.get("y")).toBe(20);
+        expect(shape.get("rotation")).toBe(45);
     });
 });
