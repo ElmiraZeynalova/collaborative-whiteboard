@@ -9,7 +9,7 @@ export default defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:5173',
     trace: 'retain-on-failure',
-    headless: false,
+    headless: true,
   },
 
   projects: [
