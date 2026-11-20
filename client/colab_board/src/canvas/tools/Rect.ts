@@ -4,10 +4,10 @@ import { useToolStore } from '../../store/toolStore'
 import * as Y from 'yjs'
 import type { YShape } from '../../types/shapes'
 
-export default class Rect extends Tool{
+export default class Rect extends Tool {
     readonly type = 'rect'
 
-    onPointerDown(pos: { x: number; y: number}): void {
+    onPointerDown(pos: { x: number; y: number }): void {
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
         const setCurrentlyDrawingShapeId = canvasStore.setCurrentlyDrawingShapeId
@@ -16,7 +16,7 @@ export default class Rect extends Tool{
         const strokeWidth = toolStore.strokeWidth
         const fillColor = toolStore.fillColor
 
-        const shapeId =  crypto.randomUUID()
+        const shapeId = crypto.randomUUID()
         setCurrentlyDrawingShapeId(shapeId)
 
         const yRectShape = new Y.Map() as YShape
@@ -36,8 +36,8 @@ export default class Rect extends Tool{
 
     }
 
-    onPointerMove(shapeId: string, pos: { x: number; y: number}): void {
-        const yRectShape =  this.ctx.yShapes.get(shapeId)
+    onPointerMove(shapeId: string, pos: { x: number; y: number }): void {
+        const yRectShape = this.ctx.yShapes.get(shapeId)
 
         if (!yRectShape) return
 

@@ -1,7 +1,7 @@
 import { useClientStore } from "../store/clientStore"
 import { useNavigate, useLocation } from "react-router-dom"
 import { logout } from "../api/auth"
-import { useAuthState } from "../context/AuthContext"
+import { useAuthState } from "../context/useAuthState"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createAccountBoard, createGuestBoard, getAllUsersBoards, deleteGuestBoard, deleteAccountBoard } from "../api/boards"
 import type { Board } from "../types/board"
@@ -15,10 +15,16 @@ export default function Dashboard() {
     const navigate = useNavigate()
     const location = useLocation()
     const { loggedIn } = useAuthState()
-    const [rerender, forceRerender] = useState<number>(0)
     const queryClient = useQueryClient()
     const [boardToDelete, setBoardToDelete] = useState<string | null>(null)
     const boardName = useClientStore(state => state.boardName)
+    const [localBoards, setLocalBoards] = useState(() => {
+        try {
+            return JSON.parse(localStorage.getItem('boards') ?? '[]') ?? []
+        } catch {
+            return []
+        }
+    })
 
     const { data: serverBoards = [] } = useQuery({
         queryKey: ['getUserBoards'],
@@ -37,15 +43,6 @@ export default function Dashboard() {
         onError: (err) => console.log(err)
     })
 
-    const localBoards = useMemo(() => {
-        try {
-            return JSON.parse(localStorage.getItem('boards') ?? '[]') ?? []
-        } catch {
-            return []
-        }
-    }, [rerender])
-
-
     const deleteBoardMutation = useMutation({
         mutationFn: async (boardId: string) => {
             const inLocalState = localBoards.find((b: Board) => b.id === boardId)
@@ -54,8 +51,7 @@ export default function Dashboard() {
                 : await deleteAccountBoard(boardId)
             return board
         },
-        onSuccess: async (board) => {
-            console.log(board)
+        onSuccess: async () => {
             setBoardToDelete(null)
             queryClient.invalidateQueries({
                 queryKey: ['getUserBoards'],
@@ -63,7 +59,7 @@ export default function Dashboard() {
         },
     })
 
-    const boards: Board[] = loggedIn ? [...serverBoards, ...localBoards] : localBoards
+    const boards: Board[] = useMemo(() => loggedIn === true ? [...serverBoards, ...localBoards] : localBoards, [loggedIn, serverBoards, localBoards])
 
     const boardsToShow = useMemo(() => {
         if (!boardName) return boards
@@ -84,10 +80,10 @@ export default function Dashboard() {
 
         if (inLocalState) {
             deleteBoardFromLocalStorage(boardId)
+            setLocalBoards((prev: Board[]) => prev.filter((board: Board) => board.id !== boardId))
         }
 
         await deleteLocalBoardFromIDB(boardId)
-        forceRerender((prev) => prev + 1)
     }
 
     return (
@@ -138,7 +134,7 @@ function BoardForm() {
 
     useEffect(() => {
         setBoardName(null)
-    }, [])
+    }, [setBoardName])
 
     const createBoardMutation = useMutation({
         mutationFn: async (data: { id: string, name: string, isGuest: boolean }) => {
@@ -220,7 +216,11 @@ function UserBoards({ boards, setBoardToDelete, deleteBoard, localBoards }: { bo
     function handleBoardChoice(boardId: string) {
         const inLocalState = localBoards.find((b: Board) => b.id === boardId)
 
-        inLocalState ? navigate(`/boards/guest/${boardId}`) : navigate(`/boards/${boardId}`)
+        if (inLocalState) {
+            navigate(`/boards/guest/${boardId}`)
+        } else {
+            navigate(`/boards/${boardId}`)
+        }
     }
 
     if (!boards) return null

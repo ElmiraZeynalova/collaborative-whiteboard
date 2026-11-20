@@ -1,10 +1,11 @@
-import type {YShape } from "../types/shapes";
-import {Arrow, Line, Group, Circle} from 'react-konva'
+import type { YShape } from "../types/shapes";
+import { Arrow, Line, Group, Circle } from 'react-konva'
 import { useCanvasStore } from "../store/canvasStore";
 import type { KonvaEventObject } from "konva/lib/Node"
 import { getShapeId, getShapeNumber, getShapeStringValue, getShapeType } from '../utils/yShapeGetters'
+import type { CommonShapeProps } from '../types/shapes'
 
-export default function LineShapeRenderer({shape, isSelected, commonProps}: {shape: YShape, isSelected: boolean, commonProps: any}){
+export default function LineShapeRenderer({ shape, isSelected, commonProps }: { shape: YShape, isSelected: boolean, commonProps: CommonShapeProps }) {
     const scale = useCanvasStore(state => state.scale)
     const shapeType = getShapeType(shape)
     const shapeId = getShapeId(shape)
@@ -21,7 +22,7 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
         ref: commonProps.ref,
     }
 
-    return(
+    return (
         <Group
             {...commonProps}
             x={0}
@@ -58,23 +59,23 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
                 lineJoin="round"
                 hitStrokeWidth={20 / scale}
             /> :
-            <Arrow
-                {...shapeProps}
-                x={startX}
-                y={startY}
-                points={[
-                    0,
-                    0,
-                    x - startX,
-                    y - startY,
-                ]}
-                pointerLength={10 + strokeWidth}
-                pointerWidth={10 + strokeWidth}
-                fill={fillStyle}
-                stroke={strokeStyle}
-                strokeWidth={strokeWidth}
-                hitStrokeWidth={20 / scale}
-            />}
+                <Arrow
+                    {...shapeProps}
+                    x={startX}
+                    y={startY}
+                    points={[
+                        0,
+                        0,
+                        x - startX,
+                        y - startY,
+                    ]}
+                    pointerLength={10 + strokeWidth}
+                    pointerWidth={10 + strokeWidth}
+                    fill={fillStyle}
+                    stroke={strokeStyle}
+                    strokeWidth={strokeWidth}
+                    hitStrokeWidth={20 / scale}
+                />}
 
             {isSelected && (
                 <LineShapeResizeHandles shape={shape} />
@@ -84,7 +85,7 @@ export default function LineShapeRenderer({shape, isSelected, commonProps}: {sha
 }
 
 
-function LineShapeResizeHandles({shape}: {shape: YShape}) {
+function LineShapeResizeHandles({ shape }: { shape: YShape }) {
 
     const handleStartDragMove = (e: KonvaEventObject<DragEvent>) => {
 

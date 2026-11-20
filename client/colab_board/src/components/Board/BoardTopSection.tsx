@@ -69,7 +69,7 @@ export default function BoardTopSection() {
     return () => {
       clearTimeout(timerRef.current);
     };
-  }, [newBoardName]);
+  }, [newBoardName, changeBoardNameMutation]);
 
   return (
     <>

@@ -2,7 +2,8 @@ import { type YShape } from "../types/shapes"
 import PencilShapeRenderer from "./PencilShapeRenderer"
 import RombShapeRenderer from './RombShapeRenderer'
 import { Rect, Text, Ellipse, Group } from 'react-konva'
-import type { KonvaEventObject, Node } from 'konva/lib/Node'
+import { type KonvaEventObject } from 'konva/lib/Node'
+import Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from '../utils/constants'
 import { registerShapeNode } from '../utils/shapeNodeRegistry'
 import { handleShapeDragEnd } from '../utils/shapeHandlers'
@@ -10,20 +11,9 @@ import { useToolStore } from '../store/toolStore'
 import { useCanvasStore } from "../store/canvasStore"
 import LineShapeRenderer from "./LineShapeRenderer"
 import { getShapeId, getShapeNumber, getShapeRadius, getShapeStringValue, getShapeType } from "../utils/yShapeGetters"
+import type { CommonShapeProps } from '../types/shapes'
+import { getFontSizeNumber } from '../utils/getFontSizeNumber'
 
-export function getFontSizeNumber(fontSize: string) {
-    let fontSizeNumber
-    if (fontSize === "S") {
-        fontSizeNumber = 14
-    } else if (fontSize === "M") {
-        fontSizeNumber = 20
-    } else if (fontSize === "L") {
-        fontSizeNumber = 30
-    } else if (fontSize === "XL") {
-        fontSizeNumber = 40
-    }
-    return fontSizeNumber
-}
 export default function ShapeRenderer({ shape }: { shape: YShape }) {
     const shapeId = getShapeId(shape)
     const shapeType = getShapeType(shape)
@@ -34,10 +24,10 @@ export default function ShapeRenderer({ shape }: { shape: YShape }) {
     const selectedShapesIds = useCanvasStore(state => state.selectedShapesIds)
     const isSelected = selectedShapesIds.includes(shapeId)
 
-    const commonProps = {
+    const commonProps: CommonShapeProps = {
         id: shapeId,
         'data-testid': `shape-${shape.get('id')}`,
-        ref: (node: Node | null) => registerShapeNode(shapeId, node),
+        ref: (node: Konva.Node | null) => registerShapeNode(shapeId, node),
         draggable: isSelectable,
         onDragEnd: (e: KonvaEventObject<DragEvent>) => handleShapeDragEnd(shape, e.target),
     }
@@ -111,7 +101,7 @@ export default function ShapeRenderer({ shape }: { shape: YShape }) {
                     onDblClick={() => setEditingTextId(shapeId)}
                 />
             )
-        case 'sticker':
+        case 'sticker': {
             const formattedDate = new Date().toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -160,6 +150,7 @@ export default function ShapeRenderer({ shape }: { shape: YShape }) {
                 </Group>
 
             )
+        }
     }
     return null
 }

@@ -3,8 +3,9 @@ import { Line } from 'react-konva'
 import type { YShape } from '../types/shapes'
 import { useCanvasStore } from '../store/canvasStore'
 import { getShapeNumber, getShapePoints, getShapeStringValue } from '../utils/yShapeGetters'
+import type { CommonShapeProps } from '../types/shapes'
 
-export default function PencilShapeRenderer({ shape, commonProps }: { shape: YShape, commonProps: any}) {
+export default function PencilShapeRenderer({ shape, commonProps }: { shape: YShape, commonProps: CommonShapeProps }) {
     const strokeStyle = getShapeStringValue(shape, 'strokeStyle')
     const strokeWidth = getShapeNumber(shape, 'strokeWidth')
     const rotation = getShapeNumber(shape, 'rotation')

@@ -1,8 +1,9 @@
-import {Line} from 'react-konva'
+import { Line } from 'react-konva'
 import { type YShape } from '../types/shapes'
 import { getShapeNumber, getShapeStringValue } from '../utils/yShapeGetters'
+import type { CommonShapeProps } from '../types/shapes'
 
-export default function RombShapeRenderer({shape, commonProps}: {shape: YShape, commonProps: any}){
+export default function RombShapeRenderer({ shape, commonProps }: { shape: YShape, commonProps: CommonShapeProps }) {
     const x = getShapeNumber(shape, 'x')
     const y = getShapeNumber(shape, 'y')
     const width = getShapeNumber(shape, 'width')
@@ -12,7 +13,7 @@ export default function RombShapeRenderer({shape, commonProps}: {shape: YShape, 
     const strokeWidth = getShapeNumber(shape, 'strokeWidth')
     const rotation = getShapeNumber(shape, 'rotation')
 
-    return(
+    return (
         <Line
             {...commonProps}
             points={[

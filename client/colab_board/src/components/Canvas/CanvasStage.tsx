@@ -6,7 +6,7 @@ import * as Y from 'yjs'
 import ShapeRenderer from '../ShapeRenderer'
 
 type Props = {
-    stageRef: React.RefObject<Konva.Stage | null>
+    setStage: React.Dispatch<React.SetStateAction<Konva.Stage | null>>
     transformerRef: React.RefObject<Konva.Transformer | null>
     yShapes: Y.Map<YShape>
     yShapesOrder: Y.Array<string>
@@ -21,7 +21,7 @@ type Props = {
 }
 
 export default function CanvasStage({
-    stageRef,
+    setStage,
     transformerRef,
     yShapes,
     yShapesOrder,
@@ -36,7 +36,7 @@ export default function CanvasStage({
 }: Props) {
     return (
         <Stage
-            ref={stageRef}
+            ref={setStage}
             width={window.innerWidth}
             height={window.innerHeight}
             draggable={isDraggableStage}

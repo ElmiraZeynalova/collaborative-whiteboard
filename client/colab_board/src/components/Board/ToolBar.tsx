@@ -11,7 +11,7 @@ export default function ToolBar() {
     useEffect(() => {
         setToolSettingChangedByUser(false)
         refreshSettingsBar(tool)
-    }, [tool])
+    }, [tool, setToolSettingChangedByUser])
 
     return (
         <div className="px-3 py-1 flex items-center gap-4 rounded-xl drop-shadow-md bg-white border border-black/15">

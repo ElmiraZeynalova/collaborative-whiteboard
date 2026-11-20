@@ -1,4 +1,4 @@
-import {create} from 'zustand'
+import { create } from 'zustand'
 export type Mode = "guest" | "account"
 
 interface ClientStore {
@@ -13,9 +13,9 @@ interface ClientStore {
     boardName: string | null
     setBoardMode: (mode: Mode) => void
     setUserId: (id: string | null) => void
-    setUserRole: (role:  "owner" | "contributor" | "admin") => void
-    setUserName: (name: string) => void
-    setUserColor: (color: string) => void
+    setUserRole: (role: "owner" | "contributor" | "admin") => void
+    setUserName: (name: string | null) => void
+    setUserColor: (color: string | null) => void
     setIsBanned: (state: boolean) => void
     setDeletedBoardId: (id: string) => void
     setBoardId: (id: string | null) => void
@@ -32,13 +32,13 @@ export const useClientStore = create<ClientStore>()((set) => ({
     deletedBoardId: null,
     boardId: null,
     boardName: null,
-    setBoardMode: (mode) => set({boardMode: mode}),
-    setUserId: (id) => set({userId: id}),
-    setUserRole: (role) => set({userRole: role}),
-    setUserName: (name) => set({userName: name}),
-    setUserColor: (color) => set({userColor: color}),
-    setIsBanned: (state) => set({isBanned: state}),
-    setDeletedBoardId: (id: string) => set({deletedBoardId: id}),
-    setBoardId: (id) => set({boardId: id}),
-    setBoardName: (name) => set({boardName: name}),
+    setBoardMode: (mode) => set({ boardMode: mode }),
+    setUserId: (id) => set({ userId: id }),
+    setUserRole: (role) => set({ userRole: role }),
+    setUserName: (name) => set({ userName: name }),
+    setUserColor: (color) => set({ userColor: color }),
+    setIsBanned: (state) => set({ isBanned: state }),
+    setDeletedBoardId: (id: string) => set({ deletedBoardId: id }),
+    setBoardId: (id) => set({ boardId: id }),
+    setBoardName: (name) => set({ boardName: name }),
 }))

@@ -2,7 +2,7 @@ import { useCanvasStore } from "../../store/canvasStore"
 import { useEffect, useRef } from 'react'
 import type Konva from 'konva'
 import { STICKER_PADDING_X, STICKER_PADDING_TOP, STICKER_PADDING_BOTTOM } from "../../utils/constants"
-import { getFontSizeNumber } from "../ShapeRenderer"
+import { getFontSizeNumber } from "../../utils/getFontSizeNumber"
 import { getShapeStringValue, getShapeType, getShapeNumber } from "../../utils/yShapeGetters"
 import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 

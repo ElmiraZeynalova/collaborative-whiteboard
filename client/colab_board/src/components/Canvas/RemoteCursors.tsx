@@ -3,14 +3,13 @@ import Konva from "konva"
 import { useHocuspocusAwareness, useHocuspocusProvider } from "@hocuspocus/provider-react"
 import { Icon } from '@iconify/react'
 
-export default function RemoteCursors({stageRef}: {stageRef: React.RefObject<Konva.Stage | null>}) {
+type Props = {
+    stage: Konva.Stage
+}
+export default function RemoteCursors({ stage }: Props) {
     const users = useHocuspocusAwareness()
     const provider = useHocuspocusProvider()
     const clientId = provider.awareness?.clientID
-
-    const stage = stageRef.current
-
-    if (!stage) return null
 
     return (
         <>

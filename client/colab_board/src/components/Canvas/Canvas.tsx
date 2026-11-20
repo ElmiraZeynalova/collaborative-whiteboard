@@ -19,7 +19,7 @@ import { useClientStore } from '../../store/clientStore'
 
 export default function Canvas() {
     const { provider, yShapes, yShapesOrder } = useCanvasYjs()
-    const stageRef = useRef<Konva.Stage>(null)
+    const [stage, setStage] = useState<Konva.Stage | null>(null)
     const tool = useToolStore(state => state.tool)
     const toolInstanceRef = useRef<Tool | null>(null)
     const currentlyDrawingShapeId = useCanvasStore(state => state.currentlyDrawingShapeId)
@@ -28,7 +28,6 @@ export default function Canvas() {
     const selectionRectangle = useCanvasStore(state => state.selectionRectangle)
     const isDraggableStage = tool === 'selection' && selectedShapesIds.length === 0
     const editingTextId = useCanvasStore(state => state.editingTextId)
-    const [stageReady, setStageReady] = useState(false)
     const setScale = useCanvasStore(state => state.setScale)
     const transformerRef = useRef<Konva.Transformer | null>(null)
     const fillColor = useToolStore(state => state.fillColor)
@@ -71,25 +70,19 @@ export default function Canvas() {
 
         transformerRef.current.nodes(nodes)
         transformerRef.current.getLayer()?.batchDraw()
-    }, [selectedShapesIds])
+    }, [selectedShapesIds, yShapes])
 
     useEffect(() => {
-        const container = stageRef.current?.container()
+        const container = stage?.container()
         if (container) {
             container.tabIndex = -1
         }
-    }, [])
-
-    useEffect(() => {
-        if (stageRef.current) {
-            setStageReady(true)
-        }
-    }, [])
+    }, [stage])
 
     useEffect(() => {
         toolInstanceRef.current = getToolInstance(tool, { yShapes, yShapesOrder })
         setSelectedShapesIds([])
-    }, [tool])
+    }, [tool, setSelectedShapesIds, yShapes, yShapesOrder])
 
     useEffect(() => {
         const toolState = useToolStore.getState();
@@ -121,12 +114,11 @@ export default function Canvas() {
             }
         }
 
-    }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds])
+    }, [fillColor, strokeColor, strokeWidth, textAlign, fontSize, selectedShapesIds, yShapes])
 
     const handleWheel = (e: KonvaEventObject<WheelEvent>) => {
         e.evt.preventDefault()
         if (editingTextId) return
-        const stage = stageRef.current
         if (!stage) return
 
         const pointer = stage.getPointerPosition()
@@ -218,10 +210,8 @@ export default function Canvas() {
             return
         }
 
-        const pointerPosition = stageRef.current?.getRelativePointerPosition()
-        console.log('POINTER DOWN')
-        console.log('Pointer position:', pointerPosition)
-        console.log('Active tool:', toolInstanceRef.current?.type)
+        const pointerPosition = stage?.getRelativePointerPosition()
+
         if (!pointerPosition) return
 
         const modifiers = {
@@ -244,7 +234,7 @@ export default function Canvas() {
             return
         }
 
-        const pointerPosition = stageRef.current?.getRelativePointerPosition()
+        const pointerPosition = stage?.getRelativePointerPosition()
 
         if (!pointerPosition) return
 
@@ -271,7 +261,7 @@ export default function Canvas() {
     return (
         <div className="relative">
             <CanvasStage
-                stageRef={stageRef}
+                setStage={setStage}
                 transformerRef={transformerRef}
                 yShapes={yShapes}
                 yShapesOrder={yShapesOrder}
@@ -284,9 +274,9 @@ export default function Canvas() {
                 onContextMenu={handleContextMenu}
                 onTransformerEnd={handleTransformerEnd}
             />
-            <RemoteCursors stageRef={stageRef} />
+            {stage && <RemoteCursors stage={stage} />}
             {contextMenu && (<Menu position={contextMenu} closeModal={() => setContextMenu(null)} />)}
-            {stageReady && stageRef.current && <TextArea stage={stageRef.current} />}
+            {stage && <TextArea stage={stage} />}
         </div>
     )
 }

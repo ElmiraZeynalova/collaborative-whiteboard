@@ -8,7 +8,7 @@ export default class Text extends Tool {
     readonly type = 'text'
 
     onPointerDown(pos: { x: number; y: number }): void {
-        console.log('TEXT TOOL POINTER DOWN', pos)
+
         const canvasStore = useCanvasStore.getState()
         const toolStore = useToolStore.getState()
 
@@ -34,13 +34,10 @@ export default class Text extends Tool {
 
         this.ctx.yShapes.set(shapeId, yTextShape)
         this.ctx.yShapesOrder.push([shapeId])
-        console.log("SHAPE CREATED", shapeId)
+
 
         canvasStore.setEditingTextId(shapeId)
-        console.log(
-            'EDITING TEXT ID:',
-            useCanvasStore.getState().editingTextId
-        )
+
     }
 
 }

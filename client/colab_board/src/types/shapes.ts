@@ -1,4 +1,6 @@
 import * as Y from 'yjs'
+import type { NodeConfig } from 'konva/lib/Node'
+import Konva from 'konva'
 
 export type Point = {
     x: number
@@ -27,10 +29,10 @@ export type ShapeChanges = {
     y?: number
     width?: number
     height?: number
-    radius?: {x: number, y: number}
+    radius?: { x: number, y: number }
     startX?: number
     startY?: number
-    points?: {x:number, y:number}[]
+    points?: { x: number, y: number }[]
     fillStyle?: string
     strokeStyle?: string
     strokeWidth?: number
@@ -38,6 +40,11 @@ export type ShapeChanges = {
     fontSize?: string
     textAlign?: string
     text?: string
-    
+
+}
+
+export type CommonShapeProps = NodeConfig & {
+    ref: (node: Konva.Node | null) => void
+    'data-testid': string
 }
 

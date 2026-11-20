@@ -18,7 +18,7 @@ import { useClientStore, type Mode } from "./store/clientStore";
 import { useQuery } from "@tanstack/react-query";
 import { verifyShareAccess, getBoardMember } from "../src/api/boards.ts"
 import { useEffect } from 'react'
-import { useAuthState } from '../src/context/AuthContext.tsx'
+import { useAuthState } from '../src/context/useAuthState.ts'
 
 export default function App() {
     return (

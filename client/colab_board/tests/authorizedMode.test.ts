@@ -253,7 +253,6 @@ test('account board permissions lifecycle between owner and member', async ({ br
         await jackPage.getByRole('button', { name: 'Create' }).click()
 
         await expect(jackPage).toHaveURL(/\/boards\/[^/]+/)
-        const boardUrl = jackPage.url()
 
         await jackPage.getByPlaceholder('Username...').fill('Jack')
         await jackPage.getByRole('button', { name: 'Enter' }).click()
@@ -458,7 +457,7 @@ test('account board permissions lifecycle between owner and admin and contributo
 
         const pages = [jackPage, alicePage, bobPage]
 
-        const imagesBeforeShape = await Promise.all(
+        await Promise.all(
             pages.map(page => getCanvasImage(page))
         )
 

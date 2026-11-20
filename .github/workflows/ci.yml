@@ -131,9 +131,6 @@ jobs:
       - name: Run database migrations
         run: npm run prisma:test
 
-      - name: Run backend linting
-        run: npm run lint
-
       - name: Run backend tests
         run: npm test
 

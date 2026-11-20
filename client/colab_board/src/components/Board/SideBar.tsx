@@ -4,7 +4,7 @@ import type { AwarenessUser, LocalAwarenessUser, Member, Role } from '../../type
 import { changeUserAccessToBoard, getAllBoardMembers, changeUserRole } from '../../api/boards'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useClientStore } from '../../store/clientStore'
-import { useAuthState } from '../../context/AuthContext'
+import { useAuthState } from '../../context/useAuthState'
 import { useEffect } from 'react'
 
 export default function SideBar({ closeBar }: { closeBar: () => void }) {

@@ -1,6 +1,6 @@
 import Canvas from "../Canvas/Canvas"
 import BoardBottomSection from './BoardBottomSection'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Modal from "../Modal"
 import { useClientStore } from "../../store/clientStore"
 import { useHocuspocusProvider } from '@hocuspocus/provider-react'
@@ -8,19 +8,14 @@ import BoardTopSection from "./BoardTopSection"
 import { useCanvasYjs } from "../../hooks/useCanvasYjs"
 import { useParams, useNavigate } from "react-router-dom"
 import { IndexeddbPersistence } from 'y-indexeddb'
-import { useAuthState } from "../../context/AuthContext"
+import { useAuthState } from "../../context/useAuthState"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { joinBoard, getBoardMember, getGuestBoard } from "../../api/boards"
 import axios from 'axios'
 import { deleteBoardFromLocalStorage, saveBoardToLocalStorage, updateBoardNameInLocalStorage } from "../../utils/localStorageOperations"
 import { deleteLocalBoardFromIDB } from "../../utils/iDBOperations"
 import type { Mode } from "../../store/clientStore"
-
-export function generateColor() {
-    return `#${Math.floor(Math.random() * 0xffffff)
-        .toString(16)
-        .padStart(6, '0')}`
-}
+import { generateColor } from '../../utils/generateColor'
 
 type MemberToJoin = {
     board_id: string
@@ -31,7 +26,6 @@ type MemberToJoin = {
 
 export default function Board({ mode }: { mode: Mode }) {
     const setBoardMode = useClientStore(state => state.setBoardMode)
-    const [showNameModal, setShowNameModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
     const setIsBanned = useClientStore(state => state.setIsBanned)
     const userName = useClientStore(state => state.userName)
@@ -56,7 +50,7 @@ export default function Board({ mode }: { mode: Mode }) {
     }, [mode, setBoardMode, id])
 
     const localBoardQuery = useQuery({
-        queryKey: ['getGiestBoard', id],
+        queryKey: ['getGuestBoard', id],
         queryFn: async () => {
             if (!id) return undefined
             try {
@@ -78,7 +72,7 @@ export default function Board({ mode }: { mode: Mode }) {
             return
         }
         updateBoardNameInLocalStorage(id!, localBoardQuery.data.name)
-    }, [localBoardQuery.isPending, localBoardQuery.data])
+    }, [localBoardQuery.isPending, localBoardQuery.data, id, setDeletedBoardId])
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
@@ -96,33 +90,46 @@ export default function Board({ mode }: { mode: Mode }) {
         enabled: loggedIn === true && userId !== null && !!id && mode === "account",
     })
 
+    const showNameModal = mode === "guest"
+        ? !userName || !userColor
+        : loggedIn === true &&
+        !query.isPending &&
+        !query.isFetching &&
+        !query.isError &&
+        !isBanned &&
+        (query.data === null || query.data?.name === null)
+
     const joinBoardMutation = useMutation({
         mutationFn: async (member: MemberToJoin) => {
             return joinBoard(member)
         },
-        onSuccess: (entry) => {
-            if (showNameModal) setShowNameModal(false)
+        onSuccess: async (entry) => {
             setUserName(entry.name)
             setUserRole(entry.role)
             setUserColor(entry.color)
-            queryClient.setQueryData(['getBoardMember'], entry)
 
+            await queryClient.setQueryData(['getBoardMember', id, userId], entry)
         },
         onError: (err) => console.error(err),
     })
 
+    useEffect(() => {
+        if (mode !== "guest") return
+
+        try {
+            const user = JSON.parse(localStorage.getItem("user") ?? "{}")
+
+            if (user.name && user.color) {
+                setUserName(user.name)
+                setUserColor(user.color)
+            }
+        } catch {
+            setUserName(null)
+            setUserColor(null)
+        }
+    }, [mode, id, setUserName, setUserColor])
 
     useEffect(() => {
-        if (mode === "guest") {
-            const existingUserData = JSON.parse(localStorage.getItem("user") ?? "{}") ?? {}
-            if (!existingUserData || !existingUserData.name || !existingUserData.color) {
-                setShowNameModal(true)
-            } else {
-                setUserName(existingUserData.name)
-                setUserColor(existingUserData.color)
-            }
-            return
-        }
 
         if (loggedIn !== true || userId === null || !id || query.isPending || query.isError) return
 
@@ -131,7 +138,6 @@ export default function Board({ mode }: { mode: Mode }) {
         if (member === undefined) return
 
         if (member === null) {
-            setShowNameModal(true)
             return
         }
 
@@ -141,7 +147,6 @@ export default function Board({ mode }: { mode: Mode }) {
         }
 
         if (member.name === null) {
-            setShowNameModal(true)
             return
         }
 
@@ -154,7 +159,7 @@ export default function Board({ mode }: { mode: Mode }) {
         setUserRole(member.role)
         setUserColor(member.color)
 
-    }, [query.data, userId, loggedIn, id, query.isPending, query.isError, query.isEnabled])
+    }, [query.data, userId, loggedIn, id, query.isPending, query.isError, query.isEnabled, joinBoardMutation, setIsBanned, setUserColor, setUserName, setUserRole])
 
 
     useEffect(() => {
@@ -176,7 +181,7 @@ export default function Board({ mode }: { mode: Mode }) {
         if (!yBoard.has('name') && boardName) {
             yBoard.set('name', boardName)
         }
-    }, [yBoard])
+    }, [yBoard, boardName])
 
 
     useEffect(() => {
@@ -196,7 +201,7 @@ export default function Board({ mode }: { mode: Mode }) {
         return () => {
             yBoard.unobserve(handleYjsChange)
         }
-    }, [yBoard, id, setBoardName, setBoardId])
+    }, [yBoard, id, setBoardName, setBoardId, mode])
 
 
     useEffect(() => {
@@ -218,12 +223,12 @@ export default function Board({ mode }: { mode: Mode }) {
 
         provider.sendStateless(JSON.stringify({ type: 'connection' }))
 
-    }, [provider, userId, userName, userColor])
+    }, [provider, userId, userName, userColor, mode])
 
 
     return (
         <>
-            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)} />}
+            {showNameModal && <UserNameModal showModal={showNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)} />}
             {isBanned && <BanModal showModal={isBanned} />}
             {deletedBoardId === id &&
                 <LocalBoardDeletedModal
@@ -244,7 +249,7 @@ export default function Board({ mode }: { mode: Mode }) {
 }
 
 
-function UserNameModal({ showModal, setShowModal, joinBoardMutation }: { showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void }) {
+function UserNameModal({ showModal, joinBoardMutation }: { showModal: boolean, joinBoardMutation: (data: MemberToJoin) => void }) {
     const userNameRef = useRef<HTMLInputElement | null>(null)
     const boardId = useClientStore(state => state.boardId)
     const setUserName = useClientStore(state => state.setUserName)
@@ -263,7 +268,6 @@ function UserNameModal({ showModal, setShowModal, joinBoardMutation }: { showMod
             localStorage.setItem("user", JSON.stringify({ name, color }))
             setUserName(name)
             setUserColor(color)
-            setShowModal(false)
             return
         }
 
@@ -275,7 +279,7 @@ function UserNameModal({ showModal, setShowModal, joinBoardMutation }: { showMod
     }
 
     return (
-        <Modal open={showModal} closeModal={() => setShowModal(false)}>
+        <Modal open={showModal} closeModal={() => { }}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium">Type in your username to enter the room</Modal.Header>
