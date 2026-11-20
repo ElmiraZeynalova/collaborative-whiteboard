@@ -330,7 +330,7 @@ test('account board permissions lifecycle between owner and member', async ({ br
         await jackPage.getByRole('button', { name: 'jack-board22' }).hover()
         await expect(deleteButton).toBeVisible()
         await deleteButton.click()
-        await jackPage.getByRole('button', { name: 'Delete board' }).click()
+        await jackPage.getByRole('button', { name: 'Delete board', exact: true }).click()
         await expect(jackPage.getByText('jack-board')).not.toBeVisible()
 
         await expect(alicePage.getByText('This board was deleted')).toBeVisible()

@@ -11,9 +11,9 @@
     "start": "dotenv -e .env.dev node dist/index.js",
     "postinstall": "prisma generate",
     "dev": "dotenv -e .env.dev -- tsx watch src/index.ts",
-    "start:test": "dotenv run -f .env.test -- tsx src/index.ts",
+    "start:test": "dotenv -e .env.test -- tsx src/index.ts",
     "prisma:dev": "dotenv -e .env.dev -- prisma migrate dev",
-    "prisma:test": "dotenv run -f .env.test -- prisma migrate deploy",
+    "prisma:test": "dotenv -e .env.test -- prisma migrate deploy",
     "prisma:studio": "dotenv -e .env.dev -- prisma studio",
     "prisma:studio:test": "dotenv -e .env.test -- prisma studio"
   },
