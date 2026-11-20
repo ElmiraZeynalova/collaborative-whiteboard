@@ -1,4 +1,4 @@
-import {Stage, Layer, Transformer, Rect} from 'react-konva'
+import { Stage, Layer, Transformer, Rect } from 'react-konva'
 import Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import type { YShape, SelectionRectangleState } from '../../types/shapes'
@@ -33,8 +33,8 @@ export default function CanvasStage({
     onPointerUp,
     onContextMenu,
     onTransformerEnd
-}: Props){
-    return(
+}: Props) {
+    return (
         <Stage
             ref={stageRef}
             width={window.innerWidth}
@@ -65,7 +65,7 @@ export default function CanvasStage({
                     rotateEnabled={true}
                     onTransformEnd={onTransformerEnd}
                 />
-                
+
                 {selectionRectangle.visible && (
                     <Rect
                         x={Math.min(selectionRectangle.x1, selectionRectangle.x2)}

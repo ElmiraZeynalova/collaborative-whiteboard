@@ -1,5 +1,5 @@
-import {logInUser, logoutUser, refreshJWTToken, getUser} from '../services/auth.service.js'
-import type {Request, Response} from 'express'
+import { logInUser, logoutUser, refreshJWTToken, getUser } from '../services/auth.service.js'
+import type { Request, Response } from 'express'
 
 const isProduction = process.env.NODE_ENV === 'production'
 
@@ -7,16 +7,20 @@ const refreshCookieOptions = {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' as const : 'lax' as const,
-    maxAge:  60 * 24 * 60 * 60 * 1000
+    maxAge: 60 * 24 * 60 * 60 * 1000
 }
 
-export async function logIn(req: Request, res: Response){
-    try{
-        const {refreshToken, accessToken, userId} = await logInUser(req.body)
+export async function logIn(req: Request, res: Response) {
+    try {
+        const { refreshToken, accessToken, userId } = await logInUser(req.body)
         res.cookie('jwt', refreshToken, refreshCookieOptions)
         res.status(200).json({ accessToken, userId })
-    }catch(error){
-        res.status(401).json({error: (error as Error).message})
+    } catch (error) {
+        //res.status(401).json({error: (error as Error).message})
+        console.error('LOGIN ERROR:', error)
+        res.status(401).json({
+            error: (error as Error).message
+        })
     }
 }
 
@@ -47,8 +51,8 @@ export async function logOut(req: Request, res: Response) {
     }
 }
 
-export async function refresh(req: Request, res: Response){
-    try{
+export async function refresh(req: Request, res: Response) {
+    try {
         const expiredRefreshToken = req.cookies?.jwt
 
         if (!expiredRefreshToken) {
@@ -56,11 +60,11 @@ export async function refresh(req: Request, res: Response){
                 error: 'Refresh token missing',
             })
         }
-        const {refreshToken, accessToken} = await refreshJWTToken(expiredRefreshToken)
+        const { refreshToken, accessToken } = await refreshJWTToken(expiredRefreshToken)
         res.cookie('jwt', refreshToken, refreshCookieOptions)
         res.status(200).json({ accessToken })
-    }catch(error){
-        res.status(401).json({error: (error as Error).message})
+    } catch (error) {
+        res.status(401).json({ error: (error as Error).message })
     }
 }
 
@@ -75,7 +79,7 @@ export async function getMe(req: Request, res: Response) {
             })
         }
 
-        return res.status(200).json({userId: user.id})
+        return res.status(200).json({ userId: user.id })
     } catch (error) {
 
         return res.status(500).json({

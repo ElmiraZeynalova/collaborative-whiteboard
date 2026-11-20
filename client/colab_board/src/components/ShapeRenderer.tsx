@@ -36,6 +36,7 @@ export default function ShapeRenderer({ shape }: { shape: YShape }) {
 
     const commonProps = {
         id: shapeId,
+        'data-testid': `shape-${shape.get('id')}`,
         ref: (node: Node | null) => registerShapeNode(shapeId, node),
         draggable: isSelectable,
         onDragEnd: (e: KonvaEventObject<DragEvent>) => handleShapeDragEnd(shape, e.target),

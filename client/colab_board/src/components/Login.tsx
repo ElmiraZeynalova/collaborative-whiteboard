@@ -3,19 +3,21 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { login } from "../api/auth"
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-export default function Login(){
+export default function Login() {
     const [email, setEmail] = useState<string | null>(null)
     const [password, setPassword] = useState<string | null>(null)
     const navigate = useNavigate()
     const location = useLocation()
 
-    const from = location.state?.from ? `${location.state.from.pathname}${location.state.from.search}${location.state.from.hash}` : '/'
+    const from = location.state?.pathname
+        ? `${location.state.pathname}${location.state.search}${location.state.hash}`
+        : '/'
 
     const [error, setError] = useState('')
     const queryClient = useQueryClient();
 
     const loginMutation = useMutation({
-        mutationFn: async() => {
+        mutationFn: async () => {
             if (email === null || password === null) {
                 setError('Email and password are required')
                 return
@@ -24,14 +26,14 @@ export default function Login(){
             return data
         },
         onSuccess: (data) => {
-            queryClient.setQueryData(['session'], {userId: data.userId});
+            queryClient.setQueryData(['session'], { userId: data.userId });
             localStorage.setItem("accessToken", data.accessToken)
             navigate(from, { replace: true })
         },
         onError: (err) => setError(err.message)
     })
 
-    function handleSubmit(e: React.FormEvent){
+    function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email ?? '')) {
             setError('Invalid email address')
@@ -42,8 +44,8 @@ export default function Login(){
 
         loginMutation.mutate()
     }
-    
-    function buttonText(){
+
+    function buttonText() {
         return loginMutation.isPending ? "Loging in..." : "Log in"
     }
 

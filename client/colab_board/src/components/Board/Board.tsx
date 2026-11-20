@@ -1,13 +1,13 @@
 import Canvas from "../Canvas/Canvas"
 import BoardBottomSection from './BoardBottomSection'
-import {useEffect, useState, useRef} from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Modal from "../Modal"
 import { useClientStore } from "../../store/clientStore"
-import {useHocuspocusProvider } from '@hocuspocus/provider-react'
+import { useHocuspocusProvider } from '@hocuspocus/provider-react'
 import BoardTopSection from "./BoardTopSection"
 import { useCanvasYjs } from "../../hooks/useCanvasYjs"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
-import {IndexeddbPersistence} from 'y-indexeddb'
+import { useParams, useNavigate } from "react-router-dom"
+import { IndexeddbPersistence } from 'y-indexeddb'
 import { useAuthState } from "../../context/AuthContext"
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { joinBoard, getBoardMember, getGuestBoard } from "../../api/boards"
@@ -29,7 +29,7 @@ type MemberToJoin = {
     is_hidden?: boolean
 }
 
-export default function Board({mode}: {mode: Mode}){
+export default function Board({ mode }: { mode: Mode }) {
     const setBoardMode = useClientStore(state => state.setBoardMode)
     const [showNameModal, setShowNameModal] = useState<boolean>(false)
     const isBanned = useClientStore(state => state.isBanned)
@@ -48,8 +48,6 @@ export default function Board({mode}: {mode: Mode}){
     const setUserColor = useClientStore(state => state.setUserColor)
     const userColor = useClientStore(state => state.userColor)
     const queryClient = useQueryClient()
-    const navigate = useNavigate()
-    const location = useLocation();
     const deletedBoardId = useClientStore(state => state.deletedBoardId)
     const setDeletedBoardId = useClientStore(state => state.setDeletedBoardId)
 
@@ -57,21 +55,10 @@ export default function Board({mode}: {mode: Mode}){
         setBoardMode(mode)
     }, [mode, setBoardMode, id])
 
-    useEffect(() => {
-        if (loggedIn === false && mode === "account") {
-            navigate("/login", {
-                replace: true,
-                state: {
-                    from: location,
-                },
-            });
-        }
-    }, [loggedIn, navigate, location])
-
     const localBoardQuery = useQuery({
         queryKey: ['getGiestBoard', id],
-        queryFn: async() => {
-            if(!id) return undefined
+        queryFn: async () => {
+            if (!id) return undefined
             try {
                 return await getGuestBoard(id)
             } catch (error) {
@@ -85,17 +72,17 @@ export default function Board({mode}: {mode: Mode}){
     })
 
     useEffect(() => {
-        if(localBoardQuery.isPending) return
-        if(!localBoardQuery.data){
+        if (localBoardQuery.isPending) return
+        if (!localBoardQuery.data) {
             setDeletedBoardId(id!)
             return
         }
-        updateBoardNameInLocalStorage(id!,localBoardQuery.data.name)
+        updateBoardNameInLocalStorage(id!, localBoardQuery.data.name)
     }, [localBoardQuery.isPending, localBoardQuery.data])
 
     const query = useQuery({
         queryKey: ['getBoardMember', id, userId],
-        queryFn: async() => {
+        queryFn: async () => {
             if (!id || !userId) return undefined;
             try {
                 return await getBoardMember(id, userId)
@@ -114,59 +101,59 @@ export default function Board({mode}: {mode: Mode}){
             return joinBoard(member)
         },
         onSuccess: (entry) => {
-            if(showNameModal) setShowNameModal(false)
+            if (showNameModal) setShowNameModal(false)
             setUserName(entry.name)
             setUserRole(entry.role)
             setUserColor(entry.color)
             queryClient.setQueryData(['getBoardMember'], entry)
-            
+
         },
         onError: (err) => console.error(err),
     })
 
 
     useEffect(() => {
-        if(mode === "guest"){
+        if (mode === "guest") {
             const existingUserData = JSON.parse(localStorage.getItem("user") ?? "{}") ?? {}
-            if(!existingUserData || !existingUserData.name || !existingUserData.color){
+            if (!existingUserData || !existingUserData.name || !existingUserData.color) {
                 setShowNameModal(true)
-            }else{
+            } else {
                 setUserName(existingUserData.name)
                 setUserColor(existingUserData.color)
             }
             return
         }
 
-        if(loggedIn !== true || userId === null || !id || query.isPending || query.isError) return
+        if (loggedIn !== true || userId === null || !id || query.isPending || query.isError) return
 
         const member = query.data
 
-        if(member === undefined) return
+        if (member === undefined) return
 
-        if(member === null){
+        if (member === null) {
             setShowNameModal(true)
             return
         }
 
-        if(!member.access){
+        if (!member.access) {
             setIsBanned(true)
             return
         }
-        
-        if(member.name === null){
+
+        if (member.name === null) {
             setShowNameModal(true)
             return
         }
 
-        if(member.is_hidden){
-            joinBoardMutation.mutate({board_id: id, is_hidden: false})
+        if (member.is_hidden) {
+            joinBoardMutation.mutate({ board_id: id, is_hidden: false })
             return
         }
 
         setUserName(member.name)
         setUserRole(member.role)
         setUserColor(member.color)
-     
+
     }, [query.data, userId, loggedIn, id, query.isPending, query.isError, query.isEnabled])
 
 
@@ -198,7 +185,7 @@ export default function Board({mode}: {mode: Mode}){
             if (typeof name === "string" && id) {
                 setBoardName(name)
                 setBoardId(id)
-                if(mode === "guest") saveBoardToLocalStorage(id, name)
+                if (mode === "guest") saveBoardToLocalStorage(id, name)
             }
         }
 
@@ -213,51 +200,51 @@ export default function Board({mode}: {mode: Mode}){
 
 
     useEffect(() => {
-        if(!userName) return 
+        if (!userName) return
 
-        if(mode === "guest" && userColor && userName){
+        if (mode === "guest" && userColor && userName) {
             provider.setAwarenessField('user', {
                 color: userColor,
                 name: userName
             })
         }
 
-        if (userId && userColor && mode === "account"){
+        if (userId && userColor && mode === "account") {
             provider.setAwarenessField('user', {
                 color: userColor,
                 userId
             })
         }
 
-        provider.sendStateless(JSON.stringify({type: 'connection'}))
-        
+        provider.sendStateless(JSON.stringify({ type: 'connection' }))
+
     }, [provider, userId, userName, userColor])
 
 
-    return(
+    return (
         <>
-            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)}/>}
+            {showNameModal && <UserNameModal showModal={showNameModal} setShowModal={setShowNameModal} joinBoardMutation={(data: MemberToJoin) => joinBoardMutation.mutate(data)} />}
             {isBanned && <BanModal showModal={isBanned} />}
-            {deletedBoardId === id && 
-                <LocalBoardDeletedModal 
-                    showModal={deletedBoardId === id} 
+            {deletedBoardId === id &&
+                <LocalBoardDeletedModal
+                    showModal={deletedBoardId === id}
                     handleLocalBoardDeletion={() => {
-                        if(mode === "guest") deleteBoardFromLocalStorage(id!)
+                        if (mode === "guest") deleteBoardFromLocalStorage(id!)
                         deleteLocalBoardFromIDB(id!)
                     }}
                 />
             }
             <div>
                 <BoardTopSection />
-                <Canvas/>
-                <BoardBottomSection/>
+                <Canvas />
+                <BoardBottomSection />
             </div>
         </>
     )
 }
 
 
-function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void}){
+function UserNameModal({ showModal, setShowModal, joinBoardMutation }: { showModal: boolean, setShowModal: (state: boolean) => void, joinBoardMutation: (data: MemberToJoin) => void }) {
     const userNameRef = useRef<HTMLInputElement | null>(null)
     const boardId = useClientStore(state => state.boardId)
     const setUserName = useClientStore(state => state.setUserName)
@@ -272,8 +259,8 @@ function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal
 
         const color = generateColor()
 
-        if(mode === "guest"){
-            localStorage.setItem("user", JSON.stringify({name, color}))
+        if (mode === "guest") {
+            localStorage.setItem("user", JSON.stringify({ name, color }))
             setUserName(name)
             setUserColor(color)
             setShowModal(false)
@@ -286,22 +273,22 @@ function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal
             color: color
         })
     }
-    
-    return(
+
+    return (
         <Modal open={showModal} closeModal={() => setShowModal(false)}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium">Type in your username to enter the room</Modal.Header>
                 <Modal.Content>
-                    <form 
+                    <form
                         className="flex flex-col w-full"
                         onSubmit={handleSubmit}>
-                        <input 
-                            type="text" 
-                            placeholder="Username..." 
+                        <input
+                            type="text"
+                            placeholder="Username..."
                             className="bg-white my-4 px-3 py-2 rounded-lg border border-[#aaa]"
-                            ref={userNameRef}/>
-                        <button 
+                            ref={userNameRef} />
+                        <button
                             type="submit"
                             className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
                         >Enter</button>
@@ -313,22 +300,23 @@ function UserNameModal({showModal, setShowModal, joinBoardMutation}: { showModal
 }
 
 
-function BanModal({showModal}: {showModal: boolean}){
+function BanModal({ showModal }: { showModal: boolean }) {
     const navigate = useNavigate()
     const setBoardName = useClientStore(state => state.setBoardName)
 
-    return(
-        <Modal open={showModal} closeModal={() => {}}>
+    return (
+        <Modal open={showModal} closeModal={() => { }}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
-                <Modal.Content className="flex flex-col gap-2">        
+                <Modal.Content className="flex flex-col gap-2">
                     <p className="text-lg">You don't have permission to access this board</p>
                     <button
                         className="cursor-pointer bg-mauve-600 hover:bg-gray-100 text-white hover:text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
                         onClick={() => {
                             setBoardName(null)
-                            navigate("/")}}>Back to dashboard
+                            navigate("/")
+                        }}>Back to dashboard
                     </button>
                     <button
                         className="cursor-pointer hover:bg-mauve-600 bg-gray-100 hover:text-white text-black hover:border-2 hover:border-black border-2 font-medium rounded-lg px-3 py-2"
@@ -341,12 +329,12 @@ function BanModal({showModal}: {showModal: boolean}){
 }
 
 
-function LocalBoardDeletedModal({showModal, handleLocalBoardDeletion}: {showModal: boolean, handleLocalBoardDeletion: () => void}){
+function LocalBoardDeletedModal({ showModal, handleLocalBoardDeletion }: { showModal: boolean, handleLocalBoardDeletion: () => void }) {
     const navigate = useNavigate()
     const setBoardName = useClientStore(state => state.setBoardName)
 
-    return(
-        <Modal open={showModal} closeModal={() => {}}>
+    return (
+        <Modal open={showModal} closeModal={() => { }}>
             <Modal.Overlay />
             <Modal.Container>
                 <Modal.Header className="text-center text-lg font-medium mb-2">Access denied</Modal.Header>
@@ -357,7 +345,8 @@ function LocalBoardDeletedModal({showModal, handleLocalBoardDeletion}: {showModa
                         onClick={() => {
                             handleLocalBoardDeletion()
                             setBoardName(null)
-                            navigate("/")}}>Back to dashboard
+                            navigate("/")
+                        }}>Back to dashboard
                     </button>
                 </Modal.Content>
             </Modal.Container>

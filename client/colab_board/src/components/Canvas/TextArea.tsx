@@ -14,8 +14,6 @@ export default function TextArea({ stage }: { stage: Konva.Stage }) {
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null)
 
     const shape = editingTextId ? yShapes?.get(editingTextId) : undefined
-    console.log('TextArea editingTextId:', editingTextId)
-    console.log('TextArea shape:', shape)
 
     useEffect(() => {
         if (!editingTextId) return

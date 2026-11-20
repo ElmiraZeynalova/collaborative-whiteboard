@@ -4,7 +4,8 @@ import {
     Routes,
     Navigate,
     useParams,
-    useSearchParams
+    useSearchParams,
+    useLocation
 } from "react-router-dom";
 import Board from "./components/Board/Board";
 import Dashboard from "./components/Dashboard";
@@ -17,6 +18,7 @@ import { useClientStore, type Mode } from "./store/clientStore";
 import { useQuery } from "@tanstack/react-query";
 import { verifyShareAccess, getBoardMember } from "../src/api/boards.ts"
 import { useEffect } from 'react'
+import { useAuthState } from '../src/context/AuthContext.tsx'
 
 export default function App() {
     return (
@@ -34,23 +36,26 @@ export default function App() {
 function BoardPage({ mode }: { mode: Mode }) {
     const { id } = useParams();
     const [searchParams] = useSearchParams();
-
     const shareToken = searchParams.get("share");
+
     const userId = useClientStore(state => state.userId);
+    const { loggedIn } = useAuthState()
 
     const setIsBanned = useClientStore(state => state.setIsBanned);
     const setDeletedBoardId = useClientStore(state => state.setDeletedBoardId);
 
+    const location = useLocation();
+
     const memberQuery = useQuery({
         queryKey: ["member", id, userId],
         queryFn: () => getBoardMember(id!, userId!),
-        enabled: mode === "account" && !!id && !!userId,
+        enabled: mode === "account" && !!id && !!userId && loggedIn === true,
     });
 
     const shareQuery = useQuery({
-        queryKey: ["share-access", id, shareToken],
+        queryKey: ["share-access", id, shareToken, userId],
         queryFn: () => verifyShareAccess(id!, shareToken!),
-        enabled: mode === "account" && !!id && !!shareToken,
+        enabled: mode === "account" && !!id && !!shareToken && !!userId && loggedIn === true,
     });
 
     useEffect(() => {
@@ -67,17 +72,33 @@ function BoardPage({ mode }: { mode: Mode }) {
     }
 
     if (mode === "account") {
+        if (loggedIn === "loading" || (loggedIn === true && !userId)) {
+            return <div>Loading...</div>;
+        }
+
+        if (loggedIn !== true) {
+            return <Navigate to="/login" replace state={location} />;
+        }
+
         if (shareToken) {
             if (shareQuery.isPending) {
-                return <div>Loading...</div>;
+                return <div>Loading board...</div>;
             }
 
-            if (!shareQuery.data?.shareTokenIsValid) {
+            if (shareQuery.isError) {
+                return <div>Failed to verify invitation.</div>;
+            }
+
+            if (shareQuery.data?.shareTokenIsValid !== true) {
                 return <Navigate to="/" replace />;
             }
         } else {
             if (memberQuery.isPending) {
-                return <div>Loading...</div>;
+                return <div>Loading board...</div>;
+            }
+
+            if (memberQuery.isError) {
+                return <div>Failed to verify board access.</div>;
             }
 
             if (!memberQuery.data) {
