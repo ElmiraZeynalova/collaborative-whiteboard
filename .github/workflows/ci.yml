@@ -68,8 +68,18 @@ jobs:
       - name: Run Vitest unit tests
         run: npx vitest run
 
+      - name: Build frontend
+        run: npm run build
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Configure frontend test environment
+        run: |
+          cat > .env.test << 'EOF'
+          VITE_API_URL=http://127.0.0.1:3000
+          VITE_HOCUSPOCUS_URL=ws://127.0.0.1:3000
+          EOF
 
       - name: Run Playwright E2E tests
         run: npx playwright test
@@ -126,3 +136,6 @@ jobs:
 
       - name: Run backend tests
         run: npm test
+
+      - name: Build backend
+        run: npm run build
