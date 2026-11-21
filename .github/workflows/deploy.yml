@@ -60,11 +60,12 @@ jobs:
         run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
 
       - name: Deploy WebSocket server via SSM
+        working-directory: server
         run: |
           {
             echo '#!/bin/bash'
             echo "export SHA=${{ github.event.workflow_run.head_sha }}"
-            tail -n +2 deploy/remote-deploy.sh
+            tail -n +2 remote-deploy.sh
           } > remote.sh
           jq -n --rawfile s remote.sh \
             '{commands: ($s | split("\n")), executionTimeout: ["900"]}' > params.json
