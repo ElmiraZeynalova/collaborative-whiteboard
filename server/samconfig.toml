@@ -1,0 +1,13 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "collaborative-board"
+resolve_s3 = true
+s3_prefix = "collaborative-board"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "FrontendUrl=\"https://d18fd4vg2lc443.cloudfront.net\" SubnetIds=\"subnet-02720de3bb62a502d,subnet-0ca26e6f488e50a52\" SecurityGroupId=\"sg-0db24a9a0186d9818\""
+image_repositories = []
+
+[default.global.parameters]
+region = "eu-north-1"
