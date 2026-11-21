@@ -38,9 +38,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
-          path: dist
+          path: ./client/colab_board/dist/
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Debug OIDC claims
+        run: |
+          TOKEN=$(curl -sH "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
+          P=$(echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+')
+          while [ $((${#P} % 4)) -ne 0 ]; do P="$P="; done
+          echo "$P" | base64 -d | jq '{sub, aud, repository, ref, event_name}'
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -95,7 +103,7 @@ jobs:
           [ "$STATUS" = "Success" ] || { echo "SSM status: $STATUS"; exit 1; }
 
       - name: Upload dist to S3
-        run: aws s3 sync ./dist s3://${{ env.BUCKET_NAME }}/ --delete
+        run: aws s3 sync ./client/colab_board/dist s3://${{ env.BUCKET_NAME }}/ --delete
 
       - name: Invalidate CloudFront
         run: |
