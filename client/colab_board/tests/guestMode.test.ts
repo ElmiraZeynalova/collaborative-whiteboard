@@ -126,7 +126,7 @@ test("guest collaboration full lifecycle", async ({ browser }) => {
         await jackPage.getByRole('button', { name: 'jack-board' }).hover()
         await expect(deleteButton).toBeVisible()
         await deleteButton.click()
-        await jackPage.getByRole('button', { name: 'Delete board' }).click()
+        await jackPage.getByRole('button', { name: 'Delete board', exact: true }).click()
         await expect(jackPage.getByText('jack-board')).not.toBeVisible()
         const jackBoardsAfterDelete = await jackPage.evaluate(() =>
             JSON.parse(localStorage.getItem('boards') ?? '[]')
