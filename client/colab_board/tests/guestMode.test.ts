@@ -43,7 +43,7 @@ test('successfull guest board lifecycle', async ({ page }) => {
     await deleteButton.click()
 
     await expect(page.getByText('Delete board ?')).toBeVisible()
-    await page.getByRole('button', { name: 'Delete board' }).click()
+    await page.getByRole('button', { name: 'Delete board', exact: true }).click()
 
     await expect(page.getByText('guest-board')).not.toBeVisible()
 
