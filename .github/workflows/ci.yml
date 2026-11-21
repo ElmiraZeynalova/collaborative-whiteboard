@@ -69,6 +69,10 @@ jobs:
         run: npx vitest run
 
       - name: Build frontend
+        working-directory: client/colab_board
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_WS_URL: ${{ vars.VITE_WS_URL }}
         run: npm run build
 
       - name: Install Playwright browsers
