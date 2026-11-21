@@ -1,0 +1,104 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+  actions: read
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-north-1
+  BUCKET_NAME: collaborative-board-frontend
+  CLOUDFRONT_DISTRIBUTION_ID: E289MVV2AWV38Z
+  INSTANCE_ID: i-02015ec3e3f654863
+
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Download dist from CI
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::661614508111:role/github-actions-role
+          role-session-name: github-cd
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup SAM
+        uses: aws-actions/setup-sam@v2
+
+      - name: Build Lambda
+        working-directory: server
+        run: sam build
+
+      - name: Deploy Lambda
+        working-directory: server
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+
+      - name: Deploy WebSocket server via SSM
+        run: |
+          {
+            echo '#!/bin/bash'
+            echo "export SHA=${{ github.event.workflow_run.head_sha }}"
+            tail -n +2 deploy/remote-deploy.sh
+          } > remote.sh
+          jq -n --rawfile s remote.sh \
+            '{commands: ($s | split("\n")), executionTimeout: ["900"]}' > params.json
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy ${{ github.event.workflow_run.head_sha }}" \
+            --cloud-watch-output-config CloudWatchOutputEnabled=true,CloudWatchLogGroupName=/ssm/collaborative-board-deploy \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+
+          STATUS=Pending
+          for i in $(seq 1 100); do
+            sleep 10
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+          done
+
+          aws ssm get-command-invocation \
+            --command-id "$CMD_ID" --instance-id "$INSTANCE_ID" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text
+
+          [ "$STATUS" = "Success" ] || { echo "SSM status: $STATUS"; exit 1; }
+
+      - name: Upload dist to S3
+        run: aws s3 sync ./dist s3://${{ env.BUCKET_NAME }}/ --delete
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
